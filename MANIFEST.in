@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include excel_hr *.css
+recursive-include excel_hr *.csv
+recursive-include excel_hr *.html
+recursive-include excel_hr *.ico
+recursive-include excel_hr *.js
+recursive-include excel_hr *.json
+recursive-include excel_hr *.md
+recursive-include excel_hr *.png
+recursive-include excel_hr *.py
+recursive-include excel_hr *.svg
+recursive-include excel_hr *.txt
+recursive-exclude excel_hr *.pyc

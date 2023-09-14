@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from . import __version__ as app_version
 
 app_name = "excel_hr"
@@ -28,6 +29,38 @@ app_license = "MIT"
 # include js in page
 # page_js = {"page" : "public/js/file.js"}
 
+fixtures = ["Custom Field"]
+
+# fixtures = [
+#     {
+#         "dt": "Custom Field",
+#         "filters": [
+#             [
+#                 "name",
+#                 "in",
+#                 [
+#                     "Leave Application-custom_test_fixtures",
+#                     "Leave Application-custom_head_of_department",
+#                     "Leave Application-custom_line_manager_two",
+#                     "Leave Application-custom_line_manager_one",
+#                     "Leave Application-custom_approver_remarks",
+#                     "Leave Application-workflow_state",
+#                     "Leave Application-custom_head_of_dept_name",
+#                     "Leave Application-custom_line_manager_two_name",
+#                     "Leave Application-custom_line_manager_one_name",
+#                     "Leave Application-custom_employee_image",
+#                     "Leave Application-custom_branch",
+#                     "Leave Application-custom_designation",
+#                     "Leave Application-custom_branch",
+#                     "Leave Application-custom_designation",
+#                     "Leave Application-custom_employee_mobile_no",
+#                     "Leave Application-custom_employee_email"
+#                 ],
+#             ],
+#         ]
+#     },
+# ]
+
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
@@ -42,7 +75,7 @@ app_license = "MIT"
 
 # website user home page (by Role)
 # role_home_page = {
-#	"Role": "home_page"
+# "Role": "home_page"
 # }
 
 # Generators
@@ -56,8 +89,8 @@ app_license = "MIT"
 
 # add methods and filters to jinja environment
 # jinja = {
-#	"methods": "excel_hr.utils.jinja_methods",
-#	"filters": "excel_hr.utils.jinja_filters"
+# "methods": "excel_hr.utils.jinja_methods",
+# "filters": "excel_hr.utils.jinja_filters"
 # }
 
 # Installation
@@ -99,11 +132,11 @@ app_license = "MIT"
 # Permissions evaluated in scripted ways
 
 # permission_query_conditions = {
-#	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+# "Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
 # }
 #
 # has_permission = {
-#	"Event": "frappe.desk.doctype.event.event.has_permission",
+# "Event": "frappe.desk.doctype.event.event.has_permission",
 # }
 
 # DocType Class
@@ -111,7 +144,7 @@ app_license = "MIT"
 # Override standard doctype classes
 
 # override_doctype_class = {
-#	"ToDo": "custom_app.overrides.CustomToDo"
+# "ToDo": "custom_app.overrides.CustomToDo"
 # }
 
 # Document Events
@@ -119,32 +152,32 @@ app_license = "MIT"
 # Hook on document methods and events
 
 # doc_events = {
-#	"*": {
-#		"on_update": "method",
-#		"on_cancel": "method",
-#		"on_trash": "method"
-#	}
+# "*": {
+# "on_update": "method",
+# "on_cancel": "method",
+# "on_trash": "method"
+# }
 # }
 
 # Scheduled Tasks
 # ---------------
 
 # scheduler_events = {
-#	"all": [
-#		"excel_hr.tasks.all"
-#	],
-#	"daily": [
-#		"excel_hr.tasks.daily"
-#	],
-#	"hourly": [
-#		"excel_hr.tasks.hourly"
-#	],
-#	"weekly": [
-#		"excel_hr.tasks.weekly"
-#	],
-#	"monthly": [
-#		"excel_hr.tasks.monthly"
-#	],
+# "all": [
+# "excel_hr.tasks.all"
+# ],
+# "daily": [
+# "excel_hr.tasks.daily"
+# ],
+# "hourly": [
+# "excel_hr.tasks.hourly"
+# ],
+# "weekly": [
+# "excel_hr.tasks.weekly"
+# ],
+# "monthly": [
+# "excel_hr.tasks.monthly"
+# ],
 # }
 
 # Testing
@@ -156,14 +189,14 @@ app_license = "MIT"
 # ------------------------------
 #
 # override_whitelisted_methods = {
-#	"frappe.desk.doctype.event.event.get_events": "excel_hr.event.get_events"
+# "frappe.desk.doctype.event.event.get_events": "excel_hr.event.get_events"
 # }
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
 # override_doctype_dashboards = {
-#	"Task": "excel_hr.task.get_dashboard_data"
+# "Task": "excel_hr.task.get_dashboard_data"
 # }
 
 # exempt linked doctypes from being automatically cancelled
@@ -189,29 +222,29 @@ app_license = "MIT"
 # --------------------
 
 # user_data_fields = [
-#	{
-#		"doctype": "{doctype_1}",
-#		"filter_by": "{filter_by}",
-#		"redact_fields": ["{field_1}", "{field_2}"],
-#		"partial": 1,
-#	},
-#	{
-#		"doctype": "{doctype_2}",
-#		"filter_by": "{filter_by}",
-#		"partial": 1,
-#	},
-#	{
-#		"doctype": "{doctype_3}",
-#		"strict": False,
-#	},
-#	{
-#		"doctype": "{doctype_4}"
-#	}
+# {
+# "doctype": "{doctype_1}",
+# "filter_by": "{filter_by}",
+# "redact_fields": ["{field_1}", "{field_2}"],
+# "partial": 1,
+# },
+# {
+# "doctype": "{doctype_2}",
+# "filter_by": "{filter_by}",
+# "partial": 1,
+# },
+# {
+# "doctype": "{doctype_3}",
+# "strict": False,
+# },
+# {
+# "doctype": "{doctype_4}"
+# }
 # ]
 
 # Authentication and authorization
 # --------------------------------
 
 # auth_hooks = [
-#	"excel_hr.auth.validate"
+# "excel_hr.auth.validate"
 # ]

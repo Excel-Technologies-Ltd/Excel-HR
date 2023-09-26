@@ -162,23 +162,28 @@ fixtures = ["Custom Field"]
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# "all": [
-# "excel_hr.tasks.all"
-# ],
-# "daily": [
-# "excel_hr.tasks.daily"
-# ],
-# "hourly": [
-# "excel_hr.tasks.hourly"
-# ],
-# "weekly": [
-# "excel_hr.tasks.weekly"
-# ],
-# "monthly": [
-# "excel_hr.tasks.monthly"
-# ],
-# }
+scheduler_events = {
+    "cron": {
+        "*/2 * * * *": [
+            "erpnext.stock.doctype.repost_item_valuation.repost_item_valuation.repost_entries",
+        ]
+    },
+    # "all": [
+    #     "excel_hr.tasks.all"
+    # ],
+    # "daily": [
+    #     "excel_hr.tasks.daily"
+    # ],
+    # "hourly": [
+    #     "excel_hr.tasks.hourly"
+    # ],
+    # "weekly": [
+    #     "excel_hr.tasks.weekly"
+    # ],
+    # "monthly": [
+    #     "excel_hr.tasks.monthly"
+    # ],
+}
 
 # Testing
 # -------

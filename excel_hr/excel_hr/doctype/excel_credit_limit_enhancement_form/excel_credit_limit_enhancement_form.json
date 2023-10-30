@@ -1,0 +1,395 @@
+{
+ "actions": [],
+ "allow_copy": 1,
+ "allow_events_in_timeline": 1,
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2023-10-29 12:50:35.536670",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "customer_information_section",
+  "naming_series",
+  "customer",
+  "customer_name",
+  "customer_group",
+  "company_name",
+  "approver_remarks",
+  "column_break_ra2cp",
+  "posting_date",
+  "territory",
+  "customer_address",
+  "address",
+  "contact_person",
+  "mobile_no",
+  "contact_email",
+  "sales_and_credit_limit_status_section",
+  "current_credit_limit",
+  "current_outstanding",
+  "last_year_turn_over",
+  "current_year_sales",
+  "cheque_in_hand_amount",
+  "cheque_attachment",
+  "interested_brand",
+  "remarks",
+  "column_break_fzmr5",
+  "fixed_limit",
+  "start_business_with_excel_year",
+  "average_monthly_sales",
+  "last_month_sales",
+  "type_of_new_credit_limit",
+  "proposed_credit_limit_amount",
+  "adjustment_date",
+  "sales_person",
+  "supervisor_email",
+  "supervisor_name",
+  "details_of_security_cheque_section",
+  "bank_name",
+  "account_no",
+  "column_break_wwcsr",
+  "cheque_no",
+  "amount",
+  "cm_officials_section",
+  "attachment_1",
+  "column_break_v0vse",
+  "attachment_2",
+  "column_break_nqnzf",
+  "attachment_3",
+  "column_break_akcay",
+  "attachment_4",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer_information_section",
+   "fieldtype": "Section Break",
+   "label": "Customer Information"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "CLE-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "depends_on": "customer",
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "customer.customer_group",
+   "fieldname": "customer_group",
+   "fieldtype": "Link",
+   "label": "Customer Group",
+   "options": "Customer Group",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Link",
+   "label": "Company Name",
+   "options": "Company",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "approver_remarks",
+   "fieldtype": "Small Text",
+   "label": "Approver Remarks",
+   "permlevel": 2
+  },
+  {
+   "fieldname": "column_break_ra2cp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Posting Date",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "customer.territory",
+   "fieldname": "territory",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Territory",
+   "options": "Territory",
+   "read_only": 1
+  },
+  {
+   "depends_on": "customer",
+   "fetch_from": "customer.customer_primary_address",
+   "fieldname": "customer_address",
+   "fieldtype": "Link",
+   "label": "Customer Address",
+   "options": "Address",
+   "read_only": 1
+  },
+  {
+   "depends_on": "customer",
+   "fetch_from": "customer.primary_address",
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "read_only": 1
+  },
+  {
+   "depends_on": "customer",
+   "fetch_from": "customer.customer_primary_contact",
+   "fieldname": "contact_person",
+   "fieldtype": "Link",
+   "label": "Contact Person",
+   "options": "Contact",
+   "read_only": 1
+  },
+  {
+   "depends_on": "customer",
+   "fetch_from": "customer.mobile_no",
+   "fieldname": "mobile_no",
+   "fieldtype": "Small Text",
+   "label": "Mobile No",
+   "read_only": 1
+  },
+  {
+   "depends_on": "customer",
+   "fetch_from": "customer.email_id",
+   "fieldname": "contact_email",
+   "fieldtype": "Data",
+   "label": "Contact Email",
+   "options": "Email",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_and_credit_limit_status_section",
+   "fieldtype": "Section Break",
+   "label": "Sales and Credit Limit Status"
+  },
+  {
+   "fieldname": "current_credit_limit",
+   "fieldtype": "Currency",
+   "label": "Current Credit Limit"
+  },
+  {
+   "fieldname": "current_outstanding",
+   "fieldtype": "Currency",
+   "label": "Current Outstanding"
+  },
+  {
+   "fieldname": "last_year_turn_over",
+   "fieldtype": "Currency",
+   "label": "Last Year Turn Over"
+  },
+  {
+   "fieldname": "current_year_sales",
+   "fieldtype": "Currency",
+   "label": "Current Year Sales"
+  },
+  {
+   "fieldname": "cheque_in_hand_amount",
+   "fieldtype": "Currency",
+   "label": "Cheque In Hand Amount"
+  },
+  {
+   "fieldname": "cheque_attachment",
+   "fieldtype": "Attach Image",
+   "label": "Cheque Attachment"
+  },
+  {
+   "fieldname": "interested_brand",
+   "fieldtype": "Table MultiSelect",
+   "label": "Interested Brand",
+   "options": "CLE Brand Table"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "column_break_fzmr5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fixed_limit",
+   "fieldtype": "Currency",
+   "label": "Fixed Limit"
+  },
+  {
+   "fieldname": "start_business_with_excel_year",
+   "fieldtype": "Data",
+   "label": "Start Business with Excel (year)"
+  },
+  {
+   "fieldname": "average_monthly_sales",
+   "fieldtype": "Currency",
+   "label": "Average Monthly Sales"
+  },
+  {
+   "fieldname": "last_month_sales",
+   "fieldtype": "Currency",
+   "label": "Last Month Sales"
+  },
+  {
+   "fieldname": "type_of_new_credit_limit",
+   "fieldtype": "Select",
+   "label": "Type of New Credit Limit",
+   "options": "\nFixed Limit\nConditional Limit"
+  },
+  {
+   "fieldname": "proposed_credit_limit_amount",
+   "fieldtype": "Currency",
+   "label": "Proposed Credit Limit Amount"
+  },
+  {
+   "fieldname": "adjustment_date",
+   "fieldtype": "Date",
+   "label": "Adjustment Date"
+  },
+  {
+   "fieldname": "sales_person",
+   "fieldtype": "Link",
+   "label": "Sales Person",
+   "options": "Sales Person"
+  },
+  {
+   "fieldname": "supervisor_email",
+   "fieldtype": "Link",
+   "label": "Supervisor Email",
+   "options": "User"
+  },
+  {
+   "fetch_from": "supervisor_email.full_name",
+   "fieldname": "supervisor_name",
+   "fieldtype": "Data",
+   "label": "Supervisor Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "details_of_security_cheque_section",
+   "fieldtype": "Section Break",
+   "label": "Details of Security Cheque"
+  },
+  {
+   "fieldname": "bank_name",
+   "fieldtype": "Data",
+   "label": "Bank Name"
+  },
+  {
+   "fieldname": "account_no",
+   "fieldtype": "Data",
+   "label": "Account No"
+  },
+  {
+   "fieldname": "column_break_wwcsr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cheque_no",
+   "fieldtype": "Data",
+   "label": "Cheque No"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "cm_officials_section",
+   "fieldtype": "Section Break",
+   "label": "CM Officials"
+  },
+  {
+   "fieldname": "attachment_1",
+   "fieldtype": "Attach",
+   "label": "Attachment 1",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "column_break_v0vse",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attachment_2",
+   "fieldtype": "Attach",
+   "label": "Attachment 2",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "column_break_nqnzf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attachment_3",
+   "fieldtype": "Attach",
+   "label": "Attachment 3",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "column_break_akcay",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attachment_4",
+   "fieldtype": "Attach",
+   "label": "Attachment 4",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Excel Credit Limit Enhancement Form",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2023-10-30 17:05:36.550605",
+ "modified_by": "Administrator",
+ "module": "Excel Hr",
+ "name": "Excel Credit Limit Enhancement Form",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

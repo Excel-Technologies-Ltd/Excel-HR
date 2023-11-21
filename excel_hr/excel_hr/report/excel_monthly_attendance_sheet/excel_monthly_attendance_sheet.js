@@ -266,7 +266,7 @@ frappe.query_reports["Excel Monthly Attendance Sheet"] = {
   
   const excel_job_location = new Map();
   
-  excel_sub_section.forEach((option) => {
+  job_location.forEach((option) => {
 	excel_job_location.set("")
 	excel_job_location.set(option, { value: option, label: __(option) });
   });

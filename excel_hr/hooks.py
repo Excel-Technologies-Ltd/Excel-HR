@@ -29,7 +29,7 @@ app_license = "MIT"
 # include js in page
 # page_js = {"page" : "public/js/file.js"}
 
-fixtures = ["Custom Field"]
+# fixtures = ["Custom Field"]
 
 # fixtures = [
 #     {

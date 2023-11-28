@@ -1,3 +1,12 @@
+# Copyright (c) 2023, Shaid Azmin and contributors
+# For license information, please see license.txt
+
+# import frappe
+
+
+def execute(filters=None):
+	columns, data = [], []
+	return columns, data
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
@@ -86,3 +95,46 @@ def get_data(filters, leave_types):
     return data
 
 # ... (rest of your code)
+
+# def get_data(filters, leave_types):
+#     user = frappe.session.user
+#     conditions = get_conditions(filters)
+
+#     active_employees = frappe.get_list(
+#         "Employee",
+#         filters=conditions,
+#         fields=["name", "employee_name", "department", "user_id"],
+#     )
+
+#     data = []
+#     for employee in active_employees:
+#         row = [employee.name, employee.employee_name, employee.department]
+#         available_leave = get_leave_details(employee.name, filters.date)
+
+#         # Initialize total used leave for each employee
+#         total_used_leave = {leave_type: 0 for leave_type in leave_types}
+
+#         # Fetch leave applications for the employee
+#         leave_applications = frappe.get_all(
+#             "Leave Application",
+#             filters={
+#                 "employee": employee.name,
+#                 "status": ("!=", "Cancelled"),
+#                 "from_date": (">=", filters.date),
+#             },
+#             fields=["leave_type", "total_leave_days"],
+#         )
+
+#         # Calculate total used leave for each leave type
+#         for leave_application in leave_applications:
+#             leave_type = leave_application.leave_type
+#             total_leave_days = leave_application.total_leave_days
+#             total_used_leave[leave_type] += total_leave_days
+
+#         # Append total used leave for each leave type to the row
+#         for leave_type in leave_types:
+#             row.append(total_used_leave[leave_type])
+
+#         data.append(row)
+
+#     return data

@@ -299,6 +299,12 @@ const excel_sections = [
 		},
 	  },
 	  {
+		fieldname:'department',
+		label: __('Department'),
+		fieldtype: 'Link',
+		options: 'Department',
+	},
+	  {
 		fieldname: "excel_department",
 		label: __("Parent Department"),
 		fieldtype: "Select",

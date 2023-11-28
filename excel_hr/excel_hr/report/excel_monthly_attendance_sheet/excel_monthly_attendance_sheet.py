@@ -88,6 +88,7 @@ def get_columns(filters: Filters) -> List[Dict]:
 				"width": 135,
 			},
 			{"label": _("Employee Name"), "fieldname": "employee_name", "fieldtype": "Data", "width": 120},
+			{"label": _("Department"), "fieldname": "department_name", "fieldtype": "Data", "width": 120},
 		]
 	)
 
@@ -189,6 +190,7 @@ def get_total_days_in_month(filters: Filters) -> int:
 
 def get_data(filters: Filters, attendance_map: Dict) -> List[Dict]:
 	employee_details, group_by_param_values = get_employee_related_details(filters)
+	print([employee_details])
 	holiday_map = get_holiday_map(filters)
 	data = []
 
@@ -206,7 +208,6 @@ def get_data(filters: Filters, attendance_map: Dict) -> List[Dict]:
 				data.extend(records)
 	else:
 		data = get_rows(employee_details, filters, holiday_map, attendance_map)
-
 	return data
 
 
@@ -404,7 +405,7 @@ def get_rows(
 	for employee, details in employee_details.items():
 		emp_holiday_list = details.holiday_list or default_holiday_list
 		holidays = holiday_map.get(emp_holiday_list)
-
+		print(details)
 		if filters.summarized_view:
 			attendance = get_attendance_status_for_summarized_view(employee, filters, holidays)
 			if not attendance:
@@ -413,7 +414,7 @@ def get_rows(
 			leave_summary = get_leave_summary(employee, filters)
 			entry_exits_summary = get_entry_exits_summary(employee, filters)
 
-			row = {"employee": employee, "employee_name": details.employee_name}
+			row = {"employee": employee, "employee_name": details.employee_name,'department_name':details.department}
 			set_defaults_for_summarized_view(filters, row)
 			row.update(attendance)
 			row.update(leave_summary)
@@ -430,7 +431,7 @@ def get_rows(
 			)
 			# set employee details in the first row
 			attendance_for_employee[0].update(
-				{"employee": employee, "employee_name": details.employee_name}
+				{"employee": employee, "employee_name": details.employee_name,'department_name':details.department}
 			)
 
 			records.extend(attendance_for_employee)

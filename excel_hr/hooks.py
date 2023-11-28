@@ -30,7 +30,9 @@ app_license = "MIT"
 # page_js = {"page" : "public/js/file.js"}
 
 # fixtures = ["Custom Field"]
-
+# override_doctype_dashboards = {
+#	"Task": "custom_field_prefixing.task.get_dashboard_data"
+# }
 # fixtures = [
 #     {
 #         "dt": "Custom Field",

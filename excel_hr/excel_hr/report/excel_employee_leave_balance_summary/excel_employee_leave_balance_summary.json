@@ -9,7 +9,7 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2023-11-28 16:19:51.602047",
+ "modified": "2023-11-29 10:33:51.827400",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "Excel Employee Leave Balance Summary",
@@ -20,16 +20,7 @@
  "report_type": "Script Report",
  "roles": [
   {
-   "role": "HR User"
-  },
-  {
-   "role": "Employee"
-  },
-  {
-   "role": "HR Manager"
-  },
-  {
-   "role": "Employee Self Service"
+   "role": "System Manager"
   }
  ]
 }

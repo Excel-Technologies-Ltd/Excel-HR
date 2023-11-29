@@ -9,7 +9,7 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2023-11-28 17:54:36.157615",
+ "modified": "2023-11-29 10:31:43.419150",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "Excel Monthly Attendance Sheet",
@@ -20,19 +20,7 @@
  "report_type": "Script Report",
  "roles": [
   {
-   "role": "HR User"
-  },
-  {
    "role": "System Manager"
-  },
-  {
-   "role": "HR Manager"
-  },
-  {
-   "role": "Employee Self Service"
-  },
-  {
-   "role": "Administrator"
   }
  ]
 }

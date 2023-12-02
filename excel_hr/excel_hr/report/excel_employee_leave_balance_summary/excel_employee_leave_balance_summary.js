@@ -25,7 +25,7 @@
 		label: __("Date"),
 		fieldtype: "Date",
 		reqd: 1,
-		default: frappe.datetime.now_date(),
+		default: frappe.datetime.year_end(),
 	  },
 	//   {
 	// 	fieldname: "date_range",
@@ -317,7 +317,6 @@
 			  { value: 'Team IT', label:__( 'Team IT' )},
 			  { value: 'EISL-Accounts', label:__( 'EISL-Accounts') }
 
-			//   hgvjg
 			  
 		]
 	  },
@@ -328,81 +327,67 @@
 		fieldtype: "Select",
 		options: [
 			"",
-			{ value: 'HO-Sales', label:__( 'HO-Sales') },
-  { value: 'HiK Vision', label:__( 'HiK Vision') },
-  { value: 'IDB-Sales', label:__( 'IDB-Sales') },
-  { value: 'Multiplan-Sales', label:__( 'Multiplan-Sales') },
-  { value: 'Treasury', label:__( 'Treasury') },
-  { value: 'Digital-X & Logitech', label:__( 'Digital-X & Logitech') },
-  { value: 'Zone Sales-2', label:__( 'Zone Sales-2') },
-  { value: 'HO-Accounts', label:__( 'HO-Accounts') },
-  { value: 'Credit Management', label:__( 'Credit Management') },
-  { value: 'Multiplan-Inventory', label:__( 'Multiplan-Inventory') },
-  { value: 'Uttara-Sales', label:__( 'Uttara-Sales') },
-  { value: 'Zone Sales-1', label:__( 'Zone Sales-1') },
-  {
-    value: 'RMA-Return Material Authorization',
-    label:__( 'RMA-Return Material Authorization')
-  },
-  { value: 'Lenovo', label:__( 'Lenovo') },
-  { value: 'IDB CSP-Inventory', label:__( 'IDB CSP-Inventory') },
-  { value: 'TP-Link-Technical', label:__( 'TP-Link-Technical') },
-  { value: 'Technical', label:__( 'Technical') },
-  { value: 'Repair', label:__( 'Repair') },
-  { value: 'PQC', label:__( 'PQC') },
-  { value: 'OQC', label:__( 'OQC') },
-  {
-    value: 'Multiplan-Support Staff',
-    label:__( 'Multiplan-Support Staff')
-  },
-  { value: 'Micropack & XP-PEN', label:__( 'Micropack & XP-PEN') },
-  {
-    value: 'Logitech, DigitalX Speaker',
-    label:__( 'Logitech, DigitalX Speaker')
-  },
-  { value: 'Logitech', label:__( 'Logitech') },
-  { value: 'ISP-Sales', label:__( 'ISP-Sales') },
-  { value: 'IQC', label:__( 'IQC') },
-  {
-    value: 'HikStorage & DigitalX UPS',
-    label:__( 'HikStorage & DigitalX UPS')
-  },
-  { value: 'DigitalX Speaker', label:__( 'DigitalX Speaker') },
-  { value: 'CSP-Khulna', label:__( 'CSP-Khulna') },
-  { value: 'CSP-Courier Section', label:__( 'CSP-Courier Section') },
-  {
-    value: 'Central Warehouse-VAT & Tax',
-    label:__( 'Central Warehouse-VAT & Tax')
-  },
-  {
-    value: 'Central Warehouse-Transport',
-    label:__( 'Central Warehouse-Transport')
-  },
-  { value: 'CCSP-RMA Inventory', label:__( 'CCSP-RMA Inventory') },
-  { value: 'CCSP-Office Support', label:__( 'CCSP-Office Support') },
-  { value: 'CCSP-Local RMA', label:__( 'CCSP-Local RMA') },
-  { value: 'CCSP-Foreign RMA', label:__( 'CCSP-Foreign RMA') },
-  { value: 'Baridhara Pr.', label:__( 'Baridhara Pr.') },
-  { value: 'Assembly', label:__( 'Assembly') },
-  { value: 'Fire & Engineering', label:__( 'Fire & Engineering') },
-  { value: 'Billing - Printing', label:__( 'Billing - Printing') },
-  { value: 'RMA Carrier', label:__( 'RMA Carrier') },
-  { value: 'Printing Division', label:__( 'Printing Division') },
-  { value: 'Billing - Sales', label:__( 'Billing - Sales') },
-  { value: 'Grandstream / Avar', label:__( 'Grandstream / Avar') },
-  { value: 'Warehouse - Logistics', label:__( 'Warehouse - Logistics') },
-  {
-    value: 'Active Network/Cyber Security (Cisco, Juniper, Sophos)',
-    label:__( 'Active Network/Cyber Security (Cisco, Juniper, Sophos')
-  },
-  { value: 'EPSON / Lenovo', label:__( 'EPSON / Lenovo') },
-  {
-    value: 'Passive Network (Rosenberger / Commscope)',
-    label:__( 'Passive Network (Rosenberger / Commscope')
-  },
-  { value: 'Corp. - CRC', label:__( 'Corp. - CRC') },
-  { value: 'KYOCERA', label:__( 'KYOCERA' )}
-		]
+			{ value: 'TP-Link-Technical', label: __("TP-Link-Technical") },
+			{ value: 'Technical', label: __("Technical") },
+			{ value: 'Repair', label: __("Repair")},
+			{ value: 'PQC', label: __("PQC")},
+			{ value: 'OQC', label: __("OQC") },
+			{
+			  value: 'Multiplan-Support Staff',
+			  label: __("Multiplan-Support Staff")
+			},
+			{ value: 'Micropack & XP-PEN', label: __("Micropack & XP-PEN") },
+			{
+			  value: 'Logitech, DigitalX Speaker',
+			  label: __("Logitech, DigitalX Speaker")
+			},
+			{ value: 'Logitech', label: __("Logitech") },
+			{ value: 'ISP-Sales', label: __("ISP-Sales") },
+			{ value: 'IQC', label: __("IQC")},
+			{
+			  value: 'HikStorage & DigitalX UPS',
+			  label: __("HikStorage & DigitalX UPS")
+			},
+			{ value: 'DigitalX Speaker', label: __("DigitalX Speaker") },
+			{ value: 'CSP-Khulna', label: __("CSP-Khulna") },
+			{ value: 'CSP-Courier Section', label: __("CSP-Courier Section") },
+			{
+			  value: 'Central Warehouse-VAT & Tax',
+			  label: __("Central Warehouse-VAT & Tax")
+			},
+			{
+			  value: 'Central Warehouse-Transport',
+			  label: __("Central Warehouse-Transport")
+			},
+			{ value: 'CCSP-RMA Inventory', label: __("CCSP-RMA Inventory")},
+			{ value: 'CCSP-Office Support', label: __("CCSP-Office Support") },
+			{ value: 'CCSP-Local RMA', label: __("CCSP-Local RMA") },
+			{ value: 'CCSP-Foreign RMA', label: __("CCSP-Foreign RMA") },
+			{ value: 'Baridhara Pr.', label: __("Baridhara Pr.") },
+			{ value: 'Assembly', label: __("Assembly") },
+			{ value: 'Fire & Engineering', label: __("Fire & Engineering") },
+			{ value: 'Billing - Printing', label: __("Billing - Printing") },
+			{ value: 'RMA Carrier', label: __("RMA Carrier") },
+			{ value: 'Printing Division', label: __("Printing Division") },
+			{ value: 'Billing - Sales', label: __("Billing - Sales") },
+			{ value: 'Grandstream / Avar', label: __("Grandstream / Avar") },
+			{
+			  value: 'Warehouse - Logistics',
+			  label: __("Warehouse - Logistics")
+			},
+			{
+			  value: 'Active Network/Cyber Security (Cisco, Juniper, Sophos)',
+			  label: __("Active Network/Cyber Security (Cisco, Juniper, Sophos)")
+			},
+			{ value: 'EPSON / Lenovo', label: __("EPSON / Lenovo") },
+			{
+			  value: 'Passive Network (Rosenberger / Commscope)',
+			  label: __("Passive Network (Rosenberger / Commscope)")
+			},
+			{ value: 'Corp. - CRC', label: __("Corp. - CRC") },
+			{ value: 'KYOCERA', label: __("KYOCERA") }
+		  ]
+		  
 	  },
 	  {
 		fieldname: "excel_job_location",

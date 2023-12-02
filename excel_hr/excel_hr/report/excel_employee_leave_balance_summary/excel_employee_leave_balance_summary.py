@@ -88,8 +88,8 @@ def get_data(filters, leave_types):
             if leave_type in available_leave["leave_allocation"]:
                 remaining = available_leave["leave_allocation"][leave_type]["remaining_leaves"]
                 if leave_type == "Special Leave" and remaining < 0:
-                    remaining = 0
-            row += [remaining]
+                    remaining = ""
+            row += [str(remaining) if leave_type == "Special Leave" else remaining] 
 
         data.append(row)
     return data

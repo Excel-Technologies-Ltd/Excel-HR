@@ -40,6 +40,7 @@
 		fieldtype: "Date Range",
 		reqd: 1,
 		default: [frappe.datetime.month_start(), frappe.datetime.month_end()],
+		read_only: 1,
 	  },
   
 	  ,

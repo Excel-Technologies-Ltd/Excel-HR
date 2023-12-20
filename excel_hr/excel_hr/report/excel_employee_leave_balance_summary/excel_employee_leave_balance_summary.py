@@ -55,12 +55,12 @@ def get_conditions(filters):
         conditions.update({"employee": ["in", filters.get("employee")]})
     if filters.get("excel_department"):
         conditions.update(
-            {"excel_department": filters.get("excel_department")})
+            {"excel_parent_department": filters.get("excel_department")})
     if filters.get("excel_section"):
-        conditions.update({"excel_section": filters.get("excel_section")})
+        conditions.update({"excel_hr_section": filters.get("excel_section")})
     if filters.get("excel_sub_section"):
         conditions.update(
-            {"excel_sub_section": filters.get("excel_sub_section")})
+            {"excel_hr_sub_section": filters.get("excel_sub_section")})
     if filters.get("excel_job_location"):
         conditions.update(
             {"excel_job_location": filters.get("excel_job_location")})
@@ -78,7 +78,7 @@ def get_data(filters, leave_types):
         filters=conditions,
         fields=["name", "employee_name", "department", "user_id"],
     )
-
+    print(active_employees)
     data = []
     for employee in active_employees:
         row = [employee.name, employee.employee_name, employee.department]
@@ -87,9 +87,9 @@ def get_data(filters, leave_types):
             remaining = 0
             if leave_type in available_leave["leave_allocation"]:
                 remaining = available_leave["leave_allocation"][leave_type]["remaining_leaves"]
-                if leave_type == "Special Leave" and remaining < 0:
-                    remaining = ""
-            row += [str(remaining) if leave_type == "Special Leave" else remaining] 
+                if leave_type == "Special Leave" :
+                    remaining = 0
+            row += [remaining]
 
         data.append(row)
     return data

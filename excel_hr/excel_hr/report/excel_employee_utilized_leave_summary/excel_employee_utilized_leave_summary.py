@@ -62,12 +62,12 @@ def get_conditions(filters):
         conditions.update({"employee": ["in", filters.get("employee")]})
     if filters.get("excel_department"):
         conditions.update(
-            {"excel_department": filters.get("excel_department")})
+            {"excel_parent_department": filters.get("excel_department")})
     if filters.get("excel_section"):
-        conditions.update({"excel_section": filters.get("excel_section")})
+        conditions.update({"excel_hr_section": filters.get("excel_section")})
     if filters.get("excel_sub_section"):
         conditions.update(
-            {"excel_sub_section": filters.get("excel_sub_section")})
+            {"excel_hr_sub_section": filters.get("excel_sub_section")})
     if filters.get("excel_job_location"):
         conditions.update(
             {"excel_job_location": filters.get("excel_job_location")})

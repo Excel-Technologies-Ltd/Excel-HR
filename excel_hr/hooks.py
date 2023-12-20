@@ -33,7 +33,7 @@ app_license = "MIT"
 # override_doctype_dashboards = {
 #	"Task": "custom_field_prefixing.task.get_dashboard_data"
 # }
-# fixtures = [
+fixtures = ["Print Format",  'Custom Field',  'Property Setter']
 #     {
 #         "dt": "Custom Field",
 #         "filters": [

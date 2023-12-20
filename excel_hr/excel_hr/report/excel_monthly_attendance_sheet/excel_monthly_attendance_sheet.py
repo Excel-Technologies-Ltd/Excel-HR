@@ -19,7 +19,7 @@ status_map = {
 	"Half Day": "HD",
 	"Work From Home": "WFH",
 	"On Leave": "L",
-	"Weekly Off": "WO",
+	"Weekly Off": "WE",
 }
 
 day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -599,7 +599,6 @@ def get_leave_summary(employee: str, filters: Filters) -> Dict[str, float]:
 	for d in leave_details:
 		leave_type = frappe.scrub(d.leave_type)
 		leaves[leave_type] = d.leave_days
-
 	return leaves
 
 

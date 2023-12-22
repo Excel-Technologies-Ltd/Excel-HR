@@ -50,7 +50,6 @@ def get_january_first():
     return formatted_date
 
 def get_conditions(filters):
-    print(filters)
     conditions = {
         "company": filters.company,
     }

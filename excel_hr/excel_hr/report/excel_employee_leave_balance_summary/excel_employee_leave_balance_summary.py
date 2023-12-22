@@ -43,7 +43,6 @@ def get_columns(leave_types):
 
 
 def get_conditions(filters):
-    print(filters)
     conditions = {
         "company": filters.company,
     }

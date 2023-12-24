@@ -14,19 +14,19 @@ from frappe.utils import cint, cstr, getdate
 Filters = frappe._dict
 
 status_map = {
-	"Present": "P",
-	"Absent": "A",
-	"Half Day": "HD",
-	"Work From Home": "WFH",
+	# "Half Day": "HD",
 	"Holiday":"H",
 	"Weekly Off": "WE",
+#  green
+ 	"Present": "P",
 	"Present GS1":"P.GS1",
 	"Present GS2":"P.GS2",
 	"Present GS3":"P.GS3",
 	"Late Attendance GS1":"L.GS1",
 	"Late Attendance GS2":"L.GS2",
 	"Late Attendance GS3":"L.GS3",
-	 "Off Day Duty GS-1":"O.GS1",
+#  blue
+	"Off Day Duty GS-1":"O.GS1",
 	"Off Day Duty GS-2":"O.GS2",
 	"Off Day Duty GS-3":"O.GS3",
  	"Outside Duty GS-1":"OW.GS1",
@@ -34,19 +34,21 @@ status_map = {
    	"Outside Duty GS-3":"OW.GS3",
     "Foreign Tour":"FT.P",
 	"Local Tour":"LT.P",
+ 	"Work From Home": "WFH",
+#   blue
+  	"Absent": "A",
 	"On Leave": "L",
-    "Annual Medical Leave":"AM.L",
-	"Special Casual Leave":"SC.L",
-    "Special Medical Leave":"SM.L",
-	"Special Leave":"SP.L",
-	"Monthly Paid Leave":"MP.L",
     "Annual Leave":"AL",
     "Annual Casual Leave":"AC.L",
     "Annual Medical Leave":"AM.L",
+	"Special Leave":"SP.L",
+ 	"Special Casual Leave":"SC.L",
+    "Special Medical Leave":"SM.L",
+	"Monthly Paid Leave":"MP.L",
     "Compensatory Leave":"AD.L",
-     "Leave Without Pay" :"WP.L",
-     "Maternity Leave":"MT.L"
- 
+    "Leave Without Pay" :"WP.L",
+    "Maternity Leave":"MT.L"
+#  red
 }
 
 day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -76,52 +78,81 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 
 
 def get_message() -> str:
-	message = ""
-	colors = [
-    "green",  # "Present"
-    "red",  # "Absent"
-    "orange",  # "Half Day"
-    "blue",  # "Work From Home"
-    "#318AD8",  # "Holiday"
-    "lightgray",  # "Weekly Off"
-    "green",  # "Present GS1"
-    "green",  # "Present GS2"
-    "green",  # "Present GS3"
-    "green",  # "Late Attendance GS1"
-    "green",  # "Late Attendance GS2"
-    "green",  # "Late Attendance GS3"
-    "green",  # "Off Day Duty GS-1"
-    "green",  # "Off Day Duty GS-2"
-    "green",  # "Off Day Duty GS-3"
-    "green",  # "Outside Duty GS-1"
-    "green",  # "Outside Duty GS-2"
-    "green",  # "Outside Duty GS-3"
-    "purple",  # "Foreign Tour"
-    "brown",  # "Local Tour"
-    "blue",  # "On Leave"
-    "blue",  # "Annual Medical Leave"
-    "blue",  # "Special Casual Leave"
-    "blue",  # "Special Medical Leave"
-    "blue",  # "Special Leave"
-    "blue",  # "Monthly Paid Leave"
-    "blue",  # "Annual Leave"
-    "blue",  # "Annual Casual Leave"
-    "blue",  # "Compensatory Leave"
-    "blue",  # "Leave Without Pay"
-    "blue"  # "Maternity Leave"
-]
+    message = ""
+    colors_group1 = [
+        "green", "red", "orange", "blue", "#318AD8",
+        "lightgray", "green", "green", "green", "green"
+    ]
+
+    colors_group2 = [
+        "green", "green", "green", "green", "green",
+        "green", "green", "green", "purple", "brown",
+        "blue", "blue", "blue", "blue", "blue",
+        "blue", "blue", "blue", "blue", "blue"
+    ]
+
+    colors_group3 = [
+        "green", "red", "orange", "blue", "#318AD8",
+        "lightgray", "green", "green", "green", "green"
+    ]
+
+    count = 0
+
+    # Start the row
+    message += "<div style='display: flex;'>"
+
+    # First column
+    message += "<div style='flex: 1;'>"
+    for (status, abbr), color in zip(list(status_map.items())[:2], colors_group1):
+        message += f"""
+            <span style='color:black; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+                	&#8718; {status} - {abbr}
+            </span>
+        """
+        count += 1
+    message += "</div>"
+
+    # Second column
+    message += "<div style='flex: 1; '>"
+    count = 0
+    for (status, abbr), color in zip(list(status_map.items())[2:9], colors_group2):
+        message += f"""
+            <span style=' color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+                &#8718; {status} - {abbr}
+            </span>
+        """
+        count += 1
+    message += "</div>"
+
+    # Third column
+    message += "<div style='flex: 1;'>"
+    count = 0
+    for (status, abbr), color in zip(list(status_map.items())[9:18], colors_group3):
+        message += f"""
+            <span style=' color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+                &#8718; {status} - {abbr}
+            </span>
+        """
+        count += 1
+    message += "</div>"
+    # Third column
+    message += "<div style='flex: 1;'>"
+    count = 0
+    for (status, abbr), color in zip(list(status_map.items())[18:30], colors_group3):
+        message += f"""
+            <span style=' color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+                &#8718; {status} - {abbr}
+            </span>
+        """
+        count += 1
+    message += "</div>"    
+
+    # End the row
+    message += "</div>"
+
+    return message
 
 
-	count = 0
-	for status, abbr in status_map.items():
-		message += f"""
-			<span style='border-left: 2px solid {colors[count]}; padding-right: 12px; padding-left: 5px; margin-right: 3px;'>
-				{status} - {abbr}
-			</span>
-		"""
-		count += 1
-
-	return message
 
 
 def get_columns(filters: Filters) -> List[Dict]:
@@ -223,7 +254,7 @@ def get_columns_for_days(filters: Filters) -> List[Dict]:
 		weekday = day_abbr[getdate(date).weekday()]
 		# sets days as 1 Mon, 2 Tue, 3 Wed
 		label = "{} {}".format(cstr(day), weekday)
-		days.append({"label": label, "fieldtype": "Data", "fieldname": day, "width": 65})
+		days.append({"label": label, "fieldtype": "Data", "fieldname": day, "width": 70})
 
 	return days
 
@@ -634,32 +665,73 @@ def get_attendance_summary_and_days(employee: str, filters: Filters) -> Tuple[Di
 	return summary[0], days
 
 
+# def get_attendance_status_for_detailed_view(
+# 	employee: str, filters: Filters, employee_attendance: Dict, holidays: List
+# ) -> List[Dict]:
+# 	"""Returns list of shift-wise attendance status for employee
+# 	[
+# 	        {'shift': 'Morning Shift', 1: 'A', 2: 'P', 3: 'A'....},
+# 	        {'shift': 'Evening Shift', 1: 'P', 2: 'A', 3: 'P'....}
+# 	]
+# 	"""
+# 	total_days = get_total_days_in_month(filters)
+# 	attendance_values = []
+
+# 	for shift, status_dict in employee_attendance.items():
+# 		row = {"shift": shift}
+
+# 		for day in range(1, total_days + 1):
+# 			status = status_dict.get(day)
+# 			if status is None and holidays:
+# 				status = get_holiday_status(day, holidays)
+
+# 			abbr = status_map.get(status, "")
+# 			row[day] = abbr
+
+# 		attendance_values.append(row)
+
+# 	return attendance_values
+
 def get_attendance_status_for_detailed_view(
-	employee: str, filters: Filters, employee_attendance: Dict, holidays: List
+    employee: str, filters: Filters, employee_attendance: Dict, holidays: List
 ) -> List[Dict]:
-	"""Returns list of shift-wise attendance status for employee
-	[
-	        {'shift': 'Morning Shift', 1: 'A', 2: 'P', 3: 'A'....},
-	        {'shift': 'Evening Shift', 1: 'P', 2: 'A', 3: 'P'....}
-	]
-	"""
-	total_days = get_total_days_in_month(filters)
-	attendance_values = []
+    # ...
 
-	for shift, status_dict in employee_attendance.items():
-		row = {"shift": shift}
+    attendance_values = []
 
-		for day in range(1, total_days + 1):
-			status = status_dict.get(day)
-			if status is None and holidays:
-				status = get_holiday_status(day, holidays)
+    # Assuming total_days is the total number of days for which you are generating attendance status
+    total_days = 31  # You should replace this with the actual total number of days
 
-			abbr = status_map.get(status, "")
-			row[day] = abbr
+    for shift, status_dict in employee_attendance.items():
+        row = {"shift": shift}
 
-		attendance_values.append(row)
+        for day in range(1, total_days + 1):
+            status = status_dict.get(day)
+            if status is None and holidays:
+                status = get_holiday_status(day, holidays)
 
-	return attendance_values
+            abbr = status_map.get(status, "")
+            color = get_color_for_status(status)  # Add this line to get the color based on status
+
+            row[day] = f'<span style="color: {color};">{abbr}</span>'  # Modify the HTML output here
+
+        attendance_values.append(row)
+
+    return attendance_values
+
+
+
+
+def get_color_for_status(status: str) -> str:
+    if status in ("Absent", "On Leave", "Compensatory Leave","Leave Without Pay" ,"Maternity Leave", "Annual Casual Leave","Annual Medical Leave","Special Leave","Special Casual Leave","Special Medical Leave","Monthly Paid Leave"):
+        return "red"
+    elif status in("Holiday","Weekly Off"):
+        return "black"
+    elif status in("Present",  "Present GS1",  "Present GS2",  "Present GS3",  "Late Attendance GS1",  "Late Attendance GS2",  "Late Attendance GS3",  "Off Day Duty GS-1",  "Off Day Duty GS-2",  "Off Day Duty GS-3",  "Outside Duty GS-1",  "Outside Duty GS-2",  "Outside Duty GS-3",  "Foreign Tour",  "Local Tour",  "Work From Home"):
+        return "blue"
+    # Add more conditions for other statuses
+    else:
+        return "black"  # Default color
 
 
 def get_holiday_status(day: int, holidays: List) -> str:

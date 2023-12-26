@@ -294,11 +294,9 @@ def get_attendance_map(filters: Filters) -> Dict:
     """Returns a dictionary of employee-wise attendance map as per shifts for all the days of the month."""
      
     attendance_list = get_attendance_records(filters)
-    print(attendance_list)
     attendance_map = {}
     leave_map = {}
     for d in attendance_list:
-        print(d)
         status = d.status
         # if d.status == "On Leave":
         #     leave_map.setdefault(d.employee, []).append(d.day_of_month)
@@ -307,8 +305,9 @@ def get_attendance_map(filters: Filters) -> Dict:
         if d.status == 'Present' and d.late_entry == 0 :
             if d.attendance_request:
                data= frappe.db.get_value('Attendance Request', d.attendance_request, ['reason','excel_criteria_of_reason'])
-               reason=data[0]
-               criteria=data[1]
+               if data:
+                  reason=data[0]
+                  criteria=data[1] 
                if reason== 'On Duty' and criteria=='Foreign Tour':
                    status='Foreign Tour'
                elif reason== 'On Duty' and criteria=='Local Tour':
@@ -347,7 +346,6 @@ def get_attendance_map(filters: Filters) -> Dict:
             status='Special Casual Leave'
             if leave_type =="Special Leave" and leave_category=="Casual":
                 status='Special Casual Leave'
-                print(status)
             elif leave_type =="Special Leave" and leave_category=="Medical":
                 status="Special Medical Leave"
             elif leave_type =="Special Leave" and leave_category=="Casual":
@@ -529,7 +527,6 @@ def get_holiday_map(filters: Filters) -> Dict[str, List[Dict]]:
 		).run(as_dict=True)
 
 		holiday_map.setdefault(d, holidays)
-	print(holiday_map)
 	return holiday_map
 
 
@@ -740,7 +737,6 @@ def get_holiday_status(day: int, holidays: List) -> str:
 		for holiday in holidays:
 			if day == holiday.get("day_of_month"):
 				if holiday.get("weekly_off"):
-					print(holiday.weekly_off)
 					status = "Weekly Off"
 				else:
 					status = "Holiday"

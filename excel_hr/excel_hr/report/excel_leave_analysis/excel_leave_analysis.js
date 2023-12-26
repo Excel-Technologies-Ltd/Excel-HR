@@ -159,7 +159,8 @@
 		  value: 'Bangabandhu Hi-Tech City',
 		  label:__( 'Bangabandhu Hi-Tech City')
 		},
-		{ value: 'Bogra Zone', label:__( 'Bogra Zone') }
+		{ value: 'Bogra Zone', label:__( 'Bogra Zone') },
+		{ value: 'CSP-Barishal', label:__( 'CSP-Barishal') }
 	],
 	  },
 	  {

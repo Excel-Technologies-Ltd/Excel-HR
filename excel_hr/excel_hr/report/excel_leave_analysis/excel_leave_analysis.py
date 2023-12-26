@@ -68,12 +68,12 @@ def get_columns(leave_types, filters, column_name_prefix=""):
             if not selected_leave_types or leave_type in selected_leave_types:
                 columns.append(_(leave_type + "(Available)") + ":Float:170")
                 columns.append(_(leave_type + "(Used)") + ":Float:170")  # Add used leave column
-                columns.append(_(leave_type + "(Total)") + ":Float:170")
+                columns.append(_(leave_type + "(Allocated)") + ":Float:170")
     else:
          for leave_type in leave_types:
                 columns.append(_(leave_type + "(Available)") + ":Float:170")
                 columns.append(_(leave_type + "(Used)") + ":Float:170")  # Add used leave column
-                columns.append(_(leave_type + "(Total)") + ":Float:170")
+                columns.append(_(leave_type + "(Allocated)") + ":Float:170")
     return columns
 
 
@@ -144,11 +144,15 @@ def get_data(filters, leave_types, column_name_prefix=""):
             remaining = 0
             if leave_type in available_leave["leave_allocation"]:
                 remaining = available_leave["leave_allocation"][leave_type]["remaining_leaves"]
+                if leave_type == "Special Leave" :
+                    remaining = 0                
             total_available_leave[leave_type] = remaining 
             # + total_used_leave[leave_type]
 
             # Calculate total leave for each leave type
             total_leave = total_available_leave[leave_type] + total_used_leave[leave_type]
+            if leave_type == "Special Leave" :
+                total_leave=0
 
             # Append total available leave, total used leave, and total leave for each leave type to the row
             row.append(total_available_leave[leave_type])

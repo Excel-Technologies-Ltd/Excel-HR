@@ -182,6 +182,12 @@
 		fieldtype: "Check",
 		Default: 0,
 	  },
+	  {
+		fieldname: "show_abbr",
+		label: __("Show Abbr Of Attendance"),
+		fieldtype: "Check",
+		Default: 0,
+	  },
 	],
 	onload: function() {
 		return  frappe.call({

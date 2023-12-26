@@ -25,6 +25,7 @@ status_map = {
 	"Late Attendance GS1":"L.GS1",
 	"Late Attendance GS2":"L.GS2",
 	"Late Attendance GS3":"L.GS3",
+ "Work From Home": "WFH",
 #  blue
 	"Off Day Duty GS-1":"O.GS1",
 	"Off Day Duty GS-2":"O.GS2",
@@ -32,22 +33,22 @@ status_map = {
  	"Outside Duty GS-1":"OW.GS1",
   	"Outside Duty GS-2":"OW.GS2",
    	"Outside Duty GS-3":"OW.GS3",
-    "Foreign Tour":"FT.P",
-	"Local Tour":"LT.P",
- 	"Work From Home": "WFH",
+    "Foreign Tour":"P.FT",
+	"Local Tour":"P.LT",
+ 	
 #   blue
   	"Absent": "A",
 	"On Leave": "L",
     "Annual Leave":"AL",
-    "Annual Casual Leave":"AC.L",
-    "Annual Medical Leave":"AM.L",
-	"Special Leave":"SP.L",
- 	"Special Casual Leave":"SC.L",
-    "Special Medical Leave":"SM.L",
-	"Monthly Paid Leave":"MP.L",
-    "Compensatory Leave":"AD.L",
-    "Leave Without Pay" :"WP.L",
-    "Maternity Leave":"MT.L"
+    "Annual Casual Leave":"L.AC",
+    "Annual Medical Leave":"L.AM",
+	"Special Leave":"L.SP",
+ 	"Special Casual Leave":"L.SC",
+    "Special Medical Leave":"L.SM",
+	"Monthly Paid Leave":"L.MP",
+    "Compensatory Leave":"L.AD",
+    "Leave Without Pay" :"LWP",
+    "Maternity Leave":"L.MT"
 #  red
 }
 
@@ -71,7 +72,7 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 		)
 		return columns, [], None, None
 
-	message = get_message() if not filters.summarized_view else ""
+	message = get_message() if  filters.show_abbr else ""
 	chart = get_chart_data(attendance_map, filters)
 
 	return columns, data, message,
@@ -99,7 +100,7 @@ def get_message() -> str:
     count = 0
 
     # Start the row
-    message += "<div style='display: flex;'>"
+    message += "<div style='display: flex;height:30vh'>"
 
     # First column
     message += "<div style='flex: 1;'>"
@@ -115,7 +116,7 @@ def get_message() -> str:
     # Second column
     message += "<div style='flex: 1; '>"
     count = 0
-    for (status, abbr), color in zip(list(status_map.items())[2:9], colors_group2):
+    for (status, abbr), color in zip(list(status_map.items())[2:10], colors_group2):
         message += f"""
             <span style=' color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
@@ -127,7 +128,7 @@ def get_message() -> str:
     # Third column
     message += "<div style='flex: 1;'>"
     count = 0
-    for (status, abbr), color in zip(list(status_map.items())[9:18], colors_group3):
+    for (status, abbr), color in zip(list(status_map.items())[10:18], colors_group3):
         message += f"""
             <span style=' color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
@@ -138,7 +139,7 @@ def get_message() -> str:
     # Third column
     message += "<div style='flex: 1;'>"
     count = 0
-    for (status, abbr), color in zip(list(status_map.items())[18:30], colors_group3):
+    for (status, abbr), color in zip(list(status_map.items())[18:26], colors_group3):
         message += f"""
             <span style=' color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
@@ -146,6 +147,17 @@ def get_message() -> str:
         """
         count += 1
     message += "</div>"    
+    # Third column
+    message += "<div style='flex: 1;'>"
+    count = 0
+    for (status, abbr), color in zip(list(status_map.items())[26:], colors_group3):
+        message += f"""
+            <span style=' color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+                &#8718; {status} - {abbr}
+            </span>
+        """
+        count += 1
+    message += "</div>"        
 
     # End the row
     message += "</div>"

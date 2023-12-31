@@ -19,20 +19,31 @@ status_map = {
 	"Weekly Off": "WE",
 #  green
  	"Present": "P",
-	"Present GS1":"P.GS1",
-	"Present GS2":"P.GS2",
-	"Present GS3":"P.GS3",
-	"Late Attendance GS1":"L.GS1",
-	"Late Attendance GS2":"L.GS2",
-	"Late Attendance GS3":"L.GS3",
- "Work From Home": "WFH",
-#  blue
+	"Present GS-1":"P.GS1",
+	"Present GS-2":"P.GS2",
+	"Present GS-3":"P.GS3",
+ 	"Present GS-4":"P.GS4",
+	"Present GS-5":"P.GS5",
+	"Present GS-6":"P.GS6",
+	"Late Attendance GS-1":"L.GS1",
+	"Late Attendance GS-2":"L.GS2",
+	"Late Attendance GS-3":"L.GS3",
+ 	"Late Attendance GS-4":"L.GS4",
+	"Late Attendance GS-5":"L.GS5",
+	"Late Attendance GS-6":"L.GS6",
+ 	"Work From Home": "WFH",
 	"Off Day Duty GS-1":"O.GS1",
 	"Off Day Duty GS-2":"O.GS2",
 	"Off Day Duty GS-3":"O.GS3",
+ 	"Off Day Duty GS-4":"O.GS4",
+	"Off Day Duty GS-5":"O.GS5",
+	"Off Day Duty GS-6":"O.GS6",
  	"Outside Duty GS-1":"OW.GS1",
   	"Outside Duty GS-2":"OW.GS2",
    	"Outside Duty GS-3":"OW.GS3",
+ 	"Outside Duty GS-4":"OW.GS4",
+  	"Outside Duty GS-5":"OW.GS5",
+   	"Outside Duty GS-6":"OW.GS6",    
     "Foreign Tour":"P.FT",
 	"Local Tour":"P.LT",
  	
@@ -93,8 +104,10 @@ def get_message() -> str:
     ]
 
     colors_group3 = [
-        "green", "red", "orange", "blue", "#318AD8",
-        "lightgray", "green", "green", "green", "green"
+        "green", "green", "green", "green", "green",
+        "green", "green", "green", "purple", "brown",
+        "blue", "blue", "blue", "blue", "blue",
+        "blue", "blue", "blue", "blue", "blue"
     ]
 
     count = 0
@@ -106,7 +119,7 @@ def get_message() -> str:
     message += "<div style='flex: 1;'>"
     for (status, abbr), color in zip(list(status_map.items())[:2], colors_group1):
         message += f"""
-            <span style='color:black; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+            <span style='font-size:10px;color:black; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 	&#8718; {status} - {abbr}
             </span>
         """
@@ -116,9 +129,9 @@ def get_message() -> str:
     # Second column
     message += "<div style='flex: 1; '>"
     count = 0
-    for (status, abbr), color in zip(list(status_map.items())[2:10], colors_group2):
+    for (status, abbr), color in zip(list(status_map.items())[2:15], colors_group2):
         message += f"""
-            <span style=' color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+            <span style='font-size:10px; color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
             </span>
         """
@@ -128,36 +141,37 @@ def get_message() -> str:
     # Third column
     message += "<div style='flex: 1;'>"
     count = 0
-    for (status, abbr), color in zip(list(status_map.items())[10:18], colors_group3):
+    for (status, abbr), color in zip(list(status_map.items())[15:28], colors_group3):
         message += f"""
-            <span style=' color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+            <span style='font-size:10px; color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
             </span>
         """
         count += 1
     message += "</div>"
-    # Third column
+    # Fourth column
     message += "<div style='flex: 1;'>"
     count = 0
-    for (status, abbr), color in zip(list(status_map.items())[18:26], colors_group3):
+    for (status, abbr), color in zip(list(status_map.items())[28:42], colors_group3):
         message += f"""
-            <span style=' color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+            <span style='font-size:10px; color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
             </span>
         """
         count += 1
     message += "</div>"    
-    # Third column
-    message += "<div style='flex: 1;'>"
-    count = 0
-    for (status, abbr), color in zip(list(status_map.items())[26:], colors_group3):
-        message += f"""
-            <span style=' color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
-                &#8718; {status} - {abbr}
-            </span>
-        """
-        count += 1
-    message += "</div>"        
+    # Fifth column
+    # message += "<div style='flex: 1;'>"
+    # count = 0
+    # for (status, abbr), color in zip(list(status_map.items())[36:46], colors_group3):
+    #     message += f"""
+    #         <span style='font-size:10px; color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+    #             &#8718; {status} - {abbr}
+    #         </span>
+    #     """
+    #     count += 1
+    # message += "</div>"  
+         
 
     # End the row
     message += "</div>"
@@ -331,26 +345,50 @@ def get_attendance_map(filters: Filters) -> Dict:
                         status="Off Day Duty GS-2"
                    elif d.shift == "General Shift-3":
                        status="Off Day Duty GS-3"
+                   elif d.shift == "General Shift-4":
+                       status="Off Day Duty GS-4"
+                   elif d.shift == "General Shift-5":
+                       status="Off Day Duty GS-5"
+                   elif d.shift == "General Shift-6":
+                       status="Off Day Duty GS-6"                                                                     
                elif reason== 'On Duty':
                    if d.shift == "General Shift-1":
                        status="Outside Duty GS-1"
                    elif d.shift == "General Shift-2":
                        status="Outside Duty GS-2"
                    elif d.shift == "General Shift-3":
-                       status="Outside Duty GS-3"       
+                       status="Outside Duty GS-3"  
+                   elif d.shift == "General Shift-4":
+                       status="Outside Duty GS-4" 
+                   elif d.shift == "General Shift-5":
+                       status="Outside Duty GS-5" 
+                   elif d.shift == "General Shift-6":
+                       status="Outside Duty GS-6"                                                                           
             elif d.shift == "General Shift-1":
-                status="Present GS1"
+                status="Present GS-1"
             elif  d.shift == "General Shift-2":
-                status="Present GS2" 
+                status="Present GS-2" 
             elif d.shift == "General Shift-3":
-                status="Present GS3"   
+                status="Present GS-3"   
+            elif d.shift == "General Shift-4":
+                status="Present GS-4"   
+            elif d.shift == "General Shift-5":
+                status="Present GS-5"   
+            elif d.shift == "General Shift-6":
+                status="Present GS-6"                                                   
         elif d.status == 'Present' and d.late_entry == 1 : 
             if d.shift == "General Shift-1":
-                status="Late Attendance GS1"
+                status="Late Attendance GS-1"
             if  d.shift == "General Shift-2":
-                status="Late Attendance GS2" 
+                status="Late Attendance GS-2" 
             if d.shift == "General Shift-3":
-                status="Late Attendance GS3"           	
+                status="Late Attendance GS-3" 
+            if d.shift == "General Shift-4":
+                status="Late Attendance GS-4"  
+            if d.shift == "General Shift-5":
+                status="Late Attendance GS-5"  
+            if d.shift == "General Shift-6":
+                status="Late Attendance GS-6"                                                            	
         elif d.status == "On Leave":
             data= frappe.db.get_value('Leave Application', d.leave_application, ['leave_type','excel_leave_category'])
             leave_type=data[0]
@@ -736,7 +774,7 @@ def get_color_for_status(status: str) -> str:
         return "red"
     elif status in("Holiday","Weekly Off"):
         return "black"
-    elif status in("Present",  "Present GS1",  "Present GS2",  "Present GS3",  "Late Attendance GS1",  "Late Attendance GS2",  "Late Attendance GS3",  "Off Day Duty GS-1",  "Off Day Duty GS-2",  "Off Day Duty GS-3",  "Outside Duty GS-1",  "Outside Duty GS-2",  "Outside Duty GS-3",  "Foreign Tour",  "Local Tour",  "Work From Home"):
+    elif status in("Present","Present GS-4","Present GS-5","Present GS-6",  "Present GS-1",  "Present GS-2",  "Present GS-3",  "Late Attendance GS-1",  "Late Attendance GS-2",  "Late Attendance GS-3", "Late Attendance GS-4","Late Attendance GS-5","Late Attendance GS-6", "Off Day Duty GS-1",  "Off Day Duty GS-2",  "Off Day Duty GS-3",  "Outside Duty GS-1",  "Outside Duty GS-2",  "Outside Duty GS-3",  "Foreign Tour",  "Local Tour",  "Work From Home"):
         return "blue"
     # Add more conditions for other statuses
     else:

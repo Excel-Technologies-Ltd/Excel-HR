@@ -114,34 +114,58 @@ def get_data(filters, leave_types, column_name_prefix=""):
 
     data = []
     for employee in active_employees:
+        print(filters.date)
         row = [employee.name, employee.employee_name, employee.department]
-        available_leave = get_leave_details(employee.name, filters.date)  # Use end_of_year for leave details retrieval
+        available_leave = get_leave_details(employee.name, filters.date)
+        print(available_leave)
+        # Use end_of_year for leave details retrieval
 
         # Initialize total used leave, total available leave, and total leave for each employee
         total_used_leave = {leave_type: 0 for leave_type in leave_types}
         total_available_leave = {leave_type: 0 for leave_type in leave_types}
+        total_allocated_leave = {leave_type: 0 for leave_type in leave_types}
 
         # Fetch leave applications for the employee
         leave_applications = frappe.get_all(
             "Leave Application",
             filters={
                 "employee": employee.name,
-                "status": ("!=", "Cancelled"),
+                "status": ("=", "Approved"),
                 "from_date": (">=", start_of_year),
-                "from_date": ("<=", end_of_year),
+                "to_date": ("<=", end_of_year),
             },
             fields=["leave_type", "total_leave_days"],
         )
-
+        leave_allocations = frappe.get_all(
+            "Leave Allocation",
+            filters={
+                "employee": employee.name,
+                "docstatus": ("=", "1"),
+                "from_date": (">=", start_of_year),
+                "to_date": ("<=", end_of_year),
+            },
+            fields=["leave_type", "total_leaves_allocated"],
+        ) 
+        
+        for allocation in leave_allocations:
+            leave_type = allocation.leave_type
+            total_leave_allocated = allocation.total_leaves_allocated
+            total_allocated_leave[leave_type] += total_leave_allocated 
+            if leave_type == "Special Leave":
+                total_allocated_leave[leave_type] = 0 
+            print(total_allocated_leave[leave_type])      
         # Calculate total used leave for each leave type
         for leave_application in leave_applications:
             leave_type = leave_application.leave_type
             total_leave_days = leave_application.total_leave_days
             total_used_leave[leave_type] += total_leave_days
+            
+            # total_available_leave = total_allocated_leave[leave_type] - total_used_leave[leave_type]    
 
         # Calculate total available leave for each leave type
         for leave_type in leave_types:
             remaining = 0
+           
             if leave_type in available_leave["leave_allocation"]:
                 remaining = available_leave["leave_allocation"][leave_type]["remaining_leaves"]
                 if leave_type == "Special Leave" :
@@ -149,18 +173,20 @@ def get_data(filters, leave_types, column_name_prefix=""):
             total_available_leave[leave_type] = remaining 
             # + total_used_leave[leave_type]
 
-            # Calculate total leave for each leave type
-            total_leave = total_available_leave[leave_type] + total_used_leave[leave_type]
-            if leave_type == "Special Leave" :
-                total_leave=0
+            
+        #     print(total_available_leave)
+        #     # if leave_type == "Special Leave" :
+        #     #     total_leave=0
 
             # Append total available leave, total used leave, and total leave for each leave type to the row
             row.append(total_available_leave[leave_type])
             row.append(total_used_leave[leave_type])
-            row.append(total_leave)
+            row.append(total_allocated_leave[leave_type])
 
         data.append(row)
 
     return data
-    return data
+...
+
+
 

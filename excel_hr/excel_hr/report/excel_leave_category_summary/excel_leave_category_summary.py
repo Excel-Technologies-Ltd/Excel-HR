@@ -22,9 +22,9 @@ from hrms.hr.doctype.leave_application.leave_application import get_leave_detail
 
 
 def execute(filters=None):
-    leave_types = frappe.db.sql_list(
-        "select name from `tabLeave Type` order by name asc")
-
+    # leave_types = frappe.db.sql_list(
+    #     "select name from `tabLeave Type` order by name asc")
+    leave_types=['Annual Leave','Special Leave']
     columns = get_columns(leave_types)
     data = get_data(filters, leave_types)
 
@@ -37,11 +37,14 @@ def get_columns(leave_types):
 		_("Employee Name") + "::200",
 		_("Department") + ":Link/Department:150",
 	]
-
-	for leave_type in leave_types:
-		columns.append(_(leave_type + "(Used)") + ":Float:170")
-
+	if "Annual Leave" in leave_types:
+		columns.append(_("Annual Leave (Casual)") + ":Float:175")
+		columns.append(_("Annual Leave (Medical)") + ":Float:175")
+	if "Special Leave" in leave_types:
+		columns.append(_("Special Leave (Casual)") + ":Float:175")
+		columns.append(_("Special Leave (Medical)") + ":Float:175")
 	return columns
+
 def get_january_first():
     current_year = datetime.now().year
     january_first = datetime(current_year, 1, 1)
@@ -73,51 +76,25 @@ def get_conditions(filters):
     return conditions
 
 
-# ... (previous code)
-
-# def get_data(filters, leave_types):
-#     user = frappe.session.user
-#     conditions = get_conditions(filters)
-
-#     active_employees = frappe.get_list(
-#         "Employee",
-#         filters=conditions,
-#         fields=["name", "employee_name", "department", "user_id"],
-#     )
-
-#     data = []
-#     for employee in active_employees:
-#         row = [employee.name, employee.employee_name, employee.department]
-#         available_leave = get_leave_details(employee.name, filters.date)
-#         for leave_type in leave_types:
-#             remaining = 0
-#             if leave_type in available_leave["leave_allocation"]:
-#                 remaining = available_leave["leave_allocation"][leave_type]["remaining_leaves"]
-#                 if leave_type == "Special Leave" and remaining < 0:
-#                     remaining = 0
-#             row += [remaining]
-
-#         data.append(row)
-#     return data
-
-# ... (rest of your code)
 
 def get_data(filters, leave_types):
-    user = frappe.session.user
-    conditions = get_conditions(filters)
+    data=[]
+    conditions = get_conditions(filters) 
     active_employees = frappe.get_list(
         "Employee",
         filters=conditions,
         fields=["name", "employee_name", "department", "user_id"],
     )
-
-    data = []
     for employee in active_employees:
         row = [employee.name, employee.employee_name, employee.department]
         available_leave = get_leave_details(employee.name, filters.date)
 
         # Initialize total used leave for each employee
         total_used_leave = {leave_type: 0 for leave_type in leave_types}
+        total_used_leave["Annual Casual Leave"] = 0
+        total_used_leave["Annual Medical Leave"] = 0
+        total_used_leave["Special Casual Leave"] = 0
+        total_used_leave["Special Medical Leave"] = 0
 
         # Fetch leave applications for the employee
         leave_applications = frappe.get_all(
@@ -125,21 +102,42 @@ def get_data(filters, leave_types):
             filters={
                 "employee": employee.name,
                 "status": ("=", "Approved"),
-                "from_date": (">=",filters.date_range[0]),
-                "to_date": ("<=", filters.date_range[1])
+                "from_date": (">=", filters.date_range[0]),
+                "to_date": ("<=", filters.date_range[1]),
+                "leave_type": ("in", leave_types)
             },
-            fields=["leave_type", "total_leave_days"],
+            fields=["leave_type", "excel_leave_category", "total_leave_days"],
         )
-        print(leave_applications)
+
         # Calculate total used leave for each leave type
         for leave_application in leave_applications:
             leave_type = leave_application.leave_type
             total_leave_days = leave_application.total_leave_days
             total_used_leave[leave_type] += total_leave_days
 
+            # Check for specific leave types and categories
+            if leave_type == "Annual Leave":
+                if leave_application.excel_leave_category == "Casual":
+                    total_used_leave["Annual Casual Leave"] += total_leave_days
+                elif leave_application.excel_leave_category == "Medical":
+                    total_used_leave["Annual Medical Leave"] += total_leave_days
+            elif leave_type == "Special Leave":
+                if leave_application.excel_leave_category == "Casual":
+                    total_used_leave["Special Casual Leave"] += total_leave_days
+                elif leave_application.excel_leave_category == "Medical":
+                    total_used_leave["Special Medical Leave"] += total_leave_days
+
         # Append total used leave for each leave type to the row
         for leave_type in leave_types:
             row.append(total_used_leave[leave_type])
+
+        # Add specific values for each leave type and category
+        if "Annual Leave" in leave_types:
+            row.append(total_used_leave["Annual Casual Leave"])
+            row.append(total_used_leave["Annual Medical Leave"])
+        if "Special Leave" in leave_types:
+            row.append(total_used_leave["Special Casual Leave"])
+            row.append(total_used_leave["Special Medical Leave"])
 
         data.append(row)
 

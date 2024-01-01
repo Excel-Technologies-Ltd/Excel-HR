@@ -13,6 +13,7 @@ def execute(filters=None):
 
 import frappe
 from frappe import _
+from datetime import datetime
 
 from hrms.hr.doctype.leave_application.leave_application import get_leave_details
 
@@ -78,10 +79,11 @@ def get_data(filters, leave_types):
         fields=["name", "employee_name", "department", "user_id"],
     )
     print(active_employees)
+    get_last_date=get_last_day_of_year(filters.year)
     data = []
     for employee in active_employees:
         row = [employee.name, employee.employee_name, employee.department]
-        available_leave = get_leave_details(employee.name, filters.date)
+        available_leave = get_leave_details(employee.name, get_last_date)
         for leave_type in leave_types:
             remaining = 0
             if leave_type in available_leave["leave_allocation"]:
@@ -137,3 +139,7 @@ def get_data(filters, leave_types):
 #         data.append(row)
 
 #     return data
+def get_last_day_of_year(year):
+    # Construct the last day of the year
+    last_day_of_year = frappe.utils.getdate(f"{year}-12-31")
+    return last_day_of_year

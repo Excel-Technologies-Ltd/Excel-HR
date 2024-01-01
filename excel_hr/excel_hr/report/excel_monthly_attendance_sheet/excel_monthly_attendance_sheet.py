@@ -129,7 +129,7 @@ def get_message() -> str:
     # Second column
     message += "<div style='flex: 1; '>"
     count = 0
-    for (status, abbr), color in zip(list(status_map.items())[2:15], colors_group2):
+    for (status, abbr), color in zip(list(status_map.items())[2:16], colors_group2):
         message += f"""
             <span style='font-size:10px; color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
@@ -141,7 +141,7 @@ def get_message() -> str:
     # Third column
     message += "<div style='flex: 1;'>"
     count = 0
-    for (status, abbr), color in zip(list(status_map.items())[15:28], colors_group3):
+    for (status, abbr), color in zip(list(status_map.items())[16:30], colors_group3):
         message += f"""
             <span style='font-size:10px; color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
@@ -152,7 +152,7 @@ def get_message() -> str:
     # Fourth column
     message += "<div style='flex: 1;'>"
     count = 0
-    for (status, abbr), color in zip(list(status_map.items())[28:42], colors_group3):
+    for (status, abbr), color in zip(list(status_map.items())[30:], colors_group3):
         message += f"""
             <span style='font-size:10px; color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
@@ -391,9 +391,9 @@ def get_attendance_map(filters: Filters) -> Dict:
                 status="Late Attendance GS-6"                                                            	
         elif d.status == "On Leave":
             data= frappe.db.get_value('Leave Application', d.leave_application, ['leave_type','excel_leave_category'])
+            print(data)
             leave_type=data[0]
             leave_category=data[1]
-            status='Special Casual Leave'
             if leave_type =="Special Leave" and leave_category=="Casual":
                 status='Special Casual Leave'
             elif leave_type =="Special Leave" and leave_category=="Medical":
@@ -402,8 +402,8 @@ def get_attendance_map(filters: Filters) -> Dict:
                 status=""
             elif leave_type =="Special Leave":
                 status="Special Leave" 
-            elif leave_type ==" Monthly Paid Leave":
-                status=" Monthly Paid Leave"
+            elif leave_type =="Monthly Paid Leave":
+                status="Monthly Paid Leave"
             elif leave_type =="Annual Leave" and leave_category=="Casual":
                 status="Annual Casual Leave"
             elif leave_type =="Annual Leave" and leave_category=="Medical":
@@ -418,9 +418,9 @@ def get_attendance_map(filters: Filters) -> Dict:
                 status="Maternity Leave"                                                                                                
         else:
             status = d.status
-
+        print(status)    
         attendance_map.setdefault(d.employee, {}).setdefault(d.shift, {})
-        attendance_map[d.employee][d.shift][d.day_of_month] = status   
+        attendance_map[d.employee][d.shift][d.day_of_month] = status  
     # # Leave is applicable for the entire day, so all shifts should show the leave entry
     # for employee, leave_days in leave_map.items():
     #     # No attendance records exist except leaves
@@ -747,7 +747,7 @@ def get_attendance_status_for_detailed_view(
     attendance_values = []
 
     # Assuming total_days is the total number of days for which you are generating attendance status
-    total_days = 31  # You should replace this with the actual total number of days
+    total_days =  get_total_days_in_month(filters) # You should replace this with the actual total number of days
 
     for shift, status_dict in employee_attendance.items():
         row = {"shift": shift}
@@ -770,11 +770,11 @@ def get_attendance_status_for_detailed_view(
 
 
 def get_color_for_status(status: str) -> str:
-    if status in ("Absent", "On Leave", "Compensatory Leave","Leave Without Pay" ,"Maternity Leave", "Annual Casual Leave","Annual Medical Leave","Special Leave","Special Casual Leave","Special Medical Leave","Monthly Paid Leave"):
+    if status in ("Absent", "On Leave", "Annual Leave","Compensatory Leave","Leave Without Pay" ,"Maternity Leave", "Annual Casual Leave","Annual Medical Leave","Special Leave","Special Casual Leave","Special Medical Leave","Monthly Paid Leave"):
         return "red"
     elif status in("Holiday","Weekly Off"):
         return "black"
-    elif status in("Present","Present GS-4","Present GS-5","Present GS-6",  "Present GS-1",  "Present GS-2",  "Present GS-3",  "Late Attendance GS-1",  "Late Attendance GS-2",  "Late Attendance GS-3", "Late Attendance GS-4","Late Attendance GS-5","Late Attendance GS-6", "Off Day Duty GS-1",  "Off Day Duty GS-2",  "Off Day Duty GS-3",  "Outside Duty GS-1",  "Outside Duty GS-2",  "Outside Duty GS-3",  "Foreign Tour",  "Local Tour",  "Work From Home"):
+    elif status in("Present","Present GS-4","Present GS-5","Present GS-6",  "Present GS-1",  "Present GS-2",  "Present GS-3",  "Late Attendance GS-1",  "Late Attendance GS-2",  "Late Attendance GS-3", "Late Attendance GS-4","Late Attendance GS-5","Late Attendance GS-6", "Off Day Duty GS-1",  "Off Day Duty GS-2",  "Off Day Duty GS-3","Off Day Duty GS-4","Off Day Duty GS-5","Off Day Duty GS-6",  "Outside Duty GS-1",  "Outside Duty GS-2",  "Outside Duty GS-3","Outside Duty GS-4","Outside Duty GS-5","Outside Duty GS-6",  "Foreign Tour",  "Local Tour",  "Work From Home"):
         return "blue"
     # Add more conditions for other statuses
     else:

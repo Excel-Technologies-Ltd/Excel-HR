@@ -29,6 +29,7 @@
 		fieldtype: "Date",
 		reqd: 1,
 		default: frappe.datetime.year_end(),
+		read_only:1
 	  },
 	//   {
 	// 	fieldname: "date_range",

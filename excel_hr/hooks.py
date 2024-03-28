@@ -145,21 +145,25 @@ fixtures = ["Print Format",  'Custom Field',  'Property Setter']
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# "ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+"Employee": "excel_hr.overrides.UserWithEmployee"
+}
 
 # Document Events
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# "*": {
-# "on_update": "method",
-# "on_cancel": "method",
-# "on_trash": "method"
-# }
-# }
+doc_events = {
+    "Employee": {
+        "on_create": "excel_hr.create_user_by_employee.create_user_by_employee",
+        "on_update": "excel_hr.create_user_by_employee.create_user_by_employee",
+    },
+    "User": {
+        "on_update": "excel_hr.create_user_by_employee.rename_employee_mail",
+        # "on_update": "excel_hr.create_user_by_employee.create_user_by_employee",
+    }
+    
+}
 
 # Scheduled Tasks
 # ---------------

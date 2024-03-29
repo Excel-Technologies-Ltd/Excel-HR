@@ -153,17 +153,17 @@ override_doctype_class = {
 # ---------------
 # Hook on document methods and events
 
-doc_events = {
-    "Employee": {
-        "on_create": "excel_hr.create_user_by_employee.create_user_by_employee",
-        "on_update": "excel_hr.create_user_by_employee.create_user_by_employee",
-    },
-    "User": {
-        "on_update": "excel_hr.create_user_by_employee.rename_employee_mail",
-        # "on_update": "excel_hr.create_user_by_employee.create_user_by_employee",
-    }
+# doc_events = {
+#     "Employee": {
+#         "on_create": "excel_hr.create_user_by_employee.create_user_by_employee",
+#         "on_update": "excel_hr.create_user_by_employee.create_user_by_employee",
+#     },
+#     "User": {
+#         "on_update": "excel_hr.create_user_by_employee.rename_employee_mail",
+#         # "on_update": "excel_hr.create_user_by_employee.create_user_by_employee",
+#     }
     
-}
+# }
 
 # Scheduled Tasks
 # ---------------

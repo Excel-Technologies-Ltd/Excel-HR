@@ -14,10 +14,11 @@ class UserWithEmployee(Employee):
         user = frappe.db.exists("User", user_company_mail)
 
         if user:
+            self.company_email = user_id
             return
 
         if not user and user_id:
-            frappe.msgprint('User does not exist, but user_id is present.')
+            self.company_email = user_id
             return
 
         # Creating a new User document

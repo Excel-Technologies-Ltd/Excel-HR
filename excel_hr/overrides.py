@@ -30,6 +30,7 @@ class UserWithEmployee(Employee):
             "last_name": self.get('last_name'),
             "full_name": " ".join(filter(None, [self.get('first_name'), self.get('middle_name'), self.get('last_name')])),
             "username": self.get('first_name').lower(),
+            "mobile_no":self.get('excel_official_mobile_no'),
             # Set username as lowercase of the first name
         })
 

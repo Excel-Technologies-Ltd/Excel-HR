@@ -31,9 +31,9 @@ app_license = "MIT"
 
 # fixtures = ["Custom Field"]
 # override_doctype_dashboards = {
-#	"Task": "custom_field_prefixing.task.get_dashboard_data"
+# "Task": "custom_field_prefixing.task.get_dashboard_data"
 # }
-fixtures = ["Print Format",  'Custom Field',  'Property Setter']
+fixtures = ["Print Format", "Custom Field", "Property Setter"]
 #     {
 #         "dt": "Custom Field",
 #         "filters": [
@@ -146,7 +146,8 @@ fixtures = ["Print Format",  'Custom Field',  'Property Setter']
 # Override standard doctype classes
 
 override_doctype_class = {
-"Employee": "excel_hr.overrides.UserWithEmployee"
+    "Employee": "excel_hr.overrides.UserWithEmployee",
+    "Attendance Request": "excel_hr.attendance_request.NewAttendanceRequest",
 }
 
 # Document Events
@@ -162,7 +163,7 @@ override_doctype_class = {
 #         "on_update": "excel_hr.create_user_by_employee.rename_employee_mail",
 #         # "on_update": "excel_hr.create_user_by_employee.create_user_by_employee",
 #     }
-    
+
 # }
 
 # Scheduled Tasks

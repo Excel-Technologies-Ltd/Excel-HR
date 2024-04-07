@@ -43,7 +43,6 @@ def get_columns(leave_types):
     if "Special Leave" in leave_types:
         columns.append(_("Special Leave (Casual)") + ":Float:175")
         columns.append(_("Special Leave (Medical)") + ":Float:175")
-    frappe.msgprint(frappe.as_json(columns))
     return columns
 
 
@@ -77,7 +76,8 @@ def get_conditions(filters):
 
 
 def get_data(filters, leave_types):
-    frappe.msgprint(frappe.as_json(leave_types))
+   
+    
     data = []
     conditions = get_conditions(filters)
     active_employees = frappe.get_list(
@@ -119,9 +119,9 @@ def get_data(filters, leave_types):
 
         # Calculate total used leave for each leave type
         for leave_application in leave_applications:
-            frappe.msgprint(frappe.as_json(leave_application))
+         
             leave_type = leave_application.leave_type
-            frappe.msgprint("come in tyoe")
+           
             total_leave_days = leave_application.total_leave_days
 
             # Check for specific leave types and categories
@@ -129,7 +129,7 @@ def get_data(filters, leave_types):
                 leave_type == "Annual Leave"
                 and leave_application.excel_leave_category == "Casual"
             ):
-                frappe.msgprint("come in annual type")
+               
                 total_used_leave["Annual Casual Leave"] += total_leave_days
             elif (
                 leave_type == "Annual Leave"
@@ -141,7 +141,7 @@ def get_data(filters, leave_types):
                 leave_type == "Special Leave"
                 and leave_application.excel_leave_category == "Casual"
             ):
-                frappe.msgprint("come in special type")
+               
                 total_used_leave["Special Casual Leave"] += total_leave_days
 
             elif (
@@ -163,5 +163,5 @@ def get_data(filters, leave_types):
             row.append(total_used_leave["Special Medical Leave"])
 
         data.append(row)
-    frappe.msgprint(frappe.as_json(data))
+  
     return data

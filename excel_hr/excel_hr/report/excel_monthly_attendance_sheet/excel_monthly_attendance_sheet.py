@@ -152,11 +152,13 @@ def get_message() -> str:
     # Fourth column
     message += "<div style='flex: 1;'>"
     count = 0
+    message +="<h1 style='font-size:10px; color:red;'> **N.B: Empty cells signify Absence.</h1>"
     for (status, abbr), color in zip(list(status_map.items())[30:], colors_group3):
         message += f"""
             <span style='font-size:10px; color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
             </span>
+            
         """
         count += 1
     message += "</div>"    

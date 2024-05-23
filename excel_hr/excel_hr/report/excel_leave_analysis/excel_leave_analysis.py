@@ -95,6 +95,8 @@ def get_conditions(filters):
         conditions.update({"excel_hr_sub_section": filters.get("excel_sub_section")})
     if filters.get("excel_job_location"):
         conditions.update({"excel_job_location": filters.get("excel_job_location")})
+    if filters.get("excel_reporting_location"):
+        conditions.update({"excel_reporting_location": filters.get("excel_reporting_location")})        
     return conditions
 
 def get_data(filters, leave_types, column_name_prefix=""):

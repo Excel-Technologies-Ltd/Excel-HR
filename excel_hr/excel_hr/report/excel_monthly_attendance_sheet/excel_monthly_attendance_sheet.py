@@ -513,6 +513,8 @@ def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
 
     if filters.excel_job_location:
         sql_query += f" AND excel_job_location = '{filters.excel_job_location}'"
+    if filters.excel_reporting_location:
+        sql_query += f" AND excel_reporting_location = '{filters.excel_reporting_location}'"    
 
     group_by = filters.group_by
     if group_by:

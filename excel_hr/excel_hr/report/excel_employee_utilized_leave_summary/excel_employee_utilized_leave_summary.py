@@ -70,6 +70,9 @@ def get_conditions(filters):
     if filters.get("excel_job_location"):
         conditions.update(
             {"excel_job_location": filters.get("excel_job_location")})
+    if filters.get("excel_reporting_location"):
+        conditions.update(
+            {"excel_reporting_location": filters.get("excel_reporting_location")})
     return conditions
 
 

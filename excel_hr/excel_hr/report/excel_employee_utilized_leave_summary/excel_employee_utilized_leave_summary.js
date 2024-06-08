@@ -101,6 +101,7 @@
 		fieldtype: "Select",
 		options: ["",
 			{value: 'Head Office', label:( 'Head Office' )},
+			{value: 'Baridhara HQ', label:( 'Baridhara HQ' )},
 		{ value: 'Corporate Office', label:( 'Corporate Office' )},
 		{ value: 'Dhanmondi Warehouse', label:( 'Dhanmondi Warehouse' )},
 		{ value: 'E. Road Zone', label:( 'E. Road Zone' )},

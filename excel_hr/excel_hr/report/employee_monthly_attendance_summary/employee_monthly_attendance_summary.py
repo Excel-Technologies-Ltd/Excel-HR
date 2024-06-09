@@ -54,15 +54,24 @@ def get_data(filters):
     employee_name = frappe.db.get_value("Employee", filters.get('employee'), "employee_name")
     holiday_name = frappe.db.get_value("Employee", filters.get('employee'), "holiday_list")
     if holiday_name:
-        data = frappe.db.get_list(
-			'Holiday',
-			filters={
-				"parent": "Holiday List - 2024 (Friday-Saturday)",
-				"parentfield": "holidays",
-				"parenttype": "Holiday List"
-			},
-			fields=['holiday_date','weekly_off']
-		)
+        # data = frappe.db.get_list(
+		# 	'Holiday',
+		# 	filters={
+		# 		"parent": holiday_name,
+		# 		"parentfield": "holidays",
+		# 		"parenttype": "Holiday List"
+		# 	},
+		# 	fields=['holiday_date','weekly_off']
+		# )
+        query = """
+                    SELECT holiday_date, weekly_off 
+                    FROM tabHoliday 
+                    WHERE parent = %s 
+                      AND parentfield = 'holidays' 
+                      AND parenttype = 'Holiday List';
+                """
+        data=frappe.db.sql(query,(holiday_name,),as_dict=True)    
+    
 
 
 

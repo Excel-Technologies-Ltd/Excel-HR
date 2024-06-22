@@ -156,14 +156,14 @@ def get_employee_details(employee_id):
         shift_time_string=f"{shift_in_time} to {shift_out_time}"    
     
     employee_details = {
-        "Employee Name": employee.get('employee_name', 'N/A'),
-        "Employee ID": employee.get('name', 'N/A'),
-        "Designation": employee.get('designation', 'N/A'),
-        "Department": employee.get('department', 'N/A'),
+        "Employee Name": employee.get('employee_name', ''),
+        "Employee ID": employee.get('name', ''),
+        "Designation": employee.get('designation', ''),
+        "Department": employee.get('department', ''),
         "Shift Time": shift_time_string,
-        "Joining Date": employee.get('date_of_joining', 'N/A'),
-        "Contact Number": employee.get('excel_official_mobile_no', 'N/A'),
-        "Email": employee.get('company_email', 'N/A'),
+        "Joining Date": employee.get('date_of_joining', ''),
+        "Contact Number": employee.get('excel_official_mobile_no', ''),
+        "Email": employee.get('company_email', ''),
         "Manager Name": frappe.db.get_value("User",employee.get('leave_approver'),'full_name')
     }
 

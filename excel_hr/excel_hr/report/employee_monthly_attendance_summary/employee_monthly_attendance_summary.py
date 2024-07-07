@@ -39,10 +39,11 @@ def get_data(filters):
     # frappe.msgprint(f"Attendance Records: {frappe.as_json(attendance_list)}")
     # Get the days in the month
     if month ==current_month and year==current_year:
-        end_day=current_date.day -1
+        end_day=current_date.day 
     else:
         end_day= calendar.monthrange(year, month)[1]
     all_dates= [datetime(year, month, day).date() for day in range(1, end_day + 1)]
+    print(all_dates)
     # days_in_month = calendar.monthrange(year, month)[1]
 
     # # Create a list of all dates in the month
@@ -108,7 +109,7 @@ def get_data(filters):
                 out_time_str,
                f"{ attendance.get('working_hours')} h",
                 get_status(attendance ,data,date),
-                attendance.get('status'),
+                "Present"if attendance.get('status')=="On Leave" else attendance.get('status'),
                 None,
                 
             ])
@@ -133,10 +134,12 @@ def get_attendance_by_employee_and_month(employee_id, month, year):
         WHERE `employee` = '{employee_id}'
         AND YEAR(`attendance_date`) = {current_year}
           AND MONTH(`attendance_date`) = {month}
+          AND `docstatus`={1}
           
     """
     # Execute the query without parameter substitution
     attendance_records = frappe.db.sql(query, as_dict=True)
+    print({"reports":attendance_records})
     
     
 
@@ -160,7 +163,8 @@ def get_employee_details(employee_id):
         "Employee ID": employee.get('name', ''),
         "Designation": employee.get('designation', ''),
         "Department": employee.get('department', ''),
-        "Shift Time": shift_time_string,
+        # "Shift Time": shift_time_string,
+        "Job Location":employee.get('excel_job_location', ''),
         "Joining Date": employee.get('date_of_joining', ''),
         "Contact Number": employee.get('excel_official_mobile_no', ''),
         "Email": employee.get('company_email', ''),

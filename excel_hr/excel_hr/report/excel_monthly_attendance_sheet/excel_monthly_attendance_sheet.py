@@ -471,6 +471,7 @@ def get_attendance_records(filters: Filters) -> List[Dict]:
 
     # Execute the SQL query and fetch results from the database
     results = frappe.db.sql(sql_query, params, as_dict=True)
+    print({"records":get_attendance_records})
 
     return results
 

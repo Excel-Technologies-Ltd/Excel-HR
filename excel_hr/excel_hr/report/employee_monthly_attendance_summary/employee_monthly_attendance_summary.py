@@ -108,13 +108,13 @@ def get_data(filters):
                 in_time_str,
                 out_time_str,
                f"{ attendance.get('working_hours')} h",
-                get_status(attendance ,data,date),
+                get_status(attendance ,data,date) ,
                 "Present"if attendance.get('status')=="On Leave" else attendance.get('status'),
                 None,
                 
             ])
         else:
-            formatted_data.append([date, employee_name, None if get_holiday_status(data,date) else shift_time_string, None,None, None,get_holiday_status(data,date),"Present" if get_holiday_status(data,date) else None,None])
+            formatted_data.append([date, employee_name, None if get_holiday_status(data,date) else shift_time_string, None,None, None,get_holiday_status(data,date) , get_holiday_status(data,date) if get_holiday_status(data,date) else "Absent" ,None])
 
     return formatted_data
 
@@ -210,7 +210,7 @@ def convert_single_time_format(time_str):
 
 def get_status(d,date_list,date):
     if not d.status:
-        return
+        status = 'Absent'
     status = d.status
     status = d.get('status')
 
@@ -221,6 +221,7 @@ def get_status(d,date_list,date):
     #     leave_map.setdefault(d.employee, []).append(d.day_of_month)
     #     continue
     # Check multiple conditions and set "GSL" accordingly
+
     if d.status == 'Present' and d.late_entry == 0 and d.early_exit==0 :
         if d.attendance_request:
            data= frappe.db.get_value('Attendance Request', d.attendance_request, ['reason','excel_criteria_of_reason'])
@@ -283,6 +284,7 @@ def get_holiday_status(date_list, date):
             return "Weekend"
         else:
             return "Holiday"
+
     
 
     

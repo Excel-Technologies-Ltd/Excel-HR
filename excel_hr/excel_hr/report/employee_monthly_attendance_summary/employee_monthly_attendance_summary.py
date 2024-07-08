@@ -114,7 +114,7 @@ def get_data(filters):
                 
             ])
         else:
-            formatted_data.append([date, employee_name, None if get_holiday_status(data,date) else shift_time_string, None,None, None,get_holiday_status(data,date) , get_holiday_status(data,date) if get_holiday_status(data,date) else "Absent" ,None])
+            formatted_data.append([date, employee_name, None if get_holiday_status(data,date) else shift_time_string, None,None, None,get_holiday_status(data,date) , "Present" if get_holiday_status(data,date) else "Absent" ,None])
 
     return formatted_data
 

@@ -50,10 +50,15 @@ def get_data(filters):
     # all_dates = [datetime(year, month, day).date() for day in range(1, days_in_month + 1)]
 
     formatted_data = []
-
+    start_date= f"{filters.year}-{filters.month}-01"
+    end_date= f"{filters.year}-{filters.month}-15"
+    get_holiday= frappe.db.get_value("Attendance", {
+			"attendance_date":["between",[start_date, end_date]],
+			"employee":filters.get('employee')
+		}, ['holiday_list'],order_by="attendance_date ASC")
     # Retrieve employee name once
     employee_name = frappe.db.get_value("Employee", filters.get('employee'), "employee_name")
-    holiday_name = frappe.db.get_value("Employee", filters.get('employee'), "holiday_list")
+    holiday_name = get_holiday or frappe.db.get_value("Employee", filters.get('employee'), "holiday_list")
     if holiday_name:
         # data = frappe.db.get_list(
 		# 	'Holiday',
@@ -88,10 +93,12 @@ def get_data(filters):
     # Populate the formatted_data list with attendance data and fill in missing dates with None
     for date in all_dates:
         attendance = next((item for item in attendance_list if item['attendance_date'] == date), None)
-
+        remarks=""
         if attendance:
             in_time = attendance.get('in_time')
             out_time = attendance.get('out_time')
+            attendance_request=attendance.get('attendance_request')
+            remarks= frappe.db.get_value('Attendance Request' ,attendance_request ,['explanation']) if attendance_request else ""
 
             if in_time and out_time:
                 in_time_str = in_time.strftime('%I:%M %p')
@@ -107,14 +114,14 @@ def get_data(filters):
                 shift_time_string,
                 in_time_str,
                 out_time_str,
-               f"{ attendance.get('working_hours')} h",
+               "" if attendance.get('status') in ["Work From Home", "On Leave"] else f"{attendance.get('working_hours')} h",
                 get_status(attendance ,data,date) ,
-                "Present"if attendance.get('status')=="On Leave" else attendance.get('status'),
-                None,
+                "Present"if attendance.get('status') in ["On Leave","Work From Home"] else attendance.get('status'),
+                remarks,
                 
             ])
         else:
-            formatted_data.append([date, employee_name, None if get_holiday_status(data,date) else shift_time_string, None,None, None,get_holiday_status(data,date) , get_holiday_status(data,date) if get_holiday_status(data,date) else "Absent" ,None])
+            formatted_data.append([date, employee_name, None, None,None, None,get_holiday_status(data,date) , get_holiday_status(data,date) if get_holiday_status(data,date) else "<span style='color:red;'>Absent</span>"  ,remarks])
 
     return formatted_data
 

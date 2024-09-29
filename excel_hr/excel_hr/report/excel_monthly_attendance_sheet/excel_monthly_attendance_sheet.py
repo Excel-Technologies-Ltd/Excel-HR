@@ -393,7 +393,7 @@ def get_attendance_map(filters: Filters) -> Dict:
                 status="Late Attendance GS-6"                                                            	
         elif d.status == "On Leave":
             data= frappe.db.get_value('Leave Application', d.leave_application, ['leave_type','excel_leave_category'])
-            print(data)
+            # print(data)
             leave_type=data[0]
             leave_category=data[1]
             if leave_type =="Special Leave" and leave_category=="Casual":
@@ -592,7 +592,23 @@ def get_rows(
 	default_holiday_list = frappe.get_cached_value("Company", filters.company, "default_holiday_list")
 
 	for employee, details in employee_details.items():
-		emp_holiday_list = details.holiday_list or default_holiday_list
+		# holiday_filter={
+		# 	"attendance_date":f"{filters.year}-{filters.month}-01",
+		# 	"employee":employee
+		# }
+		start_date= f"{filters.year}-{filters.month}-01"
+		end_date= f"{filters.year}-{filters.month}-15"
+		get_holiday= frappe.db.get_value("Attendance", {
+			"attendance_date":["between",[start_date, end_date]],
+			"employee":employee
+		}, ['holiday_list'],order_by="attendance_date ASC")
+		
+		# new_data={"details":details,
+        #     "filter":filters,
+        #     "employee":employee
+		# }
+		# frappe.msgprint(frappe.as_json(get_holiday))
+		emp_holiday_list = get_holiday or details.holiday_list or default_holiday_list
 		holidays = holiday_map.get(emp_holiday_list)
 		if filters.summarized_view:
 			attendance = get_attendance_status_for_summarized_view(employee, filters, holidays)
@@ -639,6 +655,7 @@ def get_attendance_status_for_summarized_view(
 	"""Returns dict of attendance status for employee like
 	{'total_present': 1.5, 'total_leaves': 0.5, 'total_absent': 13.5, 'total_holidays': 8, 'unmarked_days': 5}
 	"""
+	frappe.msgprint(frappe.as_json(holidays))
 	summary, attendance_days = get_attendance_summary_and_days(employee, filters)
 	if not any(summary.values()):
 		return {}
@@ -916,3 +933,7 @@ def get_chart_data(attendance_map: Dict, filters: Filters) -> Dict:
 		"type": "line",
 		"colors": ["red", "green", "blue"],
 	}
+ 
+ 
+#  def get_holiday_status_from_attendance(name,):
+     

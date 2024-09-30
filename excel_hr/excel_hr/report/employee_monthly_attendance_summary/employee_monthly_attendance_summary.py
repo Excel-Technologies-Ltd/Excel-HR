@@ -11,17 +11,72 @@ def execute(filters=None):
 
 def get_columns():
     columns = [
-        _("Date") + "::100",
-        _("Employee Name") + "::170",
-        _("Roster Time") + "::150",
-        _("In Time") + "::80",
-        _("Out Time") + "::80",
-        _("W. Hours") + "::70",
-        _("Initial Status") + "::150",
-        _("Payroll Status") + "::100",
-        _("Remarks") + "::200",
+        {
+            "fieldname": "date",
+            "label": _("Date"),
+            "fieldtype": "Data",  # Adjust based on your actual data type
+            "width": 100,
+            "align": "left"  # Align left
+        },
+        {
+            "fieldname": "employee_name",
+            "label": _("Employee Name"),
+            "fieldtype": "Data",  # Adjust based on your actual data type
+            "width": 170,
+            "align": "left"  # Align left
+        },
+        {
+            "fieldname": "roster_time",
+            "label": _("Roster Time"),
+            "fieldtype": "Data",  # Adjust based on your actual data type
+            "width": 150,
+            "align": "left"  # Align left
+        },
+        {
+            "fieldname": "in_time",
+            "label": _("In Time"),
+            "fieldtype": "Data",  # Adjust based on your actual data type
+            "width": 80,
+            "align": "left"  # Align left
+        },
+        {
+            "fieldname": "out_time",
+            "label": _("Out Time"),
+            "fieldtype": "Data",  # Adjust based on your actual data type
+            "width": 80,
+            "align": "left"  # Align left
+        },
+        {
+            "fieldname": "worked_hours",
+            "label": _("W. Hours"),
+            "fieldtype": "Data",  # Adjust based on your actual data type
+            "width": 70,
+            "align": "left"  # Align left
+        },
+        {
+            "fieldname": "initial_status",
+            "label": _("Initial Status"),
+            "fieldtype": "Data",  # Adjust based on your actual data type
+            "width": 150,
+            "align": "left"  # Align left
+        },
+        {
+            "fieldname": "payroll_status",
+            "label": _("Payroll Status"),
+            "fieldtype": "Data",  # Adjust based on your actual data type
+            "width": 100,
+            "align": "left"  # Align left
+        },
+        {
+            "fieldname": "remarks",
+            "label": _("Remarks"),
+            "fieldtype": "Small Text",  # Adjust based on your actual data type
+            "width": 220,
+            "align": "left"  # Align left
+        },
     ]
     return columns
+
 
 def get_data(filters):
     if not filters.get('employee'):
@@ -54,7 +109,9 @@ def get_data(filters):
     end_date= f"{filters.year}-{filters.month}-15"
     get_holiday= frappe.db.get_value("Attendance", {
 			"attendance_date":["between",[start_date, end_date]],
-			"employee":filters.get('employee')
+			"employee":filters.get('employee'),
+            "status":"Present",
+            "docstatus":1
 		}, ['holiday_list'],order_by="attendance_date ASC")
     # Retrieve employee name once
     employee_name = frappe.db.get_value("Employee", filters.get('employee'), "employee_name")
@@ -70,7 +127,7 @@ def get_data(filters):
 		# 	fields=['holiday_date','weekly_off']
 		# )
         query = """
-                    SELECT holiday_date, weekly_off 
+                    SELECT holiday_date, weekly_off ,description
                     FROM tabHoliday 
                     WHERE parent = %s 
                       AND parentfield = 'holidays' 
@@ -93,13 +150,19 @@ def get_data(filters):
     # Populate the formatted_data list with attendance data and fill in missing dates with None
     for date in all_dates:
         attendance = next((item for item in attendance_list if item['attendance_date'] == date), None)
-        remarks=""
+        attendance_request_remarks=""
+        leave_application_remarks=""
         if attendance:
             in_time = attendance.get('in_time')
             out_time = attendance.get('out_time')
             attendance_request=attendance.get('attendance_request')
-            remarks= frappe.db.get_value('Attendance Request' ,attendance_request ,['explanation']) if attendance_request else ""
-
+            leave_application=attendance.get('leave_application')
+            if attendance_request:
+                attendance_request_remarks= frappe.db.get_value('Attendance Request' ,attendance_request ,['explanation']) if attendance_request else ""
+                
+            if leave_application:
+                leave_application_remarks= frappe.db.get_value('Leave Application' ,leave_application ,['description']) if leave_application else ""
+               
             if in_time and out_time:
                 in_time_str = in_time.strftime('%I:%M %p')
                 out_time_str = out_time.strftime('%I:%M %p')
@@ -116,12 +179,12 @@ def get_data(filters):
                 out_time_str,
                "" if attendance.get('status') in ["Work From Home", "On Leave"] else f"{attendance.get('working_hours')} h",
                 get_status(attendance ,data,date) ,
-                "Present"if attendance.get('status') in ["On Leave","Work From Home"] else attendance.get('status'),
-                remarks,
+                "Present"if attendance.get('status') in ["On Leave","Work From Home","Weekend"] else attendance.get('status'),
+                attendance_request_remarks or leave_application_remarks,
                 
             ])
         else:
-            formatted_data.append([date, employee_name, None, None,None, None,get_holiday_status(data,date) , get_holiday_status(data,date) if get_holiday_status(data,date) else "<span style='color:red;'>Absent</span>"  ,remarks])
+            formatted_data.append([date, employee_name, None, None,None, None,get_holiday_status(data,date) , get_holiday_payroll_status(data,date) if get_holiday_payroll_status(data,date) else "<span style='color:red;'>Absent</span>"  ,get_holiday_status_remarks(data,date)])
 
     return formatted_data
 
@@ -291,7 +354,43 @@ def get_holiday_status(date_list, date):
             return "Weekend"
         else:
             return "Holiday"
+def get_holiday_payroll_status(date_list, date):
+    # Convert list of dictionaries to a list of holiday dates and their properties
+    holiday_info = {str(holiday["holiday_date"]): holiday["weekly_off"] for holiday in date_list}
 
     
+    # Check if the given date is in the holiday dates list
+    if str(date) in holiday_info:
+        if holiday_info[str(date)] == 1:
+            return "Present"
+        else:
+            return "Present"
+
+
+        
+def get_holiday_status_remarks(date_list, date):
+    # Convert list of dictionaries to a list of holiday dates and their properties (weekly_off and description)
+    holiday_info = {
+        str(holiday["holiday_date"]): {
+            "weekly_off": holiday["weekly_off"],
+            "description": holiday.get("description", "")  # Add description field, with a default empty string
+        } 
+        for holiday in date_list
+    }
+    
+    # Check if the given date is in the holiday dates list
+    if str(date) in holiday_info:
+        holiday_details = holiday_info[str(date)]
+        weekly_off = holiday_details["weekly_off"]
+        description = holiday_details["description"]
+
+        # If it's a holiday (not a weekend), return the description
+        if weekly_off == 0:  # Assuming weekly_off == 0 means it's a holiday
+            return description if description else ""  # If no description, just return "Holiday"
+        else:
+            return ""  # If it's a weekend, return "Weekend"
+    
+
+
 
     

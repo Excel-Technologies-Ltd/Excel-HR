@@ -33,8 +33,8 @@ def validate_filters(filters):
     year = int(filters.get('year'))
     
     # Check if the start and end dates are in the same month and year
-    if start_date.month != month or end_date.month != month or start_date.year != year or end_date.year != year:
-        frappe.throw("The date range must be within the selected month and year.")
+    if  start_date.year != year or end_date.year != year:
+        frappe.throw("The date range must be within the selected year.")
     
     # Check that the start date is before or equal to the end date
     if start_date > end_date:
@@ -48,7 +48,8 @@ def get_columns(filters):
         "label": "SL #",
         "fieldname": "serial_number",
         "fieldtype": "Int",
-        "width": 80
+        "width": 80,
+        "align": "center"
     })
 
     # Add Employee ID column
@@ -78,16 +79,18 @@ def get_columns(filters):
         
         # Add grouped columns for In and Out for each date
         columns.append({
-            "label": f"{date_str} In Time",
+            "label": f"{date_str} (In Time)",
             "fieldname": f"in_{current_date.day}",
             "fieldtype": "Data",
-            "width": 200
+            "width": 200,
+            "align": "center"
         })
         columns.append({
-            "label": f"{date_str} Out Time",
+            "label": f"{date_str} (Out Time)",
             "fieldname": f"out_{current_date.day}",
             "fieldtype": "Data",
-            "width": 200
+            "width": 200,
+            "align": "center"
         })
         
         # Move to the next day
@@ -113,15 +116,24 @@ def get_data(filters):
         'attendance_date': ['between', [start_date_str, end_date_str]],
         'employee': ['in', employee_ids],
         'docstatus': 1  # Only fetch submitted records
-    }, fields=['employee', 'attendance_date', 'in_time', 'out_time'])
+    }, fields=['employee', 'attendance_date', 'in_time', 'out_time','status'])
 
     # Create a dictionary for quick lookup by employee and date
     attendance_dict = {}
     for record in attendance_records:
+        # Only attempt to format in_time and out_time if they are valid time values
+        in_time = record['in_time'].strftime('%H:%M') if record['in_time'] else None
+        out_time = record['out_time'].strftime('%H:%M') if record['out_time'] else None
+
+        # Set the status if it is not "Present" and there is no valid in_time or out_time
         attendance_dict.setdefault(record['employee'], {})[record['attendance_date']] = {
-            'in_time': record['in_time'].strftime('%H:%M:%S') if record['in_time'] else None,  # Extract only the time part
-            'out_time': record['out_time'].strftime('%H:%M:%S') if record['out_time'] else None  # Extract only the time part
+            'in_time': in_time,
+            'out_time': out_time,
+            'status':record['status'],
+            'attendance_date':record['attendance_date']
         }
+
+
 
     # Iterate over each employee and populate the data
     serial_number = 1
@@ -135,15 +147,40 @@ def get_data(filters):
         while current_date <= end_date:
             date_str = current_date.strftime('%Y-%m-%d')
             attendance = attendance_dict.get(employee, {}).get(current_date.date(), None)
+            print(attendance)
 
-            # Populate In and Out times if available
-            row[f'in_{current_date.day}'] = attendance['in_time'] if attendance else None
-            row[f'out_{current_date.day}'] = attendance['out_time'] if attendance else None
+            # Check if attendance exists and handle None cases
+            if attendance and attendance['status']== 'Present':
+                row[f'in_{current_date.day}'] = convert_to_am_pm(attendance['in_time']) if attendance['in_time'] else '-'
+                row[f'out_{current_date.day}'] = convert_to_am_pm(attendance['out_time']) if attendance['out_time'] else '-'
+            elif attendance and attendance['status'] == 'Work From Home':
+                row[f'in_{current_date.day}']='WFH'
+                row[f'out_{current_date.day}']='WFH'
+            elif attendance and  attendance['status'] == 'On Leave':
+                row[f'in_{current_date.day}']='L'
+                row[f'out_{current_date.day}']='L'               
+            else:
+                row[f'in_{current_date.day}'] = 'A'
+                row[f'out_{current_date.day}'] = 'A'
 
             # Move to the next day
             current_date += timedelta(days=1)
-        print(row)
+        
         data.append(row)
         serial_number += 1
-    print(data)
+
     return data
+
+
+def convert_to_am_pm(time_str):
+    """
+    Convert time from 24-hour format (HH:MM) to 12-hour format with AM/PM.
+
+    :param time_str: Time in 24-hour format as a string (e.g., "15:32")
+    :return: Time in 12-hour format with AM/PM (e.g., "3:32 PM")
+    """
+    # Parse the time string into a datetime object
+    time_obj = datetime.strptime(time_str, "%H:%M")
+    
+    # Convert to 12-hour format with AM/PM
+    return time_obj.strftime("%I:%M %p").lstrip('0')

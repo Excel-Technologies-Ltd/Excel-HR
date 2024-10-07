@@ -9,7 +9,7 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2024-10-06 15:03:50.165883",
+ "modified": "2024-10-07 12:39:26.555712",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "Excel Employees In-Exit Time Report",
@@ -20,22 +20,10 @@
  "report_type": "Script Report",
  "roles": [
   {
-   "role": "HR User"
-  },
-  {
    "role": "HR Manager"
   },
   {
    "role": "System Manager"
-  },
-  {
-   "role": "Employee Self Service"
-  },
-  {
-   "role": "Excel Head Of Dept."
-  },
-  {
-   "role": "Employee"
   }
  ]
 }

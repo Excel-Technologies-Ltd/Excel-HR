@@ -601,7 +601,7 @@ def get_rows(
 		get_holiday= frappe.db.get_value("Attendance", {
 			"attendance_date":["between",[start_date, end_date]],
 			"employee":employee,
-			"status":"Present",
+			"status":["in",["Present","Work From Home"]],
 			 "docstatus":1
    
 		}, ['holiday_list'],order_by="attendance_date ASC")

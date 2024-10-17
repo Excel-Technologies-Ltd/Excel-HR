@@ -2,16 +2,15 @@ import frappe
 from datetime import datetime, timedelta
 
 def execute(filters=None):
-    # Validate the filters
+    # Main function to execute the report
     if filters:
         validate_filters(filters)
     
-    # Generate columns dynamically based on date range
+    # Get the columns and data for the report
     columns = get_columns(filters)
-    
-    # Fetch data from the Attendance Doctype
+    # get the data
     data = get_data(filters)
-    
+    # return the columns and data
     return columns, data
 
 def validate_filters(filters):
@@ -41,23 +40,25 @@ def validate_filters(filters):
         frappe.throw("The start date cannot be later than the end date.")
 
 def get_columns(filters):
+    # Function to generate dynamic columns based on the date range
     columns = []
     
     # Add Serial Number Column
-    columns.append({
-        "label": "SL #",
-        "fieldname": "serial_number",
-        "fieldtype": "Int",
-        "width": 80,
-        "align": "center"
-    })
+    # columns.append({
+    #     "label": "SL #",
+    #     "fieldname": "serial_number",
+    #     "fieldtype": "Int",
+    #     "width": 80,
+    #     "align": "center"
+    # })
 
     # Add Employee ID column
     columns.append({
         "label": "Employee ID",
         "fieldname": "employee_id",
-        "fieldtype": "Data",
-        "width": 150
+        "fieldtype": "Link",
+        "options": "Employee",
+        "width": 120
     })
 
     # Get the start and end date from the filters
@@ -79,17 +80,18 @@ def get_columns(filters):
         
         # Add grouped columns for In and Out for each date
         columns.append({
-            "label": f"{date_str} (In Time)",
+            "label": f"(In Time) {date_str}",
             "fieldname": f"in_{current_date.day}",
             "fieldtype": "Data",
-            "width": 200,
+            "width": 130,
             "align": "center"
         })
         columns.append({
-            "label": f"{date_str} (Out Time)",
+            "label": f"(Out Time) {date_str}",
             "fieldname": f"out_{current_date.day}",
             "fieldtype": "Data",
-            "width": 200,
+            "width": 130,
+            
             "align": "center"
         })
         
@@ -99,11 +101,40 @@ def get_columns(filters):
     return columns
 
 def get_data(filters):
+    # Function to fetch and process data for the report
     data = []
 
     # Fetch employees based on the filters or all employees
-    employee_ids = filters.get('employee') or frappe.get_all('Employee', pluck='name')
+    # employee_ids = filters.get('employee') or frappe.get_all('Employee', pluck='name')
+    # department_filter = filters.get('department')
+    # job_location=filters.get('job_location')
+    # reporting_location=filters.get('reporting_location')
+    # if department_filter:
+    #     employee_ids = frappe.get_all('Employee', filters={'department': department_filter}, pluck='name')
+    employee_ids = filters.get('employee')  # Fetch employee(s) from the filter
 
+    # If no specific employee is selected, fetch all employees based on other filters (department, job location, etc.)
+    if not employee_ids:
+        conditions = {}
+        if filters.get('department'):
+            conditions['department'] = filters.get('department')
+        if filters.get('excel_job_location'):
+            conditions['excel_job_location'] = filters.get('excel_job_location')
+        if filters.get('excel_reporting_location'):
+            conditions['excel_reporting_location'] = filters.get('excel_reporting_location')
+
+        # Fetch employees based on the conditions
+        # frappe.msgprint(frappe.as_json(conditions))
+        employee_ids = frappe.get_all('Employee', filters=conditions, pluck='name')
+        # frappe.msgprint(frappe.as_json(employee_ids))
+
+    # Ensure employee_ids is a list
+    if isinstance(employee_ids, str):
+        employee_ids = [employee_ids]
+
+    # If no employees are found, return an empty data set
+    if not employee_ids:
+        return data
     # Get the start and end date from the filters
     start_date_str = filters.get("date_range")[0]
     end_date_str = filters.get("date_range")[1]
@@ -116,7 +147,7 @@ def get_data(filters):
         'attendance_date': ['between', [start_date_str, end_date_str]],
         'employee': ['in', employee_ids],
         'docstatus': 1  # Only fetch submitted records
-    }, fields=['employee', 'attendance_date', 'in_time', 'out_time','status'])
+    }, fields=['employee', 'attendance_date', 'in_time', 'out_time', 'status'])
 
     # Create a dictionary for quick lookup by employee and date
     attendance_dict = {}
@@ -129,11 +160,9 @@ def get_data(filters):
         attendance_dict.setdefault(record['employee'], {})[record['attendance_date']] = {
             'in_time': in_time,
             'out_time': out_time,
-            'status':record['status'],
-            'attendance_date':record['attendance_date']
+            'status': record['status'],
+            'attendance_date': record['attendance_date']
         }
-
-
 
     # Iterate over each employee and populate the data
     serial_number = 1
@@ -142,26 +171,62 @@ def get_data(filters):
             'serial_number': serial_number,
             'employee_id': employee
         }
+        
+        # Get holiday list for the employee
+        get_holiday = frappe.db.get_value("Attendance", {
+            "attendance_date": ["between", [start_date, end_date]],
+            "employee": employee,
+            "status": ["in", ["Present", "Work From Home"]],
+            "docstatus": 1
+        }, ['holiday_list'], order_by="attendance_date ASC")
+        holiday_name = get_holiday or frappe.db.get_value("Employee", employee, "holiday_list")
+        
+        # Fetch holiday list details
+        holiday_list = []
+        if holiday_name:
+            query = """
+                SELECT holiday_date, weekly_off, description
+                FROM tabHoliday 
+                WHERE parent = %s 
+                AND parentfield = 'holidays' 
+                AND parenttype = 'Holiday List';
+            """
+            holiday_list = frappe.db.sql(query, (holiday_name,), as_dict=True)
 
+        # Process attendance for each day in the date range
         current_date = start_date
         while current_date <= end_date:
             date_str = current_date.strftime('%Y-%m-%d')
             attendance = attendance_dict.get(employee, {}).get(current_date.date(), None)
-            print(attendance)
 
-            # Check if attendance exists and handle None cases
-            if attendance and attendance['status']== 'Present':
-                row[f'in_{current_date.day}'] = convert_to_am_pm(attendance['in_time']) if attendance['in_time'] else '-'
-                row[f'out_{current_date.day}'] = convert_to_am_pm(attendance['out_time']) if attendance['out_time'] else '-'
+            # Check attendance status and set appropriate values
+            if attendance and attendance['status'] == 'Present':
+                row[f'in_{current_date.day}'] = format_with_color(convert_to_am_pm(attendance['in_time']), 'green') if attendance['in_time'] else '-'
+                row[f'out_{current_date.day}'] = format_with_color(convert_to_am_pm(attendance['out_time']), 'green') if attendance['out_time'] else '-'
             elif attendance and attendance['status'] == 'Work From Home':
-                row[f'in_{current_date.day}']='WFH'
-                row[f'out_{current_date.day}']='WFH'
-            elif attendance and  attendance['status'] == 'On Leave':
-                row[f'in_{current_date.day}']='L'
-                row[f'out_{current_date.day}']='L'               
+                row[f'in_{current_date.day}'] = format_with_color('WFH', 'blue')
+                row[f'out_{current_date.day}'] = format_with_color('WFH', 'blue')
+            elif attendance and attendance['status'] == 'On Leave':
+                row[f'in_{current_date.day}'] = format_with_color('L', 'orange')
+                row[f'out_{current_date.day}'] = format_with_color('L', 'orange')
             else:
-                row[f'in_{current_date.day}'] = 'A'
-                row[f'out_{current_date.day}'] = 'A'
+                # Check for holidays and weekly offs
+                is_holiday_or_weekly_off = False
+                for holiday in holiday_list:
+                    if holiday["holiday_date"] == current_date.date():
+                        is_holiday_or_weekly_off = True
+                        if holiday['weekly_off'] == 1:
+                            row[f'in_{current_date.day}'] = format_with_color('W', 'purple')  # Weekly off
+                            row[f'out_{current_date.day}'] = format_with_color('W', 'purple')
+                        elif holiday['weekly_off'] == 0:
+                            row[f'in_{current_date.day}'] = format_with_color('H', 'brown')  # Holiday
+                            row[f'out_{current_date.day}'] = format_with_color('H', 'brown')
+                        break
+
+                # If not a holiday or weekly off, mark as absent
+                if not is_holiday_or_weekly_off:
+                    row[f'in_{current_date.day}'] = format_with_color('A', 'red')
+                    row[f'out_{current_date.day}'] = format_with_color('A', 'red')
 
             # Move to the next day
             current_date += timedelta(days=1)
@@ -171,16 +236,13 @@ def get_data(filters):
 
     return data
 
-
 def convert_to_am_pm(time_str):
-    """
-    Convert time from 24-hour format (HH:MM) to 12-hour format with AM/PM.
-
-    :param time_str: Time in 24-hour format as a string (e.g., "15:32")
-    :return: Time in 12-hour format with AM/PM (e.g., "3:32 PM")
-    """
+    """Convert time from 24-hour format (HH:MM) to 12-hour format with AM/PM."""
     # Parse the time string into a datetime object
     time_obj = datetime.strptime(time_str, "%H:%M")
     
     # Convert to 12-hour format with AM/PM
     return time_obj.strftime("%I:%M %p").lstrip('0')
+def format_with_color(text, color):
+    """Wrap text in HTML to display colored text in the report."""
+    return f'<span style="color: {color};">{text}</span>'

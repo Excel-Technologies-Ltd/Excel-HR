@@ -72,11 +72,11 @@ frappe.query_reports["Excel Employees In-Exit Time Report"] = {
 					let maxDays;
 					if (month === 1) {  // February
 						// Check for leap year
-						maxDays = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 28 : 27;
+						maxDays = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 29 : 28;
 					} else if ([3, 5, 8, 10].includes(month)) {  // April, June, September, November
-						maxDays = 29;
-					} else {
 						maxDays = 30;
+					} else {
+						maxDays = 31;
 					}
 					
 					// Calculate difference in time (milliseconds)
@@ -86,7 +86,7 @@ frappe.query_reports["Excel Employees In-Exit Time Report"] = {
 					const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
 					
 					// Validate if the difference exceeds the allowed days for the month
-					if (diffDays > maxDays) {
+					if (diffDays > maxDays -1 ) {
 						frappe.msgprint(__("The date range cannot exceed " + maxDays + " days for the selected month."), __("Validation Error"));
 						frappe.query_report.set_filter_value('date_range', null);
 					}

@@ -72,11 +72,11 @@ frappe.query_reports["Excel Employees In-Exit Time Report"] = {
 					let maxDays;
 					if (month === 1) {  // February
 						// Check for leap year
-						maxDays = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 29 : 28;
+						maxDays = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 28 : 27;
 					} else if ([3, 5, 8, 10].includes(month)) {  // April, June, September, November
-						maxDays = 30;
+						maxDays = 29;
 					} else {
-						maxDays = 31;
+						maxDays = 30;
 					}
 					
 					// Calculate difference in time (milliseconds)

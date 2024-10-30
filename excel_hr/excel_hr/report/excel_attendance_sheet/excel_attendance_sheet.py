@@ -537,7 +537,7 @@ def get_attendance_status_for_detailed_view(
 
 
 def get_holiday_status(day: int, holidays: List) -> str:
-	status = None
+	status = "Absent"
 	if holidays:
 		for holiday in holidays:
 			if day == holiday.get("day_of_month"):

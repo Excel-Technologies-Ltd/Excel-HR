@@ -51,7 +51,6 @@ frappe.query_reports["Excel Employees In-Exit Time Report"] = {
 				frappe.query_report.get_filter("month").on_change();
 			}
 		},
-
 		{
 			"fieldname": "date_range",
 			"label": __("Date Range"),
@@ -59,25 +58,42 @@ frappe.query_reports["Excel Employees In-Exit Time Report"] = {
 			"reqd": 1,
 			"default": [frappe.datetime.year_start(), frappe.datetime.month_end()],
 			"on_change": function() {
-                const date_range = frappe.query_report.get_filter_value('date_range');
-                if (date_range && date_range[0] && date_range[1]) {
-                    const start_date = new Date(date_range[0]);
-                    const end_date = new Date(date_range[1]);
-                    
-                    // Calculate difference in time (milliseconds)
-                    const diffTime = Math.abs(end_date - start_date);
-                    
-                    // Convert difference from milliseconds to days
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                    
-                    // Validate if the difference is more than 31 days
-                    if (diffDays > 30) {
-                        frappe.msgprint(__("The date range cannot exceed 31 days."), __("Validation Error"));
-                        frappe.query_report.set_filter_value('date_range', null);
-                    }
-                }
-            }
+				const date_range = frappe.query_report.get_filter_value('date_range');
+				
+				if (date_range && date_range[0] && date_range[1]) {
+					const start_date = new Date(date_range[0]);
+					const end_date = new Date(date_range[1]);
+					
+					// Get the month and year from the start date
+					const month = start_date.getMonth(); // 0 = January, 1 = February, etc.
+					const year = start_date.getFullYear();
+					
+					// Set max days in the month
+					let maxDays;
+					if (month === 1) {  // February
+						// Check for leap year
+						maxDays = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 29 : 28;
+					} else if ([3, 5, 8, 10].includes(month)) {  // April, June, September, November
+						maxDays = 30;
+					} else {
+						maxDays = 31;
+					}
+					
+					// Calculate difference in time (milliseconds)
+					const diffTime = Math.abs(end_date - start_date);
+					
+					// Convert difference from milliseconds to days
+					const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+					
+					// Validate if the difference exceeds the allowed days for the month
+					if (diffDays > maxDays) {
+						frappe.msgprint(__("The date range cannot exceed " + maxDays + " days for the selected month."), __("Validation Error"));
+						frappe.query_report.set_filter_value('date_range', null);
+					}
+				}
+			}
 		},
+		
 		// {
 		// 	"fieldname": "company",
 		// 	"label": __("Company"),
@@ -85,7 +101,7 @@ frappe.query_reports["Excel Employees In-Exit Time Report"] = {
 		// 	"options": "Company",
 		// 	"reqd": 1,
 		// 	"default": frappe.defaults.get_user_default("Company"),
-		// },
+		// },,
 		{
 			"fieldname": "employee",
 			"label": __("Employee"),

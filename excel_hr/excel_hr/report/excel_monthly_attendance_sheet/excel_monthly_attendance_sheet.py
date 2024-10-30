@@ -807,7 +807,7 @@ def get_color_for_status(status: str) -> str:
 
 
 def get_holiday_status(day: int, holidays: List) -> str:
-	status = None
+	status = "Absent"
 	if holidays:
 		for holiday in holidays:
 			if day == holiday.get("day_of_month"):

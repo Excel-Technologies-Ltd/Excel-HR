@@ -126,7 +126,7 @@ def send_birthday_wish():
         'is_private': 0,
         
     })
-    file.insert()
+    file.insert(ignore_permissions=True)
     frappe.sendmail(
         recipients=email,
         subject="Happy Birthday!",
@@ -196,7 +196,7 @@ def send_anniversary_wish():
         'is_private': 0,
         
     })
-    file.insert()
+    file.insert(ignore_permissions=True)
     frappe.sendmail(
         recipients=email,
         subject="Happy Anniversary!",

@@ -73,8 +73,8 @@ def generate_token(email):
 
 @frappe.whitelist()
 def send_birthday_wish():
-    email = 'sohan.dev@excelbd.com'  # Replace with actual email
-    name = 'Sohanur Rahman Lelin'  # Replace with actual name
+    email = "sohan.dev@excelbd.com"  # Replace with actual email
+    name = "Sohanur Rahman Lelin"  # Replace with actual name
 
     birthday_image_path = "assets/excel_hr/birth.jpg"
     font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
@@ -112,18 +112,17 @@ def send_birthday_wish():
     draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="#ed7d31")
     draw.text((text_x, text_y), text, fill="black", font=font)
     img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='PNG')
+    image.save(img_byte_arr, format='JPEG')
     img_byte_arr.seek(0)
     random_number = random.randint(100000, 999999)
     base_url = frappe.utils.get_url()
     file = frappe.get_doc({
-        'doctype': 'File',
-        'file_name': f'birthday_{name}_{random_number}.png',
-        'file_url': '/files/birthday_{name}_{random_number}.png', 
-        'content': img_byte_arr.getvalue(),
-        'content_type': 'image/png',
-        # Associate with the recipient's email (or a relevant field)
-        'is_private': 0,
+        "doctype": "File",
+        "file_name": f"birthday_{name}_{random_number}.png",
+        "file_url": f"/files/birthday_{name}_{random_number}.png",
+        "content": img_byte_arr.getvalue(),
+        "content_type": "image/jpeg",
+        "is_private": 0,
         
     })
     file.insert(ignore_permissions=True)
@@ -144,8 +143,8 @@ def send_birthday_wish():
 
 @frappe.whitelist()
 def send_anniversary_wish():
-    email = 'sohan.dev@excelbd.com'  # Replace with actual email
-    name = 'Sohanur'  # Replace with actual name
+    email = "sohan.dev@excelbd.com"  # Replace with actual email
+    name = "Sohanur"  # Replace with actual name
 
     birthday_image_path = "assets/excel_hr/ann.jpg"
     font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
@@ -183,19 +182,19 @@ def send_anniversary_wish():
     draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="#ed7d31")
     draw.text((text_x, text_y), text, fill="black", font=font)
     img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='JPEG')
+    image.save(img_byte_arr, format="JPEG")
     img_byte_arr.seek(0)
     random_number = random.randint(100000, 999999)
     base_url = frappe.utils.get_url()
     file = frappe.get_doc({
-        'doctype': 'File',
-        'file_name': f'anniversary_{name}_{random_number}.png',
-        'file_url': '/files/anniversary_{name}_{random_number}.png', 
-        'content': img_byte_arr.getvalue(),
-        'content_type': 'image/png',
-        'is_private': 0,
-        
+        "doctype": "File",
+        "file_name": f"anniversary_{name}_{random_number}.png",
+        "file_url": f"/files/anniversary_{name}_{random_number}.png",
+        "content": img_byte_arr.getvalue(),
+        "content_type": "image/jpeg",
+        "is_private": 0,
     })
+   
     file.insert(ignore_permissions=True)
     frappe.sendmail(
         recipients=email,

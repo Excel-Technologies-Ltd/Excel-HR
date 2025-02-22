@@ -179,8 +179,8 @@ def send_anniversary_wish():
     bg_y2 = bg_y1 + bg_height
     text_x = bg_x1 + padding  # Use text_padding here
     text_y = bg_y1 + 3   # Use text_padding here
-    draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="#ed7d31")
-    draw.text((text_x, text_y), text, fill="black", font=font)
+    draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="rgb(237, 125, 49)")
+    draw.text((text_x, text_y), text, fill="rgb(0, 0, 0)", font=font)
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format="JPEG")
     img_byte_arr.seek(0)

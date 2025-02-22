@@ -196,14 +196,14 @@ def send_anniversary_wish():
     })
    
     file.insert(ignore_permissions=True)
-    frappe.sendmail(
-        recipients=email,
-        subject="Happy Anniversary!",
-        template="birthday",
-        args={"img_url": base_url + file.file_url},
-        delayed=False
-    )
+    # frappe.sendmail(
+    #     recipients=email,
+    #     subject="Happy Anniversary!",
+    #     template="birthday",
+    #     args={"img_url": base_url + file.file_url},
+    #     delayed=False
+    # )
     
     
-    
+
 

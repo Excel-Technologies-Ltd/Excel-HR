@@ -8,6 +8,7 @@ import requests
 import base64
 import random
 from frappe import _
+from hrms.controllers.employee_reminders import send_birthday_reminders
 @frappe.whitelist()
 def get_holiday_list(parent):
     dynamic_parent = parent
@@ -72,9 +73,8 @@ def generate_token(email):
 
 
 @frappe.whitelist()
-def send_birthday_wish():
-    email = "sohan.dev@excelbd.com"  # Replace with actual email
-    name = "Sohanur Rahman Lelin"  # Replace with actual name
+def send_birthday_wish(email="sohan.dev@excelbd.com",name="Mr . Sohanur Rahman Lelin Khan"):
+    cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
 
     birthday_image_path = "assets/excel_hr/birth.jpg"
     font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
@@ -87,7 +87,7 @@ def send_birthday_wish():
     image = Image.open(birthday_image_path)
     draw = ImageDraw.Draw(image)
 
-    font_size = 30
+    font_size = 22
     font = ImageFont.truetype(font_path, font_size)
 
     text = f"{name}"
@@ -103,14 +103,14 @@ def send_birthday_wish():
     bg_width = text_width + 2 * padding
     bg_height = text_height + 2 * padding
 
-    bg_x1 = (image.width - bg_width) // 5
+    bg_x1 = (image.width - bg_width) // 6.7
     bg_y1 = (image.height - bg_height) // 1.9
     bg_x2 = bg_x1 + bg_width
     bg_y2 = bg_y1 + bg_height
     text_x = bg_x1 + padding  # Use text_padding here
     text_y = bg_y1 + 3   # Use text_padding here
-    draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="#ed7d31")
-    draw.text((text_x, text_y), text, fill="black", font=font)
+    draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="rgb(237, 125, 49)")
+    draw.text((text_x, text_y), text, fill="rgb(0, 0, 0)", font=font)
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='JPEG')
     img_byte_arr.seek(0)
@@ -129,11 +129,11 @@ def send_birthday_wish():
     frappe.sendmail(
         recipients=email,
         subject="Happy Birthday!",
+        cc=cc_mail if cc_mail else None,
         template="birthday",
         args={
             "img_url": base_url + file.file_url,
-        },
-        delayed=False
+        }
     )
 
 
@@ -141,10 +141,10 @@ def send_birthday_wish():
 
 
 
-@frappe.whitelist()
-def send_anniversary_wish():
-    email = "sohan.dev@excelbd.com"  # Replace with actual email
-    name = "Sohanur"  # Replace with actual name
+
+def send_anniversary_wish(email="sohan.dev@excelbd.com",name="Mr Sohanur Rahman Lelin"):
+
+    cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
 
     birthday_image_path = "assets/excel_hr/ann.jpg"
     font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
@@ -157,7 +157,7 @@ def send_anniversary_wish():
     image = Image.open(birthday_image_path)
     draw = ImageDraw.Draw(image)
 
-    font_size = 30
+    font_size = 25
     font = ImageFont.truetype(font_path, font_size)
 
     text = f"{name}"
@@ -196,13 +196,14 @@ def send_anniversary_wish():
     })
    
     file.insert(ignore_permissions=True)
-    # frappe.sendmail(
-    #     recipients=email,
-    #     subject="Happy Anniversary!",
-    #     template="birthday",
-    #     args={"img_url": base_url + file.file_url},
-    #     delayed=False
-    # )
+    frappe.sendmail(
+        recipients=email,
+        subject="Happy Anniversary!",
+        cc=cc_mail if cc_mail else None,
+        template="birthday",
+        args={"img_url": base_url + file.file_url},
+        delayed=False
+    )
     
     
 

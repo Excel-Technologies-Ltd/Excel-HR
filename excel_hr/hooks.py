@@ -175,6 +175,10 @@ scheduler_events = {
             "erpnext.stock.doctype.repost_item_valuation.repost_item_valuation.repost_entries",
         ]
     },
+    "daily": [
+		"excel_hr.reminders.send_birthday_reminders",
+		"excel_hr.reminders.send_work_anniversary_reminders"
+	],
     # "all": [
     #     "excel_hr.tasks.all"
     # ],

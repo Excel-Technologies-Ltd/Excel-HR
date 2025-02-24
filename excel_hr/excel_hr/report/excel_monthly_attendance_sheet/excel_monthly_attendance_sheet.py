@@ -318,6 +318,52 @@ def get_data(filters: Filters, attendance_map: Dict) -> List[Dict]:
 
 from typing import Dict
 
+
+def get_draft_requests(filters: Filters) -> Dict:
+    """
+    Query draft Leave Applications and Attendance Requests for the filter month and year.
+    Returns a dictionary with two keys: 'leave_applications' and 'attendance_requests'.
+    Each record contains the employee, start day, and end day of the draft request.
+    """
+    # Query draft Leave Applications
+    LeaveApp = frappe.qb.DocType("Leave Application")
+    leave_apps = (
+        frappe.qb.from_(LeaveApp)
+        .select(
+            LeaveApp.employee,
+            Extract("day", LeaveApp.from_date).as_("from_date"),
+            Extract("day", LeaveApp.to_date).as_("to_date")
+        )
+        .where(
+            (LeaveApp.docstatus == 0)
+            & (LeaveApp.company == filters.company)
+            & (Extract("month", LeaveApp.from_date or LeaveApp.to_date) == filters.month)
+            & (Extract("year", LeaveApp.from_date or LeaveApp.to_date) == filters.year)
+        )
+    ).run(as_dict=True)
+    
+    # Query draft Attendance Requests
+    AttendanceRequest = frappe.qb.DocType("Attendance Request")
+    att_requests = (
+        frappe.qb.from_(AttendanceRequest)
+        .select(
+            AttendanceRequest.employee,
+            Extract("day", AttendanceRequest.from_date).as_("from_date"),
+            Extract("day", AttendanceRequest.to_date).as_("to_date")
+        )
+        .where(
+            (AttendanceRequest.docstatus == 0)
+            & (AttendanceRequest.company == filters.company)
+            & (Extract("month", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.month)
+            & (Extract("year", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.year)
+        )
+    ).run(as_dict=True)
+    
+    return {
+        "leave_applications": leave_apps,
+        "attendance_requests": att_requests,
+    }
+
 def get_attendance_map(filters: Filters) -> Dict:
     """Returns a dictionary of employee-wise attendance map as per shifts for all the days of the month."""
      

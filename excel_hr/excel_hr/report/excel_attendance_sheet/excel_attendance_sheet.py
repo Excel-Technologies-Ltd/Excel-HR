@@ -21,6 +21,8 @@ status_map = {
 	"On Leave": "L",
 	"Holiday": "H",
 	"Weekly Off": "WO",
+ 	"Attendance Request": "A.App", 
+    "Leave Application": "L.App",  
 }
 
 day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -54,12 +56,13 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 
 def get_message() -> str:
 	message = ""
-	colors = ["green", "red", "orange", "green", "#318AD8", "", ""]
+	colors = ["green", "red", "orange", "green", "#318AD8", "purple", "brown"]
 
 	count = 0
 	for status, abbr in status_map.items():
+		color = colors[count % len(colors)]
 		message += f"""
-			<span style='border-left: 2px solid {colors[count]}; padding-right: 12px; padding-left: 5px; margin-right: 3px;'>
+			<span style='border-left: 2px solid {color}; padding-right: 12px; padding-left: 5px; margin-right: 3px;'>
 				{status} - {abbr}
 			</span>
 		"""
@@ -203,7 +206,58 @@ def get_data(filters: Filters, attendance_map: Dict) -> List[Dict]:
 	else:
 		data = get_rows(employee_details, filters, holiday_map, attendance_map)
 
-	return data
+	return data	
+def get_draft_requests(filters: Filters) -> Dict:
+    # Query draft leave applications
+    LeaveApp = frappe.qb.DocType("Leave Application")
+    leave_apps = (
+        frappe.qb.from_(LeaveApp)
+        .select(
+            LeaveApp.employee,
+            Extract("day", LeaveApp.from_date).as_("start_date"),
+            Extract("day", LeaveApp.to_date).as_("to_date"),
+            Extract("month", LeaveApp.from_date).as_("start_month"),
+            Extract("month", LeaveApp.to_date).as_("to_month"),
+            
+        )
+        .where(
+            (LeaveApp.docstatus == 0)
+			& (
+				(Extract("month", LeaveApp.from_date) == filters.month) |
+				(Extract("month", LeaveApp.to_date) == filters.month)
+			)
+			& (
+				(Extract("year", LeaveApp.from_date) == filters.year) |
+				(Extract("year", LeaveApp.to_date) == filters.year)
+			)
+        )
+    ).run(as_dict=True)
+    
+    # Query draft attendance requests
+    AttendanceRequest = frappe.qb.DocType("Attendance Request")
+    att_requests = (
+        frappe.qb.from_(AttendanceRequest)
+        .select(
+            AttendanceRequest.employee,
+            Extract("day", AttendanceRequest.from_date).as_("start_date"),
+            Extract("day", AttendanceRequest.to_date).as_("to_date"),
+            Extract("month", AttendanceRequest.from_date ).as_("start_month"),
+            Extract("month", AttendanceRequest.to_date).as_("to_month"),
+            
+        )
+        .where(
+            (AttendanceRequest.docstatus == 0)
+           
+            & (AttendanceRequest.company == filters.company)
+            & (Extract("month", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.month)
+            & (Extract("year", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.year)
+        )
+    ).run(as_dict=True)
+    
+    return {
+        "leave_applications": leave_apps,
+        "attendance_requests": att_requests,
+    }
 
 
 def get_attendance_map(filters: Filters) -> Dict:
@@ -246,7 +300,40 @@ def get_attendance_map(filters: Filters) -> Dict:
 		for day in leave_days:
 			for shift in attendance_map[employee].keys():
 				attendance_map[employee][shift][day] = "On Leave"
-
+    
+	draft_data = get_draft_requests(filters)
+	frappe.msgprint(frappe.as_json(draft_data))
+	
+	for lr in draft_data.get("leave_applications", []):
+		# check true condition
+		if lr.start_month == lr.to_month:
+			for day in range(lr.start_date, lr.to_date + 1):
+				attendance_map.setdefault(lr.employee, {}).setdefault("", {})
+				attendance_map[lr.employee][""][day] = "Leave Application"
+		else:
+			if int(filters.month) == int(lr.start_month):
+				frappe.msgprint(f"start_month: {type(lr.start_month)}, to_month: {type(lr.to_month)}")
+				for day in range(lr.start_date, get_total_days_in_month(filters) + 1):
+					attendance_map.setdefault(lr.employee, {}).setdefault("", {})
+					attendance_map[lr.employee][""][day] = "Leave Application"
+			elif int(filters.month) == int(lr.to_month):
+				for day in range(1, lr.to_date + 1):
+					attendance_map.setdefault(lr.employee, {}).setdefault("", {})
+					attendance_map[lr.employee][""][day] = "Leave Application"
+	for ar in draft_data.get("attendance_requests", []):
+		if ar.start_month == ar.to_month:
+			for day in range(ar.start_date, ar.to_date + 1):
+				attendance_map.setdefault(ar.employee, {}).setdefault("", {})
+				attendance_map[ar.employee][""][day] = "Attendance Request"
+		else:
+			if int(filters.month) == int(ar.start_month):
+				for day in range(ar.start_date, get_total_days_in_month(filters) + 1):
+					attendance_map.setdefault(ar.employee, {}).setdefault("", {})
+					attendance_map[ar.employee][""][day] = "Attendance Request"
+			elif int(filters.month) == int(ar.to_month):
+				for day in range(1, ar.to_date + 1):
+					attendance_map.setdefault(ar.employee, {}).setdefault("", {})
+					attendance_map[ar.employee][""][day] = "Attendance Request"
 	return attendance_map
 
 
@@ -259,10 +346,11 @@ def get_attendance_records(filters: Filters) -> List[Dict]:
 			Extract("day", Attendance.attendance_date).as_("day_of_month"),
 			Attendance.status,
 			Attendance.shift,
+			Attendance.docstatus,
 		)
 		.where(
-			(Attendance.docstatus == 1)
-			& (Attendance.company == filters.company)
+			# (Attendance.docstatus == 1)
+			(Attendance.company == filters.company)
 			& (Extract("month", Attendance.attendance_date) == filters.month)
 			& (Extract("year", Attendance.attendance_date) == filters.year)
 		)
@@ -667,3 +755,5 @@ def get_chart_data(attendance_map: Dict, filters: Filters) -> Dict:
 		"type": "line",
 		"colors": ["red", "green", "blue"],
 	}
+
+

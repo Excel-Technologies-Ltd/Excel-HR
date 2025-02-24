@@ -59,7 +59,7 @@ def get_company_email(userid):
     
 def get_employee_full_name(userid):
     Employee = frappe.get_doc("Employee", {"user_id": userid})
-    return f"{Employee.salutation} {Employee.employee_name}"
+    return f"{Employee.salutation}. {Employee.employee_name}"
     
     
     

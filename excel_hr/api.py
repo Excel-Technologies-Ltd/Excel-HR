@@ -142,7 +142,7 @@ def send_birthday_wish(email="sohan.dev@excelbd.com",name="Mr . Sohanur Rahman L
 
 
 
-def send_anniversary_wish(email="sohan.dev@excelbd.com",name="Mr Sohanur Rahman Lelin"):
+def send_anniversary_wish(email="sohan.dev@excelbd.com",name="Mr. Sohanur Rahman Lelin Khan Mia"):
 
     cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
 

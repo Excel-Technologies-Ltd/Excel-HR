@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "reminders_tab",
+  "greetings_notifications_section",
   "birthday_reminder",
   "anniversary_reminder",
   "cc_mail"
@@ -16,30 +17,35 @@
   {
    "fieldname": "reminders_tab",
    "fieldtype": "Tab Break",
-   "label": "Reminders"
+   "label": "Greetings"
   },
   {
    "default": "0",
    "fieldname": "birthday_reminder",
    "fieldtype": "Check",
-   "label": "Birthday"
+   "label": "Birthday Greetings"
   },
   {
    "default": "0",
    "fieldname": "anniversary_reminder",
    "fieldtype": "Check",
-   "label": "Anniversary"
+   "label": "Work Anniversary"
   },
   {
    "fieldname": "cc_mail",
    "fieldtype": "Data",
    "label": "CC Mail"
+  },
+  {
+   "fieldname": "greetings_notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Greetings Notifications"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-02-23 15:26:40.319867",
+ "modified": "2025-02-23 17:17:51.391909",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "Excel Alert Settings",

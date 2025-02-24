@@ -29,11 +29,11 @@ app_license = "MIT"
 # include js in page
 # page_js = {"page" : "public/js/file.js"}
 
-# fixtures = ["Custom Field"]
+fixtures = ["Custom Field", "Property Setter","Print Format"]
 # override_doctype_dashboards = {
 # "Task": "custom_field_prefixing.task.get_dashboard_data"
 # }
-fixtures = ["Print Format", "Custom Field", "Property Setter"]
+# fixtures = ["Print Format", "Custom Field", "Property Setter"]
 #     {
 #         "dt": "Custom Field",
 #         "filters": [

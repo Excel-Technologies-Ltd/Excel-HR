@@ -72,69 +72,70 @@ def generate_token(email):
 
 
 
-@frappe.whitelist()
-def send_birthday_wish(email="sohan.dev@excelbd.com",name="Mr . Sohanur Rahman Lelin Khan"):
-    cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
+# @frappe.whitelist()
+# def send_birthday_wish(email="sohan.dev@excelbd.com",name="Patrick Banda"):
+#     cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
 
-    birthday_image_path = "assets/excel_hr/birth.jpg"
-    font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
+#     birthday_image_path = "assets/excel_hr/shep_birth.jpg"
+#     font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
 
-    if not os.path.exists(birthday_image_path):
-        frappe.throw(f"File not found at {birthday_image_path}")
-    if not os.path.exists(font_path):
-        frappe.throw(f"Font file not found at {font_path}")
+#     if not os.path.exists(birthday_image_path):
+#         frappe.throw(f"File not found at {birthday_image_path}")
+#     if not os.path.exists(font_path):
+#         frappe.throw(f"Font file not found at {font_path}")
 
-    image = Image.open(birthday_image_path)
-    draw = ImageDraw.Draw(image)
+#     image = Image.open(birthday_image_path)
+#     draw = ImageDraw.Draw(image)
 
-    font_size = 22
-    font = ImageFont.truetype(font_path, font_size)
+#     font_size = 22
+#     font = ImageFont.truetype(font_path, font_size)
 
-    text = f"{name}"
+#     text = f"{name}"
 
-    try:
-        text_bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-    except AttributeError:
-        text_width, text_height = font.getsize(text)
+#     try:
+#         text_bbox = draw.textbbox((0, 0), text, font=font)
+#         text_width = text_bbox[2] - text_bbox[0]
+#         text_height = text_bbox[3] - text_bbox[1]
+#     except AttributeError:
+#         text_width, text_height = font.getsize(text)
 
-    padding = 7
-    bg_width = text_width + 2 * padding
-    bg_height = text_height + 2 * padding
+#     padding = 7
+#     bg_width = text_width + 2 * padding
+#     bg_height = text_height + 2 * padding
 
-    bg_x1 = (image.width - bg_width) // 6.7
-    bg_y1 = (image.height - bg_height) // 1.9
-    bg_x2 = bg_x1 + bg_width
-    bg_y2 = bg_y1 + bg_height
-    text_x = bg_x1 + padding  # Use text_padding here
-    text_y = bg_y1 + 3   # Use text_padding here
-    draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="rgb(237, 125, 49)")
-    draw.text((text_x, text_y), text, fill="rgb(0, 0, 0)", font=font)
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='JPEG')
-    img_byte_arr.seek(0)
-    random_number = random.randint(100000, 999999)
-    base_url = frappe.utils.get_url()
-    file = frappe.get_doc({
-        "doctype": "File",
-        "file_name": f"birthday_{name}_{random_number}.png",
-        "file_url": f"/files/birthday_{name}_{random_number}.png",
-        "content": img_byte_arr.getvalue(),
-        "content_type": "image/jpeg",
-        "is_private": 0,
+#     bg_x1 = (image.width - bg_width) // 6.7
+#     bg_y1 = (image.height - bg_height) // 1.9
+#     bg_x2 = bg_x1 + bg_width
+#     bg_y2 = bg_y1 + bg_height
+#     text_x = bg_x1 + padding  # Use text_padding here
+#     text_y = bg_y1 + 3   # Use text_padding here
+#     draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="rgb(237, 125, 49)")
+#     draw.text((text_x, text_y), text, fill="rgb(0, 0, 0)", font=font)
+#     img_byte_arr = io.BytesIO()
+#     image.save(img_byte_arr, format='JPEG')
+#     img_byte_arr.seek(0)
+#     random_number = random.randint(100000, 999999)
+#     base_url = frappe.utils.get_url()
+#     file = frappe.get_doc({
+#         "doctype": "File",
+#         "file_name": f"birthday_{name}_{random_number}.png",
+#         "file_url": f"/files/birthday_{name}_{random_number}.png",
+#         "content": img_byte_arr.getvalue(),
+#         "content_type": "image/jpeg",
+#         "is_private": 0,
         
-    })
-    file.insert(ignore_permissions=True)
-    frappe.sendmail(
-        recipients=email,
-        subject="Happy Birthday!",
-        cc=cc_mail if cc_mail else None,
-        template="birthday",
-        args={
-            "img_url": base_url + file.file_url,
-        }
-    )
+#     })
+#     file.insert(ignore_permissions=True)
+#     frappe.sendmail(
+#         recipients=email,
+#         subject="Happy Birthday Greetings!",
+#         cc=cc_mail if cc_mail else None,
+#         template="birthday",
+#         args={
+#             "img_url": base_url + file.file_url,
+#         },
+#         delayed=False
+#     )
 
 
 
@@ -142,11 +143,11 @@ def send_birthday_wish(email="sohan.dev@excelbd.com",name="Mr . Sohanur Rahman L
 
 
 
-def send_anniversary_wish(email="sohan.dev@excelbd.com",name="Mr. Sohanur Rahman Lelin Khan Mia"):
+def send_anniversary_wish(email="sohan.dev@excelbd.com",name="Patrick Banda"):
 
     cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
 
-    birthday_image_path = "assets/excel_hr/ann.jpg"
+    birthday_image_path = "assets/excel_hr/shep_ann.jpg"
     font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
 
     if not os.path.exists(birthday_image_path):
@@ -198,13 +199,82 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com",name="Mr. Sohanur Rahman
     file.insert(ignore_permissions=True)
     frappe.sendmail(
         recipients=email,
-        subject="Happy Anniversary!",
+        subject="Happy Work Anniversary Greetings!",
         cc=cc_mail if cc_mail else None,
         template="birthday",
-        args={"img_url": base_url + file.file_url},
-        delayed=False
+        args={"img_url": base_url + file.file_url}
     )
     
     
 
 
+@frappe.whitelist()
+def send_birthday_wish(email="sohan.dev@excelbd.com", name="Patrick Banda"):
+    cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
+
+    birthday_image_path = "assets/excel_hr/shep_birth.jpg"
+    font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
+
+    if not os.path.exists(birthday_image_path):
+        frappe.throw(f"File not found at {birthday_image_path}")
+    if not os.path.exists(font_path):
+        frappe.throw(f"Font file not found at {font_path}")
+
+    image = Image.open(birthday_image_path)
+    draw = ImageDraw.Draw(image)
+
+    font_size = 22
+    font = ImageFont.truetype(font_path, font_size)
+
+    text = f"{name}"
+
+    try:
+        text_bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+    except AttributeError:
+        text_width, text_height = font.getsize(text)
+
+    padding = 7
+    bg_width = text_width + 2 * padding
+    bg_height = text_height + 2 * padding
+
+    # Fixed position from the left edge to align with the red line
+    bg_x1 = 50  # Align with the left edge (red line)
+    bg_y1 = (image.height - bg_height) // 1.9
+    bg_x2 = bg_x1 + bg_width
+    bg_y2 = bg_y1 + bg_height
+    
+    text_x = bg_x1 + padding
+    text_y = bg_y1 + 3
+    
+    draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="rgb(237, 125, 49)")
+    draw.text((text_x, text_y), text, fill="rgb(0, 0, 0)", font=font)
+    
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format='JPEG')
+    img_byte_arr.seek(0)
+    
+    random_number = random.randint(100000, 999999)
+    base_url = frappe.utils.get_url()
+    
+    file = frappe.get_doc({
+        "doctype": "File",
+        "file_name": f"birthday_{name}_{random_number}.png",
+        "file_url": f"/files/birthday_{name}_{random_number}.png",
+        "content": img_byte_arr.getvalue(),
+        "content_type": "image/jpeg",
+        "is_private": 0,
+    })
+    
+    file.insert(ignore_permissions=True)
+    
+    frappe.sendmail(
+        recipients=email,
+        subject="Happy Birthday Greetings!",
+        cc=cc_mail if cc_mail else None,
+        template="birthday",
+        args={
+            "img_url": base_url + file.file_url,
+        }
+    )

@@ -3,6 +3,7 @@ import frappe
 from datetime import datetime, timedelta
 import calendar
 from datetime import time
+from frappe.query_builder.functions import Count, Extract, Sum
 def execute(filters=None):
     columns = get_columns()
     data = get_data(filters)
@@ -98,7 +99,7 @@ def get_data(filters):
     else:
         end_day= calendar.monthrange(year, month)[1]
     all_dates= [datetime(year, month, day).date() for day in range(1, end_day + 1)]
-    print(all_dates)
+
     # days_in_month = calendar.monthrange(year, month)[1]
 
     # # Create a list of all dates in the month
@@ -146,12 +147,15 @@ def get_data(filters):
         shift_time_string=f"{shift_in_time} to {shift_out_time}"
         
         # shift_type_string=convert_time_format(shift_time)
-
+    draft_data=get_draft_requests(filters)
+    print(draft_data)
     # Populate the formatted_data list with attendance data and fill in missing dates with None
     for date in all_dates:
         attendance = next((item for item in attendance_list if item['attendance_date'] == date), None)
         attendance_request_remarks=""
         leave_application_remarks=""
+        is_draft_leave = any(lr["start_date"] <= date <= lr["to_date"] for lr in draft_data["leave_applications"])
+        is_draft_attendance = any(ar["start_date"] <= date <= ar["to_date"] for ar in draft_data["attendance_requests"])
         if attendance:
             in_time = attendance.get('in_time')
             out_time = attendance.get('out_time')
@@ -184,7 +188,16 @@ def get_data(filters):
                 
             ])
         else:
-            formatted_data.append([date, employee_name, None, None,None, None,get_holiday_status(data,date) , get_holiday_payroll_status(data,date) if get_holiday_payroll_status(data,date) else "<span style='color:red;'>Absent</span>"  ,get_holiday_status_remarks(data,date)])
+            status= 'Absent'
+            draft_remarks=None
+            if is_draft_leave:
+                
+                draft_remarks= 'Leave Application (Pending)'
+            elif is_draft_attendance:
+             
+                draft_remarks= 'Attendance Request (Pending)'      
+            
+            formatted_data.append([date, employee_name, None, None,None, None,get_holiday_status(data,date) , get_holiday_payroll_status(data,date) if get_holiday_payroll_status(data,date) else "<span style='color:red;'>Absent</span>" if status == 'Absent' else status ,get_holiday_status_remarks(data,date,draft_remarks)])
 
     return formatted_data
 
@@ -341,6 +354,7 @@ def get_status(d,date_list,date):
             status="Maternity Leave"                                                                                                
     else:
         status = d.status
+        
     return status    
 
 
@@ -368,7 +382,9 @@ def get_holiday_payroll_status(date_list, date):
 
 
         
-def get_holiday_status_remarks(date_list, date):
+def get_holiday_status_remarks(date_list, date,draft_remarks=None):
+    if draft_remarks:
+        return draft_remarks
     # Convert list of dictionaries to a list of holiday dates and their properties (weekly_off and description)
     holiday_info = {
         str(holiday["holiday_date"]): {
@@ -390,6 +406,76 @@ def get_holiday_status_remarks(date_list, date):
         else:
             return ""  # If it's a weekend, return "Weekend"
     
+def get_draft_requests(filters):
+    """
+    Fetch draft Leave Applications and Attendance Requests for the selected employee and date range.
+    Returns:
+    {
+        "leave_applications": [...],
+        "attendance_requests": [...]
+    }
+    """
+    if not filters.get("employee"):
+        return
+    
+    # Query draft Leave Applications
+    LeaveApp = frappe.qb.DocType("Leave Application")
+    leave_apps = (
+        frappe.qb.from_(LeaveApp)
+        .select(
+            LeaveApp.employee,
+            LeaveApp.from_date.as_("start_date"),
+            LeaveApp.to_date.as_("to_date")
+        )
+        .where(
+            (LeaveApp.docstatus == 0) &  # Draft status
+           
+            (LeaveApp.employee == filters.get("employee")) &
+            
+            (
+                (Extract("month", LeaveApp.from_date) == filters.get("month")) |
+                (Extract("month", LeaveApp.to_date) == filters.get("month"))
+            ) & 
+            (
+                (Extract("year", LeaveApp.from_date) == filters.get("year")) |
+                (Extract("year", LeaveApp.to_date) == filters.get("year"))
+            )
+        )
+    )
+
+
+
+    leave_apps = leave_apps.run(as_dict=True)
+
+    # Query draft Attendance Requests
+    AttendanceRequest = frappe.qb.DocType("Attendance Request")
+    att_requests = (
+        frappe.qb.from_(AttendanceRequest)
+        .select(
+            AttendanceRequest.employee,
+            AttendanceRequest.from_date.as_("start_date"),
+            AttendanceRequest.to_date.as_("to_date")
+        )
+        .where(
+            (AttendanceRequest.docstatus == 0) &  # Draft status
+            (AttendanceRequest.employee == filters.get("employee")) &
+            (
+                (Extract("month", AttendanceRequest.from_date) == filters.get("month")) |
+                (Extract("month", AttendanceRequest.to_date) == filters.get("month"))
+            ) & 
+            (
+                (Extract("year", AttendanceRequest.from_date) == filters.get("year")) |
+                (Extract("year", AttendanceRequest.to_date) == filters.get("year"))
+            )
+        )
+    )
+
+    att_requests = att_requests.run(as_dict=True)
+
+    return {
+        "leave_applications": leave_apps,
+        "attendance_requests": att_requests
+    }
 
 
 

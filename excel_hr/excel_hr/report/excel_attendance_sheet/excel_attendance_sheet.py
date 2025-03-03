@@ -306,6 +306,8 @@ def get_attendance_map(filters: Filters) -> Dict:
 	
 	for lr in draft_data.get("leave_applications", []):
 		# check true condition
+		if lr.start_date is None or lr.to_date is None:
+			continue
 		if lr.start_month == lr.to_month:
 			for day in range(lr.start_date, lr.to_date + 1):
 				attendance_map.setdefault(lr.employee, {}).setdefault("", {})
@@ -321,6 +323,8 @@ def get_attendance_map(filters: Filters) -> Dict:
 					attendance_map.setdefault(lr.employee, {}).setdefault("", {})
 					attendance_map[lr.employee][""][day] = "Leave Application"
 	for ar in draft_data.get("attendance_requests", []):
+		if ar.start_date is None or ar.to_date is None:
+			continue
 		if ar.start_month == ar.to_month:
 			for day in range(ar.start_date, ar.to_date + 1):
 				attendance_map.setdefault(ar.employee, {}).setdefault("", {})

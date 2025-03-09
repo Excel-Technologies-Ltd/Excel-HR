@@ -281,7 +281,7 @@ def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin
 import frappe
 from frappe import _
 from frappe.utils import nowdate, getdate
-
+@frappe.whitelist()
 def get_employee_overview(email):
     if not email:
         frappe.throw(_("Email is required"))

@@ -282,58 +282,59 @@ import frappe
 from frappe import _
 from frappe.utils import nowdate, getdate
 @frappe.whitelist()
+@frappe.whitelist()
 def get_employee_overview(email):
     if not email:
         frappe.throw(_("Email is required"))
-    
-    current_year = getdate(nowdate()).year
-    
+
     query = """
     SELECT 
         emp.employee,
         emp.employee_name,
         emp.company_email,
         lle.leave_type,
-        
+
+        -- Leave Ledger Summary
         SUM(CASE WHEN lle.transaction_type = 'Leave Allocation' THEN lle.leaves ELSE 0 END) AS total_allocated,
-        SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN lle.leaves ELSE 0 END) AS total_taken,
-        SUM(CASE WHEN lle.is_expired = 1 THEN lle.leaves ELSE 0 END) AS total_expired,
+        SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END) AS total_taken,
+
+        -- Remaining Leave
         (SUM(CASE WHEN lle.transaction_type = 'Leave Allocation' THEN lle.leaves ELSE 0 END) - 
-         SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN lle.leaves ELSE 0 END) - 
-         SUM(CASE WHEN lle.is_expired = 1 THEN lle.leaves ELSE 0 END)) AS closing_balance,
-        
+        SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END)) AS remaining_leave,
+
+        -- Pending Leave Applications (status = 0)
         COALESCE((
-            SELECT SUM(la.total_leave_days) 
+            SELECT COUNT(*) 
             FROM `tabLeave Application` la 
             WHERE la.employee = emp.name 
-            AND la.docstatus = 0
-            AND YEAR(la.from_date) = %(current_year)s
-        ), 0) AS pending_leave_days,
-        
+            AND la.docstatus = 0  -- Only pending applications
+            AND YEAR(la.from_date) = YEAR(CURDATE())
+        ), 0) AS pending_leave_requests,
+
+        -- Pending Attendance Requests (workflow_state = 'Applied')
         COALESCE((
             SELECT COUNT(*) 
             FROM `tabAttendance Request` ar 
             WHERE ar.employee = emp.name 
-            AND ar.docstatus = 0
-            AND YEAR(ar.from_date) = %(current_year)s
+            AND ar.workflow_state = 'Applied'  -- Only applied requests
+            AND YEAR(ar.from_date) = YEAR(CURDATE())
         ), 0) AS pending_attendance_requests
-    
+
     FROM `tabLeave Ledger Entry` lle
     JOIN `tabEmployee` emp ON lle.employee = emp.name
-    
+
     WHERE lle.docstatus = 1
-    AND YEAR(lle.from_date) = %(current_year)s
-    AND YEAR(lle.to_date) = %(current_year)s
-    AND emp.company_email = %(email)s
-    
+    AND YEAR(lle.from_date) = YEAR(CURDATE())
+    AND YEAR(lle.to_date) = YEAR(CURDATE())
+    AND emp.company_email = %s
+
     GROUP BY emp.employee, emp.employee_name, emp.company_email, lle.leave_type
     ORDER BY emp.employee, lle.leave_type;
     """
-    
-    results = frappe.db.sql(query, {"email": email, "current_year": current_year}, as_dict=True)
+
+    results = frappe.db.sql(query, (email,), as_dict=True)
     
     if not results:
-        return {"message": _("No data found for the given email")}
-    
-    return results
+        frappe.throw(_("No leave records found for this employee."))
 
+    return results

@@ -123,10 +123,8 @@ def get_data(filters):
         if filters.get('excel_reporting_location'):
             conditions['excel_reporting_location'] = filters.get('excel_reporting_location')
 
-        # Fetch employees based on the conditions
-        # frappe.msgprint(frappe.as_json(conditions))
         employee_ids = frappe.get_all('Employee', filters=conditions, pluck='name')
-        # frappe.msgprint(frappe.as_json(employee_ids))
+
 
     # Ensure employee_ids is a list
     if isinstance(employee_ids, str):

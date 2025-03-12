@@ -36,7 +36,6 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 
 	attendance_map = get_attendance_map(filters)
 	if not attendance_map:
-		frappe.msgprint(_("No attendance records found."), alert=True, indicator="orange")
 		return [], [], None, None
 
 	columns = get_columns(filters)
@@ -302,7 +301,7 @@ def get_attendance_map(filters: Filters) -> Dict:
 				attendance_map[employee][shift][day] = "On Leave"
     
 	draft_data = get_draft_requests(filters)
-	frappe.msgprint(frappe.as_json(draft_data))
+	
 	
 	for lr in draft_data.get("leave_applications", []):
 		# check true condition
@@ -314,7 +313,7 @@ def get_attendance_map(filters: Filters) -> Dict:
 				attendance_map[lr.employee][""][day] = "Leave Application"
 		else:
 			if int(filters.month) == int(lr.start_month):
-				frappe.msgprint(f"start_month: {type(lr.start_month)}, to_month: {type(lr.to_month)}")
+				
 				for day in range(lr.start_date, get_total_days_in_month(filters) + 1):
 					attendance_map.setdefault(lr.employee, {}).setdefault("", {})
 					attendance_map[lr.employee][""][day] = "Leave Application"
@@ -453,7 +452,7 @@ def get_holiday_map(filters: Filters) -> Dict[str, List[Dict]]:
 		).run(as_dict=True)
 
 		holiday_map.setdefault(d, holidays)
-	# frappe.msgprint(frappe.as_json(holiday_map))
+
 	return holiday_map
 
 

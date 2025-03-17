@@ -2,13 +2,16 @@ import frappe
 from PIL import Image, ImageDraw, ImageFont
 import io
 import os
-from frappe.utils import get_url
+from frappe.utils import get_url,today
 import frappe.utils
 import requests
 import base64
 import random
 from frappe import _
 from hrms.controllers.employee_reminders import send_birthday_reminders
+from datetime import datetime, timedelta
+
+import math
 @frappe.whitelist()
 def get_holiday_list(parent):
     dynamic_parent = parent
@@ -338,3 +341,21 @@ def get_employee_overview(email):
         frappe.throw(_("No leave records found for this employee."))
 
     return results
+
+@frappe.whitelist()
+def attendance_list_with_checkin_and_checkout(from_date=None,to_date=None):
+   if not from_date:
+      from_date = datetime.strptime(today(),"%Y-%m-%d")-timedelta(days=2)
+   if not to_date:
+      to_date = datetime.strptime(today(),"%Y-%m-%d")
+
+   attendance_list = frappe.get_list("Attendance",fields=["*"],filters={"attendance_date":["between",(from_date,to_date)]},order_by="creation desc",ignore_permissions=False)
+   for attendance in attendance_list:
+       attendance.checkin_list = frappe.db.get_list("Employee Checkin",filters={"attendance":attendance.name,"log_type":"IN"},fields=["*"],order_by="time asc")
+       attendance.checkout_list = frappe.db.get_list("Employee Checkin",filters={"attendance":attendance.name,"log_type":"OUT"},fields=["*"],order_by="time asc")
+   return attendance_list
+    
+@frappe.whitelist()    
+def get_permitted_employee():
+    employee_list = frappe.get_list("Employee",fields=["name"],filters={"status":"Active"},ignore_permissions=False)
+    return employee_list

@@ -91,7 +91,7 @@ frappe.query_reports["Excel Employee Utilized Leave Summary"] = {
       options: [
         "",
         { value: "Head Office", label: "Head Office" },
-        { value: "Baridhara HQ", label: "Baridhara HQ" },
+        { value: "HQ, Baridhara", label: "HQ, Baridhara" },
         { value: "Baridhara Service Point", label: "Baridhara Service Point" },
         { value: "Corporate Office", label: "Corporate Office" },
         { value: "Dhanmondi Warehouse", label: "Dhanmondi Warehouse" },
@@ -157,7 +157,7 @@ frappe.query_reports["Excel Employee Utilized Leave Summary"] = {
       options: [
         "",
         { value: "Head Office", label: "Head Office" },
-        { value: "Baridhara HQ", label: "Baridhara HQ" },
+        { value: "HQ, Baridhara", label: "HQ, Baridhara" },
         { value: "Baridhara Service Point", label: "Baridhara Service Point" },
         { value: "Corporate Office", label: "Corporate Office" },
         { value: "Dhanmondi Warehouse", label: "Dhanmondi Warehouse" },

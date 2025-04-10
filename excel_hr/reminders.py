@@ -22,7 +22,8 @@ def send_birthday_reminders():
         for person in birthday_persons:
             company_email = get_company_email(person.user_id)
             full_name = get_employee_full_name(person.user_id)
-            send_birthday_wish(company_email,full_name)
+            location,department= get_job_location_and_department(person.user_id)
+            send_birthday_wish(company_email,full_name,department,location)
             
            
        
@@ -37,12 +38,14 @@ def send_work_anniversary_reminders():
         return
     sender = get_sender_email()
     employees_joined_today = get_employees_having_an_event_today("work_anniversary")
-    print(employees_joined_today.items())
     for company, anniversary_persons in employees_joined_today.items():
         for person in anniversary_persons:
             company_email = get_company_email(person.user_id)
             full_name = get_employee_full_name(person.user_id)
-            send_anniversary_wish(company_email,full_name)
+            year= count_anniversary_year(person.date_of_joining)
+            location,department= get_job_location_and_department(person.user_id)
+            print(year,location,department)
+            send_anniversary_wish(company_email,full_name,department,location,year)
         
     
     
@@ -58,11 +61,38 @@ def get_company_email(userid):
     
     
 def get_employee_full_name(userid):
-    Employee = frappe.get_doc("Employee", {"user_id": userid})
-    return f"{Employee.salutation}. {Employee.employee_name}"
+    try:
+        employee = frappe.get_doc("Employee", {"user_id": userid})
+        salutation = f"{employee.salutation}." if employee.salutation else ""
+        full_name = f"{salutation} {employee.employee_name}".strip()
+        return full_name
+    except frappe.DoesNotExistError:
+        return ""
+
     
     
     
     
 
+from datetime import datetime
+
+def count_anniversary_year(joining_date):
+    """Calculate the number of years since the employee joined."""
+    today = datetime.today()
+    years_difference = today.year - joining_date.year
+    return get_ordinal_suffix(years_difference) if years_difference > 0 else 0
+
+
+
+def get_ordinal_suffix(n):
+    """Return the ordinal suffix for a given number (1st, 2nd, 3rd, etc.)."""
+    if 10 <= n % 100 <= 20:  # Handle 11th, 12th, 13th, etc.
+        suffix = "th"
+    else:
+        # For other numbers, use the last digit to determine the suffix
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
     
+    return suffix
+def get_job_location_and_department(id):
+    employee= frappe.get_doc('Employee',{"user_id": id})
+    return employee.excel_job_location,employee.excel_department

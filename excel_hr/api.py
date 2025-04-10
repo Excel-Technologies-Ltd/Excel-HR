@@ -75,80 +75,19 @@ def generate_token(email):
 
 
 
-# @frappe.whitelist()
-# def send_birthday_wish(email="sohan.dev@excelbd.com",name="Mr . Sohanur Rahman Lelin Khan"):
-#     cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
-
-#     birthday_image_path = "assets/excel_hr/birth.jpg"
-#     font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
-
-#     if not os.path.exists(birthday_image_path):
-#         frappe.throw(f"File not found at {birthday_image_path}")
-#     if not os.path.exists(font_path):
-#         frappe.throw(f"Font file not found at {font_path}")
-
-#     image = Image.open(birthday_image_path)
-#     draw = ImageDraw.Draw(image)
-
-#     font_size = 22
-#     font = ImageFont.truetype(font_path, font_size)
-
-#     text = f"{name}"
-
-#     try:
-#         text_bbox = draw.textbbox((0, 0), text, font=font)
-#         text_width = text_bbox[2] - text_bbox[0]
-#         text_height = text_bbox[3] - text_bbox[1]
-#     except AttributeError:
-#         text_width, text_height = font.getsize(text)
-
-#     padding = 7
-#     bg_width = text_width + 2 * padding
-#     bg_height = text_height + 2 * padding
-
-#     bg_x1 = (image.width - bg_width) // 6.7
-#     bg_y1 = (image.height - bg_height) // 1.9
-#     bg_x2 = bg_x1 + bg_width
-#     bg_y2 = bg_y1 + bg_height
-#     text_x = bg_x1 + padding  # Use text_padding here
-#     text_y = bg_y1 + 3   # Use text_padding here
-#     draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="rgb(237, 125, 49)")
-#     draw.text((text_x, text_y), text, fill="rgb(0, 0, 0)", font=font)
-#     img_byte_arr = io.BytesIO()
-#     image.save(img_byte_arr, format='JPEG')
-#     img_byte_arr.seek(0)
-#     random_number = random.randint(100000, 999999)
-#     base_url = frappe.utils.get_url()
-#     file = frappe.get_doc({
-#         "doctype": "File",
-#         "file_name": f"birthday_{name}_{random_number}.png",
-#         "file_url": f"/files/birthday_{name}_{random_number}.png",
-#         "content": img_byte_arr.getvalue(),
-#         "content_type": "image/jpeg",
-#         "is_private": 0,
-        
-#     })
-#     file.insert(ignore_permissions=True)
-#     frappe.sendmail(
-#         recipients=email,
-#         subject="Happy Birthday!",
-#         cc=cc_mail if cc_mail else None,
-#         template="birthday",
-#         args={
-#             "img_url": base_url + file.file_url,
-#         }
-#     )
 
 
 
 
 
 
+# final
+def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahman Lelin Khan Mia", 
+                         department="Engineering And Technology", job_location="Baridhara HR", 
+                         anniversary_years="5th"):
 
-def send_anniversary_wish(email="sohan.dev@excelbd.com",name="Mr. Sohanur Rahman Lelin Khan Mia"):
-
-    cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
-
+    cc_mail = frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
+    
     birthday_image_path = "assets/excel_hr/ann.jpg"
     font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
 
@@ -159,31 +98,112 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com",name="Mr. Sohanur Rahman
 
     image = Image.open(birthday_image_path)
     draw = ImageDraw.Draw(image)
+    
+    # Get image dimensions
+    img_width, img_height = image.size
 
-    font_size = 25
-    font = ImageFont.truetype(font_path, font_size)
+    # Font settings
+    name_font_size = 18
+    info_font_size = 16  # Smaller font size for info text
+    anniversary_font_size = 14  # Font size for anniversary text
+    years_font_size = 25  # Font size for "5 Year" text
+    name_font = ImageFont.truetype(font_path, name_font_size)
+    info_font = ImageFont.truetype(font_path, info_font_size)
+    anniversary_font = ImageFont.truetype(font_path, anniversary_font_size)
+    years_font = ImageFont.truetype(font_path, years_font_size)
 
-    text = f"{name}"
-
+    # Text content
+    name_text = name
+    info_text = f"{department}\n{job_location}"
+    
+    # Add "5 Year" text beside "Work" in "Happy Work Anniversary"
+    years_text = anniversary_years
+    
+    # Calculate position relative to image dimensions
+    # From the image, the red box appears to be roughly at:
+    # - Horizontally: right after "Work" which is around 60% of the width
+    # - Vertically: at about 35-40% from the top of the image
+    years_x = int(img_width * 0.45)  # Position at approximately 60% of the image width
+    years_y = int(img_height * 0.38)  # Position at approximately 38% of the image height
+    
+    # Draw the years text with orange color
+    draw.text((years_x, years_y), years_text, fill="rgb(237, 125, 49)", font=years_font)
+    
+    # Calculate text dimensions for name and info
     try:
-        text_bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
+        # For name text
+        name_bbox = draw.textbbox((0, 0), name_text, font=name_font)
+        name_width = name_bbox[2] - name_bbox[0]
+        name_height = name_bbox[3] - name_bbox[1]
+        
+        # Calculate info text dimensions
+        info_lines = info_text.split('\n')
+        info_height = 0
+        info_width = 0
+        
+        for line in info_lines:
+            line_bbox = draw.textbbox((0, 0), line, font=info_font)
+            line_width = line_bbox[2] - line_bbox[0]
+            line_height = line_bbox[3] - line_bbox[1]
+            info_height += line_height
+            info_width = max(info_width, line_width)
+            
     except AttributeError:
-        text_width, text_height = font.getsize(text)
+        # Fallback for older Pillow versions
+        name_width, name_height = name_font.getsize(name_text)
+        
+        info_lines = info_text.split('\n')
+        info_height = 0
+        info_width = 0
+        
+        for line in info_lines:
+            line_width, line_height = info_font.getsize(line)
+            info_height += line_height
+            info_width = max(info_width, line_width)
 
-    padding = 7
-    bg_width = text_width + 2 * padding
-    bg_height = text_height + 2 * padding
+    # Single box for both name and info text
+    padding_h = 12  # Horizontal padding
+    padding_v = 8  # Vertical padding
+    line_spacing = 5  # Space between lines and between name and info
+    
+    # Calculate box width based on the wider of name or info
+    box_width = max(name_width, info_width) + 2 * padding_h
+    
+    # Calculate box height to fit both name and info with spacing
+    box_height = name_height + info_height + (len(info_lines) + 1) * line_spacing + 2 * padding_v
+    
+    # Position the box centrally
+    box_x1 = (img_width - box_width) // 2
+    box_y1 = img_height // 1.8  # Positioned midway down the image (adjust as needed)
+    box_x2 = box_x1 + box_width
+    box_y2 = box_y1 + box_height
+    
+    # Draw the box background
+    draw.rectangle((box_x1, box_y1, box_x2, box_y2), fill="rgb(12, 46, 195)")
+    
+    # Draw name text (centered in the box)
+    name_x = box_x1 + (box_width - name_width) // 2
+    current_y = box_y1 + padding_v
+    draw.text((name_x, current_y), name_text, fill="rgb(237, 125, 49)", font=name_font)
+    
+    # Update vertical position for info text (after name text)
+    current_y += name_height + line_spacing * 2  # Extra spacing after name
+    
+    # Draw info text (each line centered)
+    for line in info_lines:
+        try:
+            line_bbox = draw.textbbox((0, 0), line, font=info_font)
+            line_width = line_bbox[2] - line_bbox[0]
+            line_height = line_bbox[3] - line_bbox[1]
+        except AttributeError:
+            line_width, line_height = info_font.getsize(line)
+            
+        # Center align text horizontally in the box
+        line_x = box_x1 + (box_width - line_width) // 2
+        draw.text((line_x, current_y), line, fill="rgb(237, 125, 49)", font=info_font)
+        current_y += line_height + line_spacing
 
-    bg_x1 = (image.width - bg_width) // 1.9
-    bg_y1 = (image.height - bg_height) // 1.5
-    bg_x2 = bg_x1 + bg_width
-    bg_y2 = bg_y1 + bg_height
-    text_x = bg_x1 + padding  # Use text_padding here
-    text_y = bg_y1 + 3   # Use text_padding here
-    draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="rgb(237, 125, 49)")
-    draw.text((text_x, text_y), text, fill="rgb(0, 0, 0)", font=font)
+    # Save and send
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format="JPEG")
     img_byte_arr.seek(0)
@@ -209,7 +229,8 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com",name="Mr. Sohanur Rahman
     
     
 @frappe.whitelist()
-def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin Khan"):
+def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin Khan", 
+                      department="Engineering And Technology", job_location="Baridhara HR"):
     cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
 
     birthday_image_path = "assets/excel_hr/birth.jpg"
@@ -220,39 +241,95 @@ def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin
     if not os.path.exists(font_path):
         frappe.throw(f"Font file not found at {font_path}")
 
-    image = Image.open(birthday_image_path)
+    # Open the original image
+    original_image = Image.open(birthday_image_path)
+    
+    # Get original dimensions
+    original_width, original_height = original_image.size
+    
+    # Define new dimensions (reducing by 50%)
+    # Using a more aggressive reduction factor
+    new_width = int(original_width * 0.8)
+    new_height = int(original_height * 0.8)
+    
+    # Resize the image
+    image = original_image.resize((new_width, new_height), Image.LANCZOS)
+    
     draw = ImageDraw.Draw(image)
 
-    font_size = 22
-    font = ImageFont.truetype(font_path, font_size)
+    # Adjust font sizes for the smaller image
+    name_font_size = 18  # Reduced from 18
+    info_font_size = 16  # Reduced from 18
+    name_font = ImageFont.truetype(font_path, name_font_size)
+    info_font = ImageFont.truetype(font_path, info_font_size)
 
-    text = f"{name}"
+    # Text content
+    name_text = f"{name}"
+    department_text = f"{department}"
+    location_text = f"{job_location}"
 
+    # Calculate text dimensions
     try:
-        text_bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
+        # For name text
+        name_bbox = draw.textbbox((0, 0), name_text, font=name_font)
+        name_width = name_bbox[2] - name_bbox[0]
+        name_height = name_bbox[3] - name_bbox[1]
+        
+        # For department text
+        dept_bbox = draw.textbbox((0, 0), department_text, font=info_font)
+        dept_width = dept_bbox[2] - dept_bbox[0]
+        dept_height = dept_bbox[3] - dept_bbox[1]
+        
+        # For location text
+        loc_bbox = draw.textbbox((0, 0), location_text, font=info_font)
+        loc_width = loc_bbox[2] - loc_bbox[0]
+        loc_height = loc_bbox[3] - loc_bbox[1]
+        
     except AttributeError:
-        text_width, text_height = font.getsize(text)
+        # Fallback for older Pillow versions
+        name_width, name_height = name_font.getsize(name_text)
+        dept_width, dept_height = info_font.getsize(department_text)
+        loc_width, loc_height = info_font.getsize(location_text)
 
-    padding = 7
-    bg_width = text_width + 2 * padding
-    bg_height = text_height + 2 * padding
+    # Scale down padding and spacing for the smaller image
+    padding = 5  # Reduced from 10
+    line_spacing = 7  # Reduced from 5
 
-    # Fixed position from the left edge to align with the red line
-    bg_x1 = 50  # Align with the left edge (red line)
-    bg_y1 = (image.height - bg_height) // 1.9
-    bg_x2 = bg_x1 + bg_width
-    bg_y2 = bg_y1 + bg_height
+    # Calculate total box width and height
+    box_width = max(name_width, dept_width, loc_width) + 2 * padding
+    box_height = name_height + dept_height + loc_height + 3 * padding + 2 * line_spacing
+
+    # Scale the box position for the resized image
+    box_x1 = int(48 * (new_width / original_width))
+    box_y1 = (image.height - box_height) // 1.82
+    box_x2 = box_x1 + box_width
+    box_y2 = box_y1 + box_height
     
-    text_x = bg_x1 + padding
-    text_y = bg_y1 + 3
+    # Draw the single box
+    # draw.rectangle((box_x1, box_y1, box_x2, box_y2), fill="rgb(237, 125, 49)")
     
-    draw.rectangle((bg_x1, bg_y1, bg_x2, bg_y2), fill="rgb(237, 125, 49)")
-    draw.text((text_x, text_y), text, fill="rgb(0, 0, 0)", font=font)
+    # Draw name text
+    name_text_x = box_x1 + padding
+    current_y = box_y1 + padding
+    draw.text((name_text_x, current_y), name_text, fill="rgb(237, 125, 49)", font=name_font)
     
+    # Update vertical position for department text
+    current_y += name_height + line_spacing
+    
+    # Draw department text
+    dept_x = box_x1 + padding
+    draw.text((dept_x, current_y), department_text, fill="rgb(237, 125, 49)", font=info_font)
+    
+    # Update vertical position for location text
+    current_y += dept_height + line_spacing
+    
+    # Draw location text
+    loc_x = box_x1 + padding
+    draw.text((loc_x, current_y), location_text, fill="rgb(237, 125, 49)", font=info_font)
+    
+    # Save and send
     img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='JPEG')
+    image.save(img_byte_arr, format='JPEG', quality=85)  # Reduced quality for smaller file size
     img_byte_arr.seek(0)
     
     random_number = random.randint(100000, 999999)
@@ -284,7 +361,6 @@ def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin
 import frappe
 from frappe import _
 from frappe.utils import nowdate, getdate
-@frappe.whitelist()
 @frappe.whitelist()
 def get_employee_overview(email):
     if not email:
@@ -359,3 +435,17 @@ def attendance_list_with_checkin_and_checkout(from_date=None,to_date=None):
 def get_permitted_employee():
     employee_list = frappe.get_list("Employee",fields=["name"],filters={"status":"Active"},ignore_permissions=False)
     return employee_list
+
+    
+    
+    
+
+    
+    
+
+
+
+
+
+    
+    

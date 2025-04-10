@@ -90,14 +90,14 @@ def get_data(filters):
     current_year = current_date.year
     current_month = current_date.month
     attendance_list = get_attendance_by_employee_and_month(filters.get('employee'), month,year)
-    if not attendance_list:
-        return
+    # if not attendance_list:
+    #     return
     # frappe.msgprint(f"Attendance Records: {frappe.as_json(attendance_list)}")
     # Get the days in the month
-    if month ==current_month and year==current_year:
-        end_day=current_date.day 
-    else:
-        end_day= calendar.monthrange(year, month)[1]
+    # if month ==current_month and year==current_year:
+    #     end_day=current_date.day 
+    # else:
+    end_day= calendar.monthrange(year, month)[1]
     all_dates= [datetime(year, month, day).date() for day in range(1, end_day + 1)]
 
     # days_in_month = calendar.monthrange(year, month)[1]
@@ -148,7 +148,6 @@ def get_data(filters):
         
         # shift_type_string=convert_time_format(shift_time)
     draft_data=get_draft_requests(filters)
-    print(draft_data)
     # Populate the formatted_data list with attendance data and fill in missing dates with None
     for date in all_dates:
         attendance = next((item for item in attendance_list if item['attendance_date'] == date), None)

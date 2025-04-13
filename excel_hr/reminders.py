@@ -38,13 +38,13 @@ def send_work_anniversary_reminders():
         return
     sender = get_sender_email()
     employees_joined_today = get_employees_having_an_event_today("work_anniversary")
+    print(employees_joined_today.items())
     for company, anniversary_persons in employees_joined_today.items():
         for person in anniversary_persons:
             company_email = get_company_email(person.user_id)
             full_name = get_employee_full_name(person.user_id)
             year= count_anniversary_year(person.date_of_joining)
             location,department= get_job_location_and_department(person.user_id)
-            print(year,location,department)
             send_anniversary_wish(company_email,full_name,department,location,year)
         
     
@@ -80,7 +80,12 @@ def count_anniversary_year(joining_date):
     """Calculate the number of years since the employee joined."""
     today = datetime.today()
     years_difference = today.year - joining_date.year
-    return get_ordinal_suffix(years_difference) if years_difference > 0 else 0
+
+    # Ensure years_difference is greater than 0 to apply the ordinal suffix
+    if years_difference > 0:
+        return f"{years_difference}{get_ordinal_suffix(years_difference)}"
+    return "0"
+
 
 
 
@@ -95,4 +100,4 @@ def get_ordinal_suffix(n):
     return suffix
 def get_job_location_and_department(id):
     employee= frappe.get_doc('Employee',{"user_id": id})
-    return employee.excel_job_location,employee.excel_department
+    return employee.excel_job_location,employee.excel_parent_department

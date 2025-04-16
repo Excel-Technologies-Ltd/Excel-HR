@@ -103,7 +103,7 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahma
     img_width, img_height = image.size
 
     # Font settings
-    name_font_size = 18
+    name_font_size = 20
     info_font_size = 16  # Smaller font size for info text
     anniversary_font_size = 14  # Font size for anniversary text
     years_font_size = 25  # Font size for "5 Year" text
@@ -221,7 +221,7 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahma
     file.insert(ignore_permissions=True)
     frappe.sendmail(
         recipients=email,
-        subject="Happy Work Anniversary Greetings!",
+        subject=f"Happy Work Anniversary to {name}",
         cc=cc_mail if cc_mail else None,
         template="birthday",
         args={"img_url": base_url + file.file_url}
@@ -258,7 +258,7 @@ def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin
     draw = ImageDraw.Draw(image)
 
     # Adjust font sizes for the smaller image
-    name_font_size = 18  # Reduced from 18
+    name_font_size = 20  # Reduced from 18
     info_font_size = 16  # Reduced from 18
     name_font = ImageFont.truetype(font_path, name_font_size)
     info_font = ImageFont.truetype(font_path, info_font_size)
@@ -348,7 +348,7 @@ def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin
     
     frappe.sendmail(
         recipients=email,
-        subject="Happy Birthday Greetings!",
+        subject=f"Happy Birthday to {name}",
         cc=cc_mail if cc_mail else None,
         template="birthday",
         args={

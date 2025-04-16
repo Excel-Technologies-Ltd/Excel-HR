@@ -1,5 +1,8 @@
 import frappe
 from datetime import datetime, timedelta
+from frappe.query_builder.functions import Count, Extract, Sum
+from typing import Dict, List, Optional, Tuple
+Filters = frappe._dict
 
 def execute(filters=None):
     # Main function to execute the report
@@ -196,8 +199,9 @@ def get_data(filters):
         while current_date <= end_date:
             date_str = current_date.strftime('%Y-%m-%d')
             attendance = attendance_dict.get(employee, {}).get(current_date.date(), None)
-
+            draft_request=get_draft_requests(filters,employee)
             # Check attendance status and set appropriate values
+            
             if attendance and attendance['status'] == 'Present':
                 row[f'in_{current_date.day}'] = format_with_color(convert_to_am_pm(attendance['in_time']), 'green') if attendance['in_time'] else '-'
                 row[f'out_{current_date.day}'] = format_with_color(convert_to_am_pm(attendance['out_time']), 'green') if attendance['out_time'] else '-'
@@ -225,6 +229,19 @@ def get_data(filters):
                 if not is_holiday_or_weekly_off:
                     row[f'in_{current_date.day}'] = format_with_color('A', 'red')
                     row[f'out_{current_date.day}'] = format_with_color('A', 'red')
+                    # make here draft request
+            for lr in draft_request.get("leave_applications", []):
+              
+                if lr.start_date <= current_date.day <= lr.to_date:
+                    # print(lr.start_date,current_date.day,lr.to_date)
+                    row[f'in_{current_date.day}'] = format_with_color('L.App', 'green')
+                    row[f'out_{current_date.day}'] = format_with_color('L.App', 'green')
+
+            for ar in draft_request.get("attendance_requests", []):
+                print(ar)
+                if ar.start_date <= current_date.day <= ar.to_date:
+                    row[f'in_{current_date.day}'] = format_with_color('A.App', 'hotpink')
+                    row[f'out_{current_date.day}'] = format_with_color('A.App', 'hotpink')
 
             # Move to the next day
             current_date += timedelta(days=1)
@@ -233,6 +250,64 @@ def get_data(filters):
         serial_number += 1
 
     return data
+
+
+def get_draft_requests(filters: Filters,employee:str) -> Dict:
+    """Fetches draft leave applications and attendance requests."""
+    LeaveApp = frappe.qb.DocType("Leave Application")
+    AttendanceRequest = frappe.qb.DocType("Attendance Request")
+    
+    leave_apps = (
+        frappe.qb.from_(LeaveApp)
+        .select(
+            LeaveApp.employee,
+            Extract("day", LeaveApp.from_date).as_("start_date"),
+            Extract("day", LeaveApp.to_date).as_("to_date"),
+            Extract("month", LeaveApp.from_date).as_("start_month"),
+            Extract("month", LeaveApp.to_date).as_("to_month"),
+            LeaveApp.from_date,
+        )
+        .where(
+            (LeaveApp.docstatus == 0)  # Draft status
+            & (LeaveApp.employee == employee)
+            & (
+                (Extract("month", LeaveApp.from_date) == filters.month) |
+                (Extract("month", LeaveApp.to_date) == filters.month)
+            )
+            & (
+                (Extract("year", LeaveApp.from_date) == filters.year) |
+                (Extract("year", LeaveApp.to_date) == filters.year)
+            )
+        )
+    ).run(as_dict=True)
+    
+    att_requests = (
+        frappe.qb.from_(AttendanceRequest)
+        .select(
+            AttendanceRequest.employee,
+            Extract("day", AttendanceRequest.from_date).as_("start_date"),
+            Extract("day", AttendanceRequest.to_date).as_("to_date"),
+            Extract("month", AttendanceRequest.from_date).as_("start_month"),
+            Extract("month", AttendanceRequest.to_date).as_("to_month"),
+        )
+        .where(
+            (AttendanceRequest.docstatus == 0)  # Draft status
+            & (AttendanceRequest.employee == employee)
+            & (Extract("month", AttendanceRequest.from_date) == filters.month)
+            & (Extract("year", AttendanceRequest.from_date) == filters.year)
+        )
+    ).run(as_dict=True)
+    print({
+        "leave_applications": leave_apps,
+        "attendance_requests": att_requests,
+    })
+    
+    return {
+        "leave_applications": leave_apps,
+        "attendance_requests": att_requests,
+    }
+
+
 
 def convert_to_am_pm(time_str):
     """Convert time from 24-hour format (HH:MM) to 12-hour format with AM/PM."""

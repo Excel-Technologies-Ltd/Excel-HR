@@ -72,6 +72,7 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 	filters = frappe._dict(filters or {})
 		
 	attendance_map = get_attendance_map(filters)
+	print(attendance_map)
 	if not attendance_map:
 		frappe.msgprint(_("No attendance records found."), alert=True, indicator="orange")
 		return [], [], None, None
@@ -391,11 +392,14 @@ def get_draft_requests(filters: Filters) -> Dict:
     
     # Query draft Leave Applications
     LeaveApp = frappe.qb.DocType("Leave Application")
+    Employee = frappe.qb.DocType("Employee")
     leave_query = (
         frappe.qb.from_(LeaveApp)
+        .join(Employee).on(Employee.name == LeaveApp.employee)
         .select(
             LeaveApp.employee,
-            Extract("day", LeaveApp.from_date).as_("from_date"),
+            Employee.default_shift.as_("shift"),
+            Extract("day", LeaveApp.from_date).as_("start_date"),
             Extract("day", LeaveApp.to_date).as_("to_date"),
             Extract("month", LeaveApp.from_date).as_("start_month"),
             Extract("month", LeaveApp.to_date).as_("to_month"),
@@ -421,7 +425,8 @@ def get_draft_requests(filters: Filters) -> Dict:
         frappe.qb.from_(AttendanceRequest)
         .select(
             AttendanceRequest.employee,
-            Extract("day", AttendanceRequest.from_date).as_("from_date"),
+            AttendanceRequest.excel_shift.as_("shift"),
+            Extract("day", AttendanceRequest.from_date).as_("start_date"),
             Extract("day", AttendanceRequest.to_date).as_("to_date"),
             Extract("month", AttendanceRequest.from_date).as_("start_month"),
             Extract("month", AttendanceRequest.to_date).as_("to_month"),
@@ -530,7 +535,7 @@ def get_attendance_map(filters: Filters) -> Dict:
             elif leave_type =="Special Leave" and leave_category=="Medical":
                 status="Special Medical Leave"
             elif leave_type =="Special Leave" and leave_category=="Casual":
-                status=""
+                status="Special Casual Leave"
             elif leave_type =="Special Leave":
                 status="Special Leave" 
             elif leave_type =="Monthly Paid Leave":
@@ -552,38 +557,39 @@ def get_attendance_map(filters: Filters) -> Dict:
         attendance_map.setdefault(d.employee, {}).setdefault(d.shift, {})
         attendance_map[d.employee][d.shift][d.day_of_month] = status
         draft_data= get_draft_requests(filters)
+        print(draft_data)
         for lr in draft_data.get("leave_applications", []):
             if lr.start_date is None or lr.to_date is None:
                 continue
             if lr.start_month == lr.to_month:
                 for day in range(lr.start_date, lr.to_date + 1):
-                    attendance_map.setdefault(lr.employee, {}).setdefault("", {})
-                    attendance_map[lr.employee][""][day] = "Leave Application"
+                    attendance_map.setdefault(lr.employee, {}).setdefault(lr.shift, {})
+                    attendance_map[lr.employee][lr.shift][day] = "Leave Application"
             else:
                 if int(filters.month) == int(lr.start_month):
                     for day in range(lr.start_date, get_total_days_in_month(filters) + 1):
-                        attendance_map.setdefault(lr.employee, {}).setdefault("", {})
-                        attendance_map[lr.employee][""][day] = "Leave Application"
+                        attendance_map.setdefault(lr.employee, {}).setdefault(lr.shift, {})
+                        attendance_map[lr.employee][lr.shift][day] = "Leave Application"
                 elif int(filters.month) == int(lr.to_month):
                     for day in range(1, lr.to_date + 1):
-                        attendance_map.setdefault(lr.employee, {}).setdefault("", {})
-                        attendance_map[lr.employee][""][day] = "Leave Application"
+                        attendance_map.setdefault(lr.employee, {}).setdefault(lr.shift, {})
+                        attendance_map[lr.employee][lr.shift][day] = "Leave Application"
         for ar in draft_data.get("attendance_requests", []):
             if ar.start_date is None or ar.to_date is None:
                 continue
             if ar.start_month == ar.to_month:
                 for day in range(ar.start_date, ar.to_date + 1):
-                    attendance_map.setdefault(ar.employee, {}).setdefault("", {})
-                    attendance_map[ar.employee][""][day] = "Attendance Request"
+                    attendance_map.setdefault(ar.employee, {}).setdefault(ar.shift, {})
+                    attendance_map[ar.employee][ar.shift][day] = "Attendance Request"
             else:
                 if int(filters.month) == int(ar.start_month):
                     for day in range(ar.start_date, get_total_days_in_month(filters) + 1):
-                        attendance_map.setdefault(ar.employee, {}).setdefault("", {})
-                        attendance_map[ar.employee][""][day] = "Attendance Request"
+                        attendance_map.setdefault(ar.employee, {}).setdefault(ar.shift, {})
+                        attendance_map[ar.employee][ar.shift][day] = "Attendance Request"
                 elif int(filters.month) == int(ar.to_month):
                     for day in range(1, ar.to_date + 1):
-                        attendance_map.setdefault(ar.employee, {}).setdefault("", {})
-                        attendance_map[ar.employee][""][day] = "Attendance Request"
+                        attendance_map.setdefault(ar.employee, {}).setdefault(ar.shift, {})
+                        attendance_map[ar.employee][ar.shift][day] = "Attendance Request"
     # # Leave is applicable for the entire day, so all shifts should show the leave entry
     # for employee, leave_days in leave_map.items():
     #     # No attendance records exist except leaves
@@ -593,7 +599,7 @@ def get_attendance_map(filters: Filters) -> Dict:
     #     for day in leave_days:
     #         for shift in attendance_map[employee].keys():
     #             attendance_map[employee][shift][day] = "On Leave"
-
+	
     return attendance_map
 
 
@@ -602,7 +608,6 @@ def get_attendance_map(filters: Filters) -> Dict:
 from datetime import datetime
 
 def get_attendance_records(filters: Filters) -> List[Dict]:
-   
     sql_query = """
         SELECT
             employee,
@@ -616,6 +621,7 @@ def get_attendance_records(filters: Filters) -> List[Dict]:
             tabAttendance
         WHERE
             docstatus = 1
+            AND employee = %(employee)s
             AND company = %(company)s
            	AND EXTRACT(year FROM attendance_date) = %(year)s
             AND EXTRACT(month FROM attendance_date) = %(month)s
@@ -625,6 +631,7 @@ def get_attendance_records(filters: Filters) -> List[Dict]:
 
     # Assuming filters is a dictionary
     params = {
+        "employee":filters.employee,
         "company": filters.company,
         "year": filters.year,
         "month": filters.month,

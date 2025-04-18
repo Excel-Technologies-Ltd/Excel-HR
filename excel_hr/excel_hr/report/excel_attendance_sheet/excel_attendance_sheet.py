@@ -10,8 +10,8 @@ import frappe
 from frappe import _
 from frappe.query_builder.functions import Count, Extract, Sum
 from frappe.utils import cint, cstr, getdate
-
 Filters = frappe._dict
+
 
 status_map = {
 	"Present": "P",
@@ -602,6 +602,7 @@ def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
 			Employee.holiday_list,
 		)
 		.where(Employee.company == filters.company)
+		.where(Employee.status == "Active")
 	)
 
 	if filters.employee:

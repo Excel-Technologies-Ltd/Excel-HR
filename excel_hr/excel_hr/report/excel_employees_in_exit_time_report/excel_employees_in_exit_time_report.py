@@ -114,19 +114,27 @@ def get_data(filters):
     # reporting_location=filters.get('reporting_location')
     # if department_filter:
     #     employee_ids = frappe.get_all('Employee', filters={'department': department_filter}, pluck='name')
-    employee_ids = filters.get('employee')  # Fetch employee(s) from the filter
-
+    # employee_ids = filters.get('employee')  # Fetch employee(s) from the filter
+    employee_ids = []
     # If no specific employee is selected, fetch all employees based on other filters (department, job location, etc.)
-    if not employee_ids:
+    if not employee_ids or len(employee_ids) == 0:
         conditions = {}
+        # only get active employee
+        conditions['status'] = 'Active'
         if filters.get('department'):
             conditions['department'] = filters.get('department')
         if filters.get('excel_job_location'):
             conditions['excel_job_location'] = filters.get('excel_job_location')
         if filters.get('excel_reporting_location'):
             conditions['excel_reporting_location'] = filters.get('excel_reporting_location')
+        # if employee need in operator
+        if filters.get('employee'):
+            conditions['name'] = ['in', filters.get('employee')]
+        # only get active employee
+
 
         employee_ids = frappe.get_all('Employee', filters=conditions, pluck='name')
+        frappe.errprint(frappe.as_json(employee_ids))
 
 
     # Ensure employee_ids is a list

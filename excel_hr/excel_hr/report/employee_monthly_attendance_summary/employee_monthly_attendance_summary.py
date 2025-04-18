@@ -82,6 +82,9 @@ def get_columns():
 def get_data(filters):
     if not filters.get('employee'):
         return []
+    employee_doc = frappe.get_doc("Employee", filters.get('employee'))
+    if not employee_doc.status == "Active":
+        return []
 
     # Convert month to integer
     month = int(filters.get('month'))
@@ -209,9 +212,9 @@ def get_attendance_by_employee_and_month(employee_id, month, year):
     #     "month": month,
     #     "current_year": current_year
     # }))
-    
+
     query = f"""
-        SELECT working_hours, leave_application, early_exit, shift, late_entry, attendance_request, status, employee_name, employee, attendance_date, in_time, out_time, (SELECT employee_name FROM `tabEmployee` WHERE name = `tabAttendance`.employee) AS employee_name
+        SELECT working_hours, leave_application, early_exit, shift, late_entry, attendance_request, status, employee_name, employee, attendance_date, in_time, out_time, (SELECT employee_name FROM `tabEmployee` WHERE name = `tabAttendance`.employee ) AS employee_name
         FROM `tabAttendance`
         WHERE `employee` = '{employee_id}'
         AND YEAR(`attendance_date`) = {current_year}

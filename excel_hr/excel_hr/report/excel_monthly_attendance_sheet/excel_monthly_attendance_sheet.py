@@ -402,6 +402,7 @@ def get_draft_requests(filters: Filters) -> Dict:
         )
         .where(
             (LeaveApp.docstatus == 0) &
+            (LeaveApp.status == "Open") &
             (LeaveApp.company == filters.company) &
             (
                 (Extract("month", LeaveApp.from_date) == filters.month) |
@@ -430,6 +431,7 @@ def get_draft_requests(filters: Filters) -> Dict:
         )
         .where(
             (AttendanceRequest.docstatus == 0) &
+            (AttendanceRequest.workflow_state == "Applied") &
             (AttendanceRequest.company == filters.company) &
             (
                 (Extract("month", AttendanceRequest.from_date) == filters.month) |

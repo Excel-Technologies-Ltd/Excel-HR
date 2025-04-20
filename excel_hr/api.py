@@ -87,7 +87,7 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahma
                          anniversary_years="5th"):
 
     cc_mail = frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
-    cc_mail = cc_mail.split(",")
+    
     
     birthday_image_path = "assets/excel_hr/ann.jpg"
     font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"
@@ -221,11 +221,12 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahma
    
     file.insert(ignore_permissions=True)
     frappe.sendmail(
-        recipients=email,
-        subject=f"Happy Work Anniversary to {name}",
+        recipients=[email],
         cc=cc_mail if cc_mail else None,
+        subject=f"Happy Work Anniversary to {name}",
         template="birthday",
-        args={"img_url": base_url + file.file_url}
+        args={"img_url": base_url + file.file_url},
+        expose_recipients = 'header'
     )
     
     
@@ -354,7 +355,8 @@ def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin
         template="birthday",
         args={
             "img_url": base_url + file.file_url,
-        }
+        },
+        expose_recipients = 'header',
     )
 
 

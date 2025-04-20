@@ -64,7 +64,7 @@ frappe.query_reports["Excel Employees In-Exit Time Report"] = {
       label: __("Date Range"),
       fieldtype: "Date Range",
       reqd: 1,
-      default: [frappe.datetime.year_start(), frappe.datetime.month_end()],
+      default: [frappe.datetime.month_start(), frappe.datetime.month_end()],
       on_change: function () {
         const date_range = frappe.query_report.get_filter_value("date_range");
 

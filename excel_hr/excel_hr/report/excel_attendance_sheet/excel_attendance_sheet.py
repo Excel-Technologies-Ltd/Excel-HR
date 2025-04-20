@@ -519,6 +519,7 @@ def get_draft_requests(filters: Filters) -> Dict:
         )
         .where(
             (LeaveApp.docstatus == 0)
+            & (LeaveApp.status == "Open")
             & (
                 (Extract("month", LeaveApp.from_date) == filters.month) |
                 (Extract("month", LeaveApp.to_date) == filters.month)
@@ -544,6 +545,7 @@ def get_draft_requests(filters: Filters) -> Dict:
         )
         .where(
             (AttendanceRequest.docstatus == 0)
+            & (AttendanceRequest.workflow_state == "Applied")
             & (AttendanceRequest.company == filters.company)
             & (Extract("month", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.month)
             & (Extract("year", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.year)

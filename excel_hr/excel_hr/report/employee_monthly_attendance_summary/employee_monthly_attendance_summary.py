@@ -433,6 +433,7 @@ def get_draft_requests(filters):
             (LeaveApp.docstatus == 0) &  # Draft status
            
             (LeaveApp.employee == filters.get("employee")) &
+            (LeaveApp.status == "Open") &
             
             (
                 (Extract("month", LeaveApp.from_date) == filters.get("month")) |
@@ -459,7 +460,8 @@ def get_draft_requests(filters):
             AttendanceRequest.to_date.as_("to_date")
         )
         .where(
-            (AttendanceRequest.docstatus == 0) &  # Draft status
+            (AttendanceRequest.docstatus == 0) &
+            (AttendanceRequest.workflow_state == "Applied") &
             (AttendanceRequest.employee == filters.get("employee")) &
             (
                 (Extract("month", AttendanceRequest.from_date) == filters.get("month")) |

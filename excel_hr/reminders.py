@@ -23,7 +23,7 @@ def send_birthday_reminders():
             company_email = get_company_email(person.user_id)
             full_name = get_employee_full_name(person.user_id)
             location,department= get_job_location_and_department(person.user_id)
-            send_birthday_wish(company_email,full_name,department,location)
+            # send_birthday_wish(company_email,full_name,department,location)
             
            
        
@@ -45,6 +45,7 @@ def send_work_anniversary_reminders():
             full_name = get_employee_full_name(person.user_id)
             year= count_anniversary_year(person.date_of_joining)
             location,department= get_job_location_and_department(person.user_id)
+            print(company_email,full_name,department,location,year)
             send_anniversary_wish(company_email,full_name,department,location,year)
         
     
@@ -91,13 +92,16 @@ def count_anniversary_year(joining_date):
 
 def get_ordinal_suffix(n):
     """Return the ordinal suffix for a given number (1st, 2nd, 3rd, etc.)."""
-    if 10 <= n % 100 <= 20:  # Handle 11th, 12th, 13th, etc.
-        suffix = "th"
+    # Use only the last digit to determine the suffix
+    last_digit = n % 10
+    if last_digit == 1:
+        return "st"
+    elif last_digit == 2:
+        return "nd"
+    elif last_digit == 3:
+        return "rd"
     else:
-        # For other numbers, use the last digit to determine the suffix
-        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
-    
-    return suffix
+        return "th"
 def get_job_location_and_department(id):
     employee= frappe.get_doc('Employee',{"user_id": id})
     return employee.excel_job_location,employee.excel_parent_department

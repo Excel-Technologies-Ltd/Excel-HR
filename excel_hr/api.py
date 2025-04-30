@@ -421,18 +421,57 @@ def get_employee_overview(email):
 
     return results
 
-@frappe.whitelist()
-def attendance_list_with_checkin_and_checkout(from_date=None,to_date=None):
-   if not from_date:
-      from_date = datetime.strptime(today(),"%Y-%m-%d")-timedelta(days=2)
-   if not to_date:
-      to_date = datetime.strptime(today(),"%Y-%m-%d")
+# @frappe.whitelist()
+# def attendance_list_with_checkin_and_checkout(from_date=None,to_date=None,filter="zmin"):
+#    if not from_date:
+#       from_date = datetime.strptime(today(),"%Y-%m-%d")-timedelta(days=2)
+#    if not to_date:
+#       to_date = datetime.strptime(today(),"%Y-%m-%d")
+#    filters={"attendance_date":["between",(from_date,to_date)]}
+#    if  filter:
+#        filters={"attendance_date":["between",(from_date,to_date)],"employee_name":["like","%"+filter+"%"]}
+   
 
-   attendance_list = frappe.get_list("Attendance",fields=["*"],filters={"attendance_date":["between",(from_date,to_date)]},order_by="creation desc",ignore_permissions=False)
-   for attendance in attendance_list:
-       attendance.checkin_list = frappe.db.get_list("Employee Checkin",filters={"attendance":attendance.name,"log_type":"IN"},fields=["*"],order_by="time asc")
-       attendance.checkout_list = frappe.db.get_list("Employee Checkin",filters={"attendance":attendance.name,"log_type":"OUT"},fields=["*"],order_by="time asc")
-   return attendance_list
+#    attendance_list = frappe.get_list("Attendance",fields=["*"],filters=filters,order_by="creation desc",ignore_permissions=False)
+#    for attendance in attendance_list:
+#        attendance.checkin_list = frappe.db.get_list("Employee Checkin",filters={"attendance":attendance.name,"log_type":"IN"},fields=["*"],order_by="time asc")
+#        attendance.checkout_list = frappe.db.get_list("Employee Checkin",filters={"attendance":attendance.name,"log_type":"OUT"},fields=["*"],order_by="time asc")
+#    return attendance_list
+@frappe.whitelist()
+def attendance_list_with_checkin_and_checkout(from_date=None, to_date=None, filter=None):
+    if not from_date:
+        from_date = datetime.strptime(today(), "%Y-%m-%d") - timedelta(days=2)
+    if not to_date:
+        to_date = datetime.strptime(today(), "%Y-%m-%d")
+    
+    # Initialize filters
+    filters = {"attendance_date": ["between", (from_date, to_date)]}
+
+    # Add employee name filter if provided
+    if filter:
+        filters["employee_name"] = ["like", "%" + filter + "%"]
+    
+    # Fetch attendance list with provided filters
+    attendance_list = frappe.get_list(
+        "Attendance", fields=["*"], filters=filters, order_by="creation desc", ignore_permissions=False
+    )
+    
+    for attendance in attendance_list:
+        attendance.checkin_list = frappe.db.get_list(
+            "Employee Checkin",
+            filters={"attendance": attendance.name, "log_type": "IN"},
+            fields=["*"],
+            order_by="time asc"
+        )
+        attendance.checkout_list = frappe.db.get_list(
+            "Employee Checkin",
+            filters={"attendance": attendance.name, "log_type": "OUT"},
+            fields=["*"],
+            order_by="time asc"
+        )
+    
+    return attendance_list
+
     
 @frappe.whitelist()    
 def get_permitted_employee():

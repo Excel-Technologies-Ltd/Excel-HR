@@ -479,8 +479,8 @@ def attendance_list_with_checkin_and_checkout(from_date=None, to_date=None, filt
             limit=1
         )
 
-        attendance["checkin"] = checkin[0] if checkin else None
-        attendance["checkout"] = checkout[0] if checkout else None
+        attendance["checkin_list"] = checkin if checkin else []
+        attendance["checkout_list"] = checkout if checkout else []
 
     return attendance_list
 

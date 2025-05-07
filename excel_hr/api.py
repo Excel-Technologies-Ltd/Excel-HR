@@ -438,23 +438,13 @@ def get_employee_overview(email):
 #        attendance.checkout_list = frappe.db.get_list("Employee Checkin",filters={"attendance":attendance.name,"log_type":"OUT"},fields=["*"],order_by="time asc")
 #    return attendance_list
 @frappe.whitelist()
-def attendance_list_with_checkin_and_checkout(from_date=None, to_date=None, filter=None):
-    if not from_date:
-        from_date = datetime.strptime(today(), "%Y-%m-%d") - timedelta(days=2)
-    if not to_date:
-        to_date = datetime.strptime(today(), "%Y-%m-%d")
+def attendance_list_with_checkin_and_checkout(filters=None):
     # Initialize filters
-    filters = {"attendance_date": ["between", (from_date, to_date)]}
-
-    # Add employee name filter if provided
-    if filter:
-        filters["employee_name"] = ["like", f"%{filter}%"]
-
     # Fetch up to 300 attendance records
     attendance_list = frappe.get_list(
         "Attendance",
         fields=["*"],
-        filters=filters,
+        filters=filters if filters else None,
         order_by="creation desc",
         page_length=300,
         ignore_permissions=False
@@ -464,7 +454,7 @@ def attendance_list_with_checkin_and_checkout(from_date=None, to_date=None, filt
         # Get first check-in (earliest)
         checkin = frappe.db.get_list(
             "Employee Checkin",
-            filters={"attendance": attendance.name, "log_type": "IN"},
+            filters={"attendance": attendance.name,},
             fields=["*"],
             order_by="time asc",
             limit=1
@@ -473,7 +463,7 @@ def attendance_list_with_checkin_and_checkout(from_date=None, to_date=None, filt
         # Get last checkout (latest)
         checkout = frappe.db.get_list(
             "Employee Checkin",
-            filters={"attendance": attendance.name, "log_type": "OUT"},
+            filters={"attendance": attendance.name,},
             fields=["*"],
             order_by="time desc",
             limit=1

@@ -27,7 +27,7 @@ def get_employees_todays_checkin(employees):
 
 
 @frappe.whitelist()
-def get_attendance_with_checkin_and_checkout(
+def get_attendance_report_with_todays_checkin_and_checkout(
     filters=None,
     or_filters=None,
     order_by=None,
@@ -84,6 +84,7 @@ def get_attendance_with_checkin_and_checkout(
         checkins_dict.setdefault(key, []).append(c)
 
     # Step 3: Get filtered employee list
+    # employee_filters = [f for f in filters if f[0] != "attendance_date"] { "status": "Active" }
     employee_filters = [f for f in filters if f[0] != "attendance_date"]
     employee_list = frappe.get_all("Employee", filters=employee_filters, or_filters=or_filters, fields=["name"])
 
@@ -106,20 +107,29 @@ def get_attendance_with_checkin_and_checkout(
                 checkins_for_day = checkins_dict[key]
                 row = {
                     "employee": emp_id,
+                    "full_name": frappe.get_value("Employee", emp_id, "employee_name"),
+                    "department": frappe.get_value("Employee", emp_id, "department"),
+                    "job_location": frappe.get_value("Employee", emp_id, "excel_job_location"),
+                    "shift": frappe.get_value("Employee",emp_id, "default_shift"),
                     "attendance_date": current_date,
-                    "status": "Present (Real-Time)",
+                    "status": "Present",
                     "source": "Checkin",
                     "checkin_list": [checkins_for_day[0], checkins_for_day[-1]]
                 }
             # Case 3: No data at all
             else:
-                row = {
-                    "employee": emp_id,
-                    "attendance_date": current_date,
-                    "status": "Absent",
-                    "source": "Assumed",
-                    "checkin_list": []
-                }
+                continue
+                # row = {
+                #     "employee": emp_id,
+                #     "full_name": frappe.get_value("Employee", emp_id, "employee_name"),
+                #     "department": frappe.get_value("Employee", emp_id, "department"),
+                #     "job_location": frappe.get_value("Employee", emp_id, "excel_job_location"),
+                #     "shift": frappe.get_value("Employee",emp_id, "default_shift"),
+                #     "attendance_date": current_date,
+                #     "status": "Absent",
+                #     "source": "Assumed",
+                #     "checkin_list": []
+                # }
 
             # Respect fields filter
             if fields == ["*"]:

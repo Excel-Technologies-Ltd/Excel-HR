@@ -12,6 +12,8 @@ from hrms.controllers.employee_reminders import send_birthday_reminders
 from datetime import datetime, timedelta
 import math
 import json
+import re
+
 
 
 
@@ -24,6 +26,22 @@ def get_employees_todays_checkin(employees):
         ignore_permissions=False
     )
     return today_checkin
+
+@frappe.whitelist()
+def get_has_role(filters=None):
+    roles_response = frappe.db.get_all(
+        "Has Role",
+        fields=["role", "parent"],
+        filters= filters or {},
+    ),
+    if roles_response and isinstance(roles_response[0], list):
+        roles = roles_response[0]
+    else:
+        roles = roles_response
+    email_pattern = re.compile(r"[^@]+@[^@]+\.[^@]+")
+    filtered = [r for r in roles if email_pattern.match(r.get("parent", ""))]
+    return filtered
+     
 
 
 @frappe.whitelist()

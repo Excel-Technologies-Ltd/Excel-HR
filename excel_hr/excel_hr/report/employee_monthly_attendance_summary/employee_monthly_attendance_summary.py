@@ -83,8 +83,12 @@ def get_data(filters):
     if not filters.get('employee'):
         return []
     employee_doc = frappe.get_doc("Employee", filters.get('employee'))
-    if not employee_doc.status == "Active":
-        return []
+    # if filters.get('is_active'):
+    #     employee_doc.status = "Active"
+    # else:
+    #     employee_doc.status != "Active"    
+    # if not employee_doc.status == "Active":
+    #     return []
 
     # Convert month to integer
     month = int(filters.get('month'))
@@ -214,7 +218,12 @@ def get_attendance_by_employee_and_month(employee_id, month, year):
     # }))
 
     query = f"""
-        SELECT working_hours, leave_application, early_exit, shift, late_entry, attendance_request, status, employee_name, employee, attendance_date, in_time, out_time, (SELECT employee_name FROM `tabEmployee` WHERE name = `tabAttendance`.employee ) AS employee_name
+        SELECT working_hours, leave_application, early_exit,
+          shift, late_entry, attendance_request, status, 
+          employee_name, employee, attendance_date, in_time, out_time, 
+          (SELECT employee_name 
+            FROM `tabEmployee` 
+            WHERE name = `tabAttendance`.employee ) AS employee_name
         FROM `tabAttendance`
         WHERE `employee` = '{employee_id}'
         AND YEAR(`attendance_date`) = {current_year}
@@ -417,6 +426,8 @@ def get_draft_requests(filters):
         "attendance_requests": [...]
     }
     """
+    # Employee = frappe.qb.DocType("Employee")
+    # status_condition = (Employee.status == "Active") if filters.get("is_active") else (Employee.status != "Active")
     if not filters.get("employee"):
         return
     
@@ -424,6 +435,7 @@ def get_draft_requests(filters):
     LeaveApp = frappe.qb.DocType("Leave Application")
     leave_apps = (
         frappe.qb.from_(LeaveApp)
+        # .join(Employee).on(Employee.name == LeaveApp.employee)
         .select(
             LeaveApp.employee,
             LeaveApp.from_date.as_("start_date"),
@@ -443,17 +455,15 @@ def get_draft_requests(filters):
                 (Extract("year", LeaveApp.from_date) == filters.get("year")) |
                 (Extract("year", LeaveApp.to_date) == filters.get("year"))
             )
+            # & (status_condition)
         )
-    )
-
-
-
-    leave_apps = leave_apps.run(as_dict=True)
+    ).run(as_dict=True)
 
     # Query draft Attendance Requests
     AttendanceRequest = frappe.qb.DocType("Attendance Request")
     att_requests = (
         frappe.qb.from_(AttendanceRequest)
+        # .join(Employee).on(Employee.name == AttendanceRequest.employee)
         .select(
             AttendanceRequest.employee,
             AttendanceRequest.from_date.as_("start_date"),
@@ -471,10 +481,9 @@ def get_draft_requests(filters):
                 (Extract("year", AttendanceRequest.from_date) == filters.get("year")) |
                 (Extract("year", AttendanceRequest.to_date) == filters.get("year"))
             )
+            # & (status_condition)
         )
-    )
-
-    att_requests = att_requests.run(as_dict=True)
+    ).run(as_dict=True)
 
     return {
         "leave_applications": leave_apps,

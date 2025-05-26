@@ -14,6 +14,15 @@ import math
 import json
 import re
 
+@frappe.whitelist()
+def get_departments_for_company(company):
+    departments = frappe.db.sql_list("""
+        SELECT DISTINCT department FROM `tabEmployee`
+        WHERE company = %s AND department IS NOT NULL AND department != ''
+        ORDER BY department
+    """, company)
+    return departments  # Returns list of strings
+
 
 
 

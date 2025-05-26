@@ -32,8 +32,10 @@ frappe.query_reports["Excel Attendance Sheet"] = {
     {
       fieldname: "year",
       label: __("Year"),
-      fieldtype: "Select",
+      fieldtype: "Link",
+      options: "Fiscal Year",
       reqd: 1,
+      default: erpnext.utils.get_fiscal_year(frappe.datetime.get_today()),
     },
     {
       fieldname: "employee",
@@ -69,8 +71,15 @@ frappe.query_reports["Excel Attendance Sheet"] = {
       fieldtype: "Check",
       Default: 0,
     },
+    {
+      fieldname: "is_active",
+      label: __("Is Active Employees"),
+      fieldtype: "Check",
+      default: 1,
+    },
   ],
   onload: function () {
+    report.get_filter_value("is_active")
     return frappe.call({
       method:
         "hrms.hr.report.monthly_attendance_sheet.monthly_attendance_sheet.get_attendance_years",

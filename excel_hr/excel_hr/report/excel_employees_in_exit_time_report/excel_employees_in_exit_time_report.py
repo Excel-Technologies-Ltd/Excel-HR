@@ -120,7 +120,10 @@ def get_data(filters):
     if not employee_ids or len(employee_ids) == 0:
         conditions = {}
         # only get active employee
-        conditions['status'] = 'Active'
+        if filters.get('is_active'):
+            conditions['status'] = 'Active'
+        else:
+            conditions['status'] = ['!=', 'Active']
         if filters.get('department'):
             conditions['department'] = filters.get('department')
         if filters.get('excel_job_location'):
@@ -264,9 +267,13 @@ def get_draft_requests(filters: Filters,employee:str) -> Dict:
     """Fetches draft leave applications and attendance requests."""
     LeaveApp = frappe.qb.DocType("Leave Application")
     AttendanceRequest = frappe.qb.DocType("Attendance Request")
+    Employee = frappe.qb.DocType("Employee")
+    status_condition = (Employee.status == "Active") if filters.get("is_active") else (Employee.status != "Active")
+    print("Filters: status_condition", status_condition)
     
     leave_apps = (
         frappe.qb.from_(LeaveApp)
+        .join(Employee).on(Employee.name == LeaveApp.employee)
         .select(
             LeaveApp.employee,
             Extract("day", LeaveApp.from_date).as_("start_date"),
@@ -287,11 +294,13 @@ def get_draft_requests(filters: Filters,employee:str) -> Dict:
                 (Extract("year", LeaveApp.from_date) == filters.year) |
                 (Extract("year", LeaveApp.to_date) == filters.year)
             )
+             & (status_condition)
         )
     ).run(as_dict=True)
     
     att_requests = (
         frappe.qb.from_(AttendanceRequest)
+        .join(Employee).on(Employee.name == AttendanceRequest.employee)
         .select(
             AttendanceRequest.employee,
             Extract("day", AttendanceRequest.from_date).as_("start_date"),
@@ -305,6 +314,7 @@ def get_draft_requests(filters: Filters,employee:str) -> Dict:
             & (AttendanceRequest.employee == employee)
             & (Extract("month", AttendanceRequest.from_date) == filters.month)
             & (Extract("year", AttendanceRequest.from_date) == filters.year)
+            & (status_condition)
         )
     ).run(as_dict=True)
     print({

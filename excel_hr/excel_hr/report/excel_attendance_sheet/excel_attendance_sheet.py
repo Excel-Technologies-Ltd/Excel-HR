@@ -103,7 +103,6 @@ def get_columns(filters: Filters) -> List[Dict]:
 				"width": 135,
 			},
 			{"label": _("Employee Name"), "fieldname": "employee_name", "fieldtype": "Data", "width": 120},
-			{"label": _("Employee Status"), "fieldname": "status", "fieldtype": "Data", "width": 80},
 
 		]
 	)

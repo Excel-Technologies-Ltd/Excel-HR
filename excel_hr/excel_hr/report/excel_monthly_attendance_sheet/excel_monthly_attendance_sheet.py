@@ -10,6 +10,7 @@ import frappe
 from frappe import _
 from frappe.query_builder.functions import Count, Extract, Sum
 from frappe.utils import cint, cstr, getdate
+from typing import Dict
 
 Filters = frappe._dict
 
@@ -313,72 +314,6 @@ def get_data(filters: Filters, attendance_map: Dict) -> List[Dict]:
 	return data
 
 
-
-
-from typing import Dict
-
-
-# def get_draft_requests(filters: Filters) -> Dict:
-#     """
-#     Query draft Leave Applications and Attendance Requests for the filter month and year.
-#     Returns a dictionary with two keys: 'leave_applications' and 'attendance_requests'.
-#     Each record contains the employee, start day, and end day of the draft request.
-#     """
-#     # Query draft Leave Applications
-#     LeaveApp = frappe.qb.DocType("Leave Application")
-#     leave_apps = (
-#         frappe.qb.from_(LeaveApp)
-#         .select(
-#             LeaveApp.employee,
-#             Extract("day", LeaveApp.from_date).as_("from_date"),
-#             Extract("day", LeaveApp.to_date).as_("to_date"),
-#             Extract("month", LeaveApp.from_date).as_("start_month"),
-#             Extract("month", LeaveApp.to_date).as_("to_month"),
-#         )
-#         .where(
-#             (LeaveApp.docstatus == 0)
-#             & (LeaveApp.company == filters.company)
-#             & (
-#                 (Extract("month", LeaveApp.from_date) == filters.month) |
-#                 (Extract("month", LeaveApp.to_date) == filters.month)
-#             )
-#             & (Extract("year", LeaveApp.from_date or LeaveApp.to_date) == filters.year)
-#         )
-#     ).run(as_dict=True)
-    
-#     # Query draft Attendance Requests
-#     AttendanceRequest = frappe.qb.DocType("Attendance Request")
-#     att_requests = (
-#         frappe.qb.from_(AttendanceRequest)
-#         .select(
-#             AttendanceRequest.employee,
-#             Extract("day", AttendanceRequest.from_date).as_("from_date"),
-#             Extract("day", AttendanceRequest.to_date).as_("to_date"),
-#             Extract("month", AttendanceRequest.from_date).as_("start_month"),
-#             Extract("month", AttendanceRequest.to_date).as_("to_month"),
-#         )
-#         .where(
-#             (AttendanceRequest.docstatus == 0)
-#             & (AttendanceRequest.company == filters.company)
-#             # this need conditional if employee is not selected dont need to add this condition
-#             # & (AttendanceRequest.employee == filters.employee)
-#             & (
-#                 (Extract("month", AttendanceRequest.from_date) == filters.month) |
-#                 (Extract("month", AttendanceRequest.to_date) == filters.month)
-#             )
-#             & (Extract("year", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.year)
-            
-#         )
-#     ).run(as_dict=True)
-    
-#     return {
-#         "leave_applications": leave_apps,
-#         "attendance_requests": att_requests,
-#     }
-
-
-from typing import Dict
-
 def get_draft_requests(filters: Filters) -> Dict:
     """
     Query draft Leave Applications and Attendance Requests for the filter month and year.
@@ -389,7 +324,9 @@ def get_draft_requests(filters: Filters) -> Dict:
     # Query draft Leave Applications
     LeaveApp = frappe.qb.DocType("Leave Application")
     Employee = frappe.qb.DocType("Employee")
-    leave_query = (
+    status_condition = (Employee.status == "Active") if filters.get("is_active") else (Employee.status != "Active")
+    print("Filters: status_condition", status_condition)
+    leave_apps = (
         frappe.qb.from_(LeaveApp)
         .join(Employee).on(Employee.name == LeaveApp.employee)
         .select(
@@ -412,15 +349,16 @@ def get_draft_requests(filters: Filters) -> Dict:
                 (Extract("year", LeaveApp.from_date) == filters.year) |
                 (Extract("year", LeaveApp.to_date) == filters.year)
             )
-            & (Employee.status == "Active")
+            & (status_condition)
+           
         )
-    )
-    leave_apps = leave_query.run(as_dict=True)
+    ).run(as_dict=True)
 
     # Query draft Attendance Requests
     AttendanceRequest = frappe.qb.DocType("Attendance Request")
-    attendance_query = (
+    att_requests = (
         frappe.qb.from_(AttendanceRequest)
+        .join(Employee).on(Employee.name == AttendanceRequest.employee)
         .select(
             AttendanceRequest.employee,
             AttendanceRequest.excel_shift.as_("shift"),
@@ -441,9 +379,9 @@ def get_draft_requests(filters: Filters) -> Dict:
                 (Extract("year", AttendanceRequest.from_date) == filters.year) |
                 (Extract("year", AttendanceRequest.to_date) == filters.year)
             )
+            & (status_condition)
         )
-    )
-    att_requests = attendance_query.run(as_dict=True)
+    ).run(as_dict=True)
 
     return {
         "leave_applications": leave_apps,
@@ -637,7 +575,12 @@ def get_attendance_map(filters: Filters) -> Dict:
 from datetime import datetime
 
 def get_attendance_records(filters: Filters) -> List[Dict]:
-    sql_query = """
+    conditions = ""
+    if filters.get("is_active"):
+        conditions += " AND status = 'Active'"
+    else:
+        conditions += " AND status != 'Active'"
+    sql_query =f"""
         SELECT
             employee,
             EXTRACT(day FROM attendance_date) AS day_of_month,
@@ -653,6 +596,7 @@ def get_attendance_records(filters: Filters) -> List[Dict]:
             AND company = %(company)s
            	AND EXTRACT(year FROM attendance_date) = %(year)s
             AND EXTRACT(month FROM attendance_date) = %(month)s
+            {conditions}
         ORDER BY
             employee, attendance_date
     """
@@ -692,9 +636,12 @@ def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
             `tabEmployee`
         WHERE
             company = '{filters.company}'
-            AND status = 'Active'
     """
 
+    if filters.get("is_active"):
+        sql_query += " AND status = 'Active'"
+    else:
+        sql_query += " AND status != 'Active'"
     if filters.employee:
         employee_list = "','".join(filters.employee)
         sql_query += f" AND employee IN ('{employee_list}')"

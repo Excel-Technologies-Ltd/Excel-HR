@@ -38,38 +38,38 @@ frappe.query_reports["Excel Attendance Sheet"] = {
       default: erpnext.utils.get_fiscal_year(frappe.datetime.get_today()),
     },
     {
-  fieldname: "employee",
-  label: __("Employee"),
-  fieldtype: "MultiSelectList",
-  get_data: function(txt) {
-    var company = frappe.query_report.get_filter_value("company");
-    if (!company) {
-      return Promise.resolve([]);
-    }
-    
-    let filters = {company: company};
-    if (txt) {
-      filters['employee_name'] = ['like', `%${txt}%`];
-    }
-    
-    return frappe.call({
-      method: "frappe.client.get_list",
-      args: {
-        doctype: "Employee",
-        filters: filters,
-        fields: ["name", "employee_name"],
-        limit_page_length: 0
+      fieldname: "employee",
+      label: __("Employee"),
+      fieldtype: "MultiSelectList",
+      get_data: function(txt) {
+        var company = frappe.query_report.get_filter_value("company");
+        if (!company) {
+          return Promise.resolve([]);
+        }
+        
+        let filters = {company: company};
+        if (txt) {
+          filters['employee_name'] = ['like', `%${txt}%`];
+        }
+        
+        return frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Employee",
+            filters: filters,
+            fields: ["name", "employee_name"],
+            limit_page_length: 0
+          }
+        }).then(r => {
+          let employees = r.message || [];
+          return employees.map(emp => ({
+            value: emp.name,
+            label: `${emp.name}`,
+            description: emp.employee_name
+          }));
+        });
       }
-    }).then(r => {
-      let employees = r.message || [];
-      return employees.map(emp => ({
-        value: emp.name,
-        label: `${emp.name}`,
-        description: emp.employee_name
-      }));
-    });
-  }
-},
+    },
     {
       fieldname: "department",
       label: __("Department"),

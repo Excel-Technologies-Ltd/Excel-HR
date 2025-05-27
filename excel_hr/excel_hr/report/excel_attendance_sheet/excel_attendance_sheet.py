@@ -30,6 +30,8 @@ day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 def execute(filters: Optional[Filters] = None) -> Tuple:
 	filters = frappe._dict(filters or {})
+	if filters.get("employee") == []:
+		filters.pop("employee")
 
 	if not (filters.month and filters.year):
 		frappe.throw(_("Please select month and year."))
@@ -288,12 +290,21 @@ def get_draft_requests(filters: Filters) -> Dict:
     """Returns draft leave applications and attendance requests"""
     LeaveApp = frappe.qb.DocType("Leave Application")
     Employee = frappe.qb.DocType("Employee")
+    AttendanceRequest = frappe.qb.DocType("Attendance Request")
     
-    # Status condition for employees
-    status_condition = (Employee.status == "Active") if filters.get("is_active") else (Employee.status != "Active")
-
+    # Status condition
+    if filters.get("is_active"):
+        status_condition = (Employee.status == "Active")
+    else:
+        status_condition = (Employee.status != "Active")
+    
+    # Department condition
+    department_condition = None
+    if filters.get("department"):
+        department_condition = (Employee.department == filters.department)
+    
     # Query draft leave applications
-    leave_apps = (
+    leave_query = (
         frappe.qb.from_(LeaveApp)
         .join(Employee).on(Employee.name == LeaveApp.employee)
         .select(
@@ -317,11 +328,15 @@ def get_draft_requests(filters: Filters) -> Dict:
             )
             & (status_condition)
         )
-    ).run(as_dict=True)
+    )
+    
+    if department_condition:
+        leave_query = leave_query.where(department_condition)
+    
+    leave_apps = leave_query.run(as_dict=True)
     
     # Query draft attendance requests
-    AttendanceRequest = frappe.qb.DocType("Attendance Request")
-    att_requests = (
+    att_query = (
         frappe.qb.from_(AttendanceRequest)
         .join(Employee).on(Employee.name == AttendanceRequest.employee)
         .select(
@@ -336,11 +351,22 @@ def get_draft_requests(filters: Filters) -> Dict:
             (AttendanceRequest.docstatus == 0)
             & (AttendanceRequest.workflow_state == "Applied")
             & (AttendanceRequest.company == filters.company)
-            & (Extract("month", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.month)
-            & (Extract("year", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.year)
+            & (
+                (Extract("month", AttendanceRequest.from_date) == filters.month) |
+                (Extract("month", AttendanceRequest.to_date) == filters.month)
+            )
+            & (
+                (Extract("year", AttendanceRequest.from_date) == filters.year) |
+                (Extract("year", AttendanceRequest.to_date) == filters.year)
+            )
             & (status_condition)
         )
-    ).run(as_dict=True)
+    )
+    
+    if department_condition:
+        att_query = att_query.where(department_condition)
+    
+    att_requests = att_query.run(as_dict=True)
     
     return {
         "leave_applications": leave_apps,
@@ -348,16 +374,16 @@ def get_draft_requests(filters: Filters) -> Dict:
     }
 
 
-
 def get_attendance_records(filters: Filters) -> List[Dict]:
 	Attendance = frappe.qb.DocType("Attendance")
 	Employee = frappe.qb.DocType("Employee")
-	print("Condition 1 : ", Employee.status == ("Active" if filters.is_active else "Inactive"))
 	employee_subquery = (
         frappe.qb.from_(Employee)
         .select(Employee.name)
         .where(Employee.company == filters.company)
     )
+	if filters.department:
+		employee_subquery = employee_subquery.where(Employee.department == filters.department)
 	if filters.get("is_active"):
 		employee_subquery = employee_subquery.where(Employee.status == "Active")
 	else:
@@ -382,7 +408,9 @@ def get_attendance_records(filters: Filters) -> List[Dict]:
 	)
 
 	if filters.employee:
-		query = query.where(Attendance.employee == filters.employee)
+		if isinstance(filters.employee, str):
+			filters.employee = [filters.employee]
+		query = query.where(Attendance.employee.isin(filters.employee))
 	query = query.orderby(Attendance.employee, Attendance.attendance_date)
 		
 
@@ -410,16 +438,19 @@ def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
         )
         .where(Employee.company == filters.company)
     )
+	
     
     # Use filters.get("is_active") for consistency
+    if filters.get("department"):
+        query = query.where(Employee.department == filters.department)
     if filters.get("is_active"):
         query = query.where(Employee.status == "Active")
     else:
         query = query.where(Employee.status != "Active")
-
     if filters.employee:
-        query = query.where(Employee.name == filters.employee)
-
+        if isinstance(filters.employee, str):
+            filters.employee = [filters.employee]
+        query = query.where(Employee.name.isin(filters.employee))
     group_by = filters.group_by
     if group_by:
         group_by = group_by.lower()

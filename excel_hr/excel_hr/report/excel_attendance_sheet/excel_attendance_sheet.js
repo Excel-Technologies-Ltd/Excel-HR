@@ -83,7 +83,9 @@ frappe.query_reports["Excel Attendance Sheet"] = {
           },
         };
       },
-    },
+      default: ""
+  }
+    ,
     {
       fieldname: "company",
       label: __("Company"),
@@ -111,20 +113,38 @@ frappe.query_reports["Excel Attendance Sheet"] = {
       default: 1,
     },
   ],
-  onload: function () {
-    report.get_filter_value("is_active")
-    return frappe.call({
-      method:
-        "hrms.hr.report.monthly_attendance_sheet.monthly_attendance_sheet.get_attendance_years",
-      callback: function (r) {
-        var year_filter = frappe.query_report.get_filter("year");
-        year_filter.df.options = r.message;
-        year_filter.df.default = r.message.split("\n")[0];
-        year_filter.refresh();
-        year_filter.set_input(year_filter.df.default);
+  onload: function(report) {
+  // Just call to get filter value - this line seems unused, can be removed or used as needed
+  report.get_filter_value("is_active");
+
+  if (!report.get_filter_value('department')) {
+    frappe.call({
+      method: "frappe.client.get_value",
+      args: {
+        doctype: "Employee",
+        fieldname: ["department"],
+        filters: { user_id: frappe.session.user }
       },
+      callback: function(r) {
+        if (r.message && r.message.department) {
+          report.set_filter_value('department', r.message.department);
+        }
+      }
     });
-  },
+  }
+
+  return frappe.call({
+    method: "hrms.hr.report.monthly_attendance_sheet.monthly_attendance_sheet.get_attendance_years",
+    callback: function(r) {
+      var year_filter = report.get_filter("year");
+      year_filter.df.options = r.message;
+      year_filter.df.default = r.message.split("\n")[0];
+      year_filter.refresh();
+      year_filter.set_input(year_filter.df.default);
+    },
+  });
+}
+,
   formatter: function (value, row, column, data, default_formatter) {
     value = default_formatter(value, row, column, data);
     const summarized_view =
@@ -148,6 +168,12 @@ frappe.query_reports["Excel Attendance Sheet"] = {
           value = "<span style='color:orange'>" + value + "</span>";
         else if (value == "L")
           value = "<span style='color:#318AD8'>" + value + "</span>";
+        else if (value == "A.App")
+          value = "<span style='color:#FFA500'>" + value + "</span>";
+        else if (value == "L.App")
+          value = "<span style='color:#FFA500'>" + value + "</span>";
+        else if (value == "Attendance Request - A.App")
+          value = "<span style='color:#FFA500'>" + value + "</span>";
       }
     }
 

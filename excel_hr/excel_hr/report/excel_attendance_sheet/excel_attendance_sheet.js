@@ -143,8 +143,7 @@ frappe.query_reports["Excel Attendance Sheet"] = {
       year_filter.set_input(year_filter.df.default);
     },
   });
-}
-,
+},
   formatter: function (value, row, column, data, default_formatter) {
     value = default_formatter(value, row, column, data);
     const summarized_view =

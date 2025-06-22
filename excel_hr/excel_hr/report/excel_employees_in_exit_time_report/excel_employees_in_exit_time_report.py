@@ -123,10 +123,10 @@ def get_data(filters):
         conditions['status'] = 'Active'
         if filters.get('department'):
             conditions['department'] = filters.get('department')
-        if filters.get('excel_job_location'):
-            conditions['excel_job_location'] = filters.get('excel_job_location')
-        if filters.get('excel_reporting_location'):
-            conditions['excel_reporting_location'] = filters.get('excel_reporting_location')
+        if filters.get('custom_job_location'):
+            conditions['custom_job_location'] = filters.get('custom_job_location')
+        if filters.get('custom_reporting_location'):
+            conditions['custom_reporting_location'] = filters.get('custom_reporting_location')
         # if employee need in operator
         if filters.get('employee'):
             conditions['name'] = ['in', filters.get('employee')]

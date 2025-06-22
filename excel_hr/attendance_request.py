@@ -18,8 +18,9 @@ class OverlappingAttendanceRequestError(frappe.ValidationError):
 
 class NewAttendanceRequest(Document):
     def validate(self):
+        Alert_Doc=frappe.get_doc("Excel Alert Settings")
         validate_active_employee(self.employee)
-        validate_dates(self, self.from_date, self.to_date)
+        validate_dates(self, self.from_date, self.to_date,bool(Alert_Doc.validate_future_date_in_attendance_request))
         self.validate_half_day()
         self.validate_request_overlap()
 

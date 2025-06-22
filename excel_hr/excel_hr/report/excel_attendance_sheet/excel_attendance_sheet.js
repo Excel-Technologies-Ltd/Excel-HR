@@ -32,14 +32,49 @@ frappe.query_reports["Excel Attendance Sheet"] = {
     {
       fieldname: "year",
       label: __("Year"),
-      fieldtype: "Select",
+      fieldtype: "Link",
+      options: "Fiscal Year",
       reqd: 1,
+      default: erpnext.utils.get_fiscal_year(frappe.datetime.get_today()),
     },
     {
       fieldname: "employee",
       label: __("Employee"),
+      fieldtype: "MultiSelectList",
+      get_data: function(txt) {
+        var company = frappe.query_report.get_filter_value("company");
+        if (!company) {
+          return Promise.resolve([]);
+        }
+        
+        let filters = {company: company};
+        if (txt) {
+          filters['employee_name'] = ['like', `%${txt}%`];
+        }
+        
+        return frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Employee",
+            filters: filters,
+            fields: ["name", "employee_name"],
+            limit_page_length: 0
+          }
+        }).then(r => {
+          let employees = r.message || [];
+          return employees.map(emp => ({
+            value: emp.name,
+            label: `${emp.name}`,
+            description: emp.employee_name
+          }));
+        });
+      }
+    },
+    {
+      fieldname: "department",
+      label: __("Department"),
       fieldtype: "Link",
-      options: "Employee",
+      options: "Department",
       get_query: () => {
         var company = frappe.query_report.get_filter_value("company");
         return {
@@ -48,7 +83,9 @@ frappe.query_reports["Excel Attendance Sheet"] = {
           },
         };
       },
-    },
+      default: ""
+  }
+    ,
     {
       fieldname: "company",
       label: __("Company"),
@@ -57,32 +94,56 @@ frappe.query_reports["Excel Attendance Sheet"] = {
       default: frappe.defaults.get_user_default("Company"),
       reqd: 1,
     },
-    {
-      fieldname: "group_by",
-      label: __("Group By"),
-      fieldtype: "Select",
-      options: ["", "Branch", "Grade", "Department", "Designation"],
-    },
+    // {
+    //   fieldname: "group_by",
+    //   label: __("Group By"),
+    //   fieldtype: "Select",
+    //   options: ["", "Branch", "Grade", "Department", "Designation"],
+    // },
     {
       fieldname: "summarized_view",
       label: __("Summarized View"),
       fieldtype: "Check",
       Default: 0,
     },
+    {
+      fieldname: "is_active",
+      label: __("Is Active Employees"),
+      fieldtype: "Check",
+      default: 1,
+    },
   ],
-  onload: function () {
-    return frappe.call({
-      method:
-        "hrms.hr.report.monthly_attendance_sheet.monthly_attendance_sheet.get_attendance_years",
-      callback: function (r) {
-        var year_filter = frappe.query_report.get_filter("year");
-        year_filter.df.options = r.message;
-        year_filter.df.default = r.message.split("\n")[0];
-        year_filter.refresh();
-        year_filter.set_input(year_filter.df.default);
+  onload: function(report) {
+  // Just call to get filter value - this line seems unused, can be removed or used as needed
+  report.get_filter_value("is_active");
+
+  if (!report.get_filter_value('department')) {
+    frappe.call({
+      method: "frappe.client.get_value",
+      args: {
+        doctype: "Employee",
+        fieldname: ["department"],
+        filters: { user_id: frappe.session.user }
       },
+      callback: function(r) {
+        if (r.message && r.message.department) {
+          report.set_filter_value('department', r.message.department);
+        }
+      }
     });
-  },
+  }
+
+  return frappe.call({
+    method: "hrms.hr.report.monthly_attendance_sheet.monthly_attendance_sheet.get_attendance_years",
+    callback: function(r) {
+      var year_filter = report.get_filter("year");
+      year_filter.df.options = r.message;
+      year_filter.df.default = r.message.split("\n")[0];
+      year_filter.refresh();
+      year_filter.set_input(year_filter.df.default);
+    },
+  });
+},
   formatter: function (value, row, column, data, default_formatter) {
     value = default_formatter(value, row, column, data);
     const summarized_view =
@@ -106,6 +167,12 @@ frappe.query_reports["Excel Attendance Sheet"] = {
           value = "<span style='color:orange'>" + value + "</span>";
         else if (value == "L")
           value = "<span style='color:#318AD8'>" + value + "</span>";
+        else if (value == "A.App")
+          value = "<span style='color:#FFA500'>" + value + "</span>";
+        else if (value == "L.App")
+          value = "<span style='color:#FFA500'>" + value + "</span>";
+        else if (value == "Attendance Request - A.App")
+          value = "<span style='color:#FFA500'>" + value + "</span>";
       }
     }
 

@@ -30,6 +30,8 @@ day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 def execute(filters: Optional[Filters] = None) -> Tuple:
 	filters = frappe._dict(filters or {})
+	if filters.get("employee") == []:
+		filters.pop("employee")
 
 	if not (filters.month and filters.year):
 		frappe.throw(_("Please select month and year."))
@@ -103,6 +105,7 @@ def get_columns(filters: Filters) -> List[Dict]:
 				"width": 135,
 			},
 			{"label": _("Employee Name"), "fieldname": "employee_name", "fieldtype": "Data", "width": 120},
+
 		]
 	)
 
@@ -211,224 +214,6 @@ def get_data(filters: Filters, attendance_map: Dict) -> List[Dict]:
 
 	return data	
 
-# def get_draft_requests(filters: Filters) -> Dict:
-#     # Query draft leave applications
-#     LeaveApp = frappe.qb.DocType("Leave Application")
-#     Employee = frappe.qb.DocType("Employee")
-#     leave_apps = (
-#         frappe.qb.from_(LeaveApp)
-#         .join(Employee).on(Employee.name == LeaveApp.employee)
-#         .select(
-#             LeaveApp.employee,
-#             Employee.default_shift.as_("shift"),
-#             Extract("day", LeaveApp.from_date).as_("start_date"),
-#             Extract("day", LeaveApp.to_date).as_("to_date"),
-#             Extract("month", LeaveApp.from_date).as_("start_month"),
-#             Extract("month", LeaveApp.to_date).as_("to_month"),
-            
-#         )
-#         .where(
-#             (LeaveApp.docstatus == 0)
-# 			& (
-# 				(Extract("month", LeaveApp.from_date) == filters.month) |
-# 				(Extract("month", LeaveApp.to_date) == filters.month)
-# 			)
-# 			& (
-# 				(Extract("year", LeaveApp.from_date) == filters.year) |
-# 				(Extract("year", LeaveApp.to_date) == filters.year)
-# 			)
-#         )
-#     ).run(as_dict=True)
-    
-#     # Query draft attendance requests
-#     AttendanceRequest = frappe.qb.DocType("Attendance Request")
-#     att_requests = (
-#         frappe.qb.from_(AttendanceRequest)
-#         .select(
-#             AttendanceRequest.employee,
-#             AttendanceRequest.excel_shift.as_("shift"),
-#             Extract("day", AttendanceRequest.from_date).as_("start_date"),
-#             Extract("day", AttendanceRequest.to_date).as_("to_date"),
-#             Extract("month", AttendanceRequest.from_date ).as_("start_month"),
-#             Extract("month", AttendanceRequest.to_date).as_("to_month"),
-            
-#         )
-#         .where(
-#             (AttendanceRequest.docstatus == 0)
-           
-#             & (AttendanceRequest.company == filters.company)
-#             & (Extract("month", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.month)
-#             & (Extract("year", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.year)
-#         )
-#     ).run(as_dict=True)
-    
-#     return {
-#         "leave_applications": leave_apps,
-#         "attendance_requests": att_requests,
-#     }
-
-
-# def get_attendance_map(filters: Filters) -> Dict:
-# 	"""Returns a dictionary of employee wise attendance map as per shifts for all the days of the month like
-# 	{
-# 	    'employee1': {
-# 	            'Morning Shift': {1: 'Present', 2: 'Absent', ...}
-# 	            'Evening Shift': {1: 'Absent', 2: 'Present', ...}
-# 	    },
-# 	    'employee2': {
-# 	            'Afternoon Shift': {1: 'Present', 2: 'Absent', ...}
-# 	            'Night Shift': {1: 'Absent', 2: 'Absent', ...}
-# 	    },
-# 	    'employee3': {
-# 	            None: {1: 'On Leave'}
-# 	    }
-# 	}
-# 	"""
-# 	attendance_list = get_attendance_records(filters)
-# 	attendance_map = {}
-# 	leave_map = {}
-
-# 	for d in attendance_list:
-# 		if d.status == "On Leave":
-# 			leave_map.setdefault(d.employee, []).append(d.day_of_month)
-# 			continue
-
-# 		if d.shift is None:
-# 			d.shift = ""
-
-# 		attendance_map.setdefault(d.employee, {}).setdefault(d.shift, {})
-# 		attendance_map[d.employee][d.shift][d.day_of_month] = d.status
-
-# 	# leave is applicable for the entire day so all shifts should show the leave entry
-# 	for employee, leave_days in leave_map.items():
-# 		# no attendance records exist except leaves
-# 		if employee not in attendance_map:
-# 			attendance_map.setdefault(employee, {}).setdefault(None, {})
-
-# 		for day in leave_days:
-# 			for shift in attendance_map[employee].keys():
-# 				attendance_map[employee][shift][day] = "On Leave"
-    
-# 	draft_data = get_draft_requests(filters)
-	
-	
-# 	for lr in draft_data.get("leave_applications", []):
-# 		# check true condition
-# 		if lr.start_date is None or lr.to_date is None:
-# 			continue
-# 		if lr.start_month == lr.to_month:
-# 			for day in range(lr.start_date, lr.to_date + 1):
-# 				attendance_map.setdefault(lr.employee, {}).setdefault("", {})
-# 				attendance_map[lr.employee][""][day] = "Leave Application"
-# 		else:
-# 			if int(filters.month) == int(lr.start_month):
-				
-# 				for day in range(lr.start_date, get_total_days_in_month(filters) + 1):
-# 					attendance_map.setdefault(lr.employee, {}).setdefault("", {})
-# 					attendance_map[lr.employee][""][day] = "Leave Application"
-# 			elif int(filters.month) == int(lr.to_month):
-# 				for day in range(1, lr.to_date + 1):
-# 					attendance_map.setdefault(lr.employee, {}).setdefault("", {})
-# 					attendance_map[lr.employee][""][day] = "Leave Application"
-# 	for ar in draft_data.get("attendance_requests", []):
-# 		if ar.start_date is None or ar.to_date is None:
-# 			continue
-# 		if ar.start_month == ar.to_month:
-# 			for day in range(ar.start_date, ar.to_date + 1):
-# 				attendance_map.setdefault(ar.employee, {}).setdefault("", {})
-# 				attendance_map[ar.employee][""][day] = "Attendance Request"
-# 		else:
-# 			if int(filters.month) == int(ar.start_month):
-# 				for day in range(ar.start_date, get_total_days_in_month(filters) + 1):
-# 					attendance_map.setdefault(ar.employee, {}).setdefault("", {})
-# 					attendance_map[ar.employee][""][day] = "Attendance Request"
-# 			elif int(filters.month) == int(ar.to_month):
-# 				for day in range(1, ar.to_date + 1):
-# 					attendance_map.setdefault(ar.employee, {}).setdefault("", {})
-# 					attendance_map[ar.employee][""][day] = "Attendance Request"
-# 	return attendance_map
-# def get_attendance_map(filters: Filters) -> Dict:
-# 	"""Returns a dictionary of employee wise attendance map as per shifts for all the days of the month like
-# 	{
-# 	    'employee1': {
-# 	            'Morning Shift': {1: 'Present', 2: 'Absent', ...}
-# 	            'Evening Shift': {1: 'Absent', 2: 'Present', ...}
-# 	    },
-# 	    'employee2': {
-# 	            'Afternoon Shift': {1: 'Present', 2: 'Absent', ...}
-# 	            'Night Shift': {1: 'Absent', 2: 'Absent', ...}
-# 	    },
-# 	    'employee3': {
-# 	            None: {1: 'On Leave'}
-# 	    }
-# 	}
-# 	"""
-# 	attendance_list = get_attendance_records(filters)
-# 	attendance_map = {}
-# 	leave_map = {}
-
-# 	for d in attendance_list:
-# 		if d.status == "On Leave":
-# 			leave_map.setdefault(d.employee, []).append(d.day_of_month)
-# 			continue
-
-# 		if d.shift is None:
-# 			d.shift = ""
-
-# 		attendance_map.setdefault(d.employee, {}).setdefault(d.shift, {})
-# 		attendance_map[d.employee][d.shift][d.day_of_month] = d.status
-
-# 	# leave is applicable for the entire day so all shifts should show the leave entry
-# 	for employee, leave_days in leave_map.items():
-# 		# no attendance records exist except leaves
-# 		if employee not in attendance_map:
-# 			attendance_map.setdefault(employee, {}).setdefault(None, {})
-
-# 		for day in leave_days:
-# 			for shift in attendance_map[employee].keys():
-# 				attendance_map[employee][shift][day] = "On Leave"
-    
-# 	# Get draft data for leave and attendance requests
-# 	draft_data = get_draft_requests(filters)
-	
-# 	# Process draft leave applications and attendance requests together to prevent duplicates
-# 	for lr in draft_data.get("leave_applications", []):
-# 		# check true condition
-# 		if lr.start_date is None or lr.to_date is None:
-# 			continue
-# 		if lr.start_month == lr.to_month:
-# 			for day in range(lr.start_date, lr.to_date + 1):
-# 				attendance_map.setdefault(lr.employee, {}).setdefault(lr.shift, {})
-# 				attendance_map[lr.employee][lr.shift][day] = "Leave Application"
-# 		else:
-# 			if int(filters.month) == int(lr.start_month):
-# 				for day in range(lr.start_date, get_total_days_in_month(filters) + 1):
-# 					attendance_map.setdefault(lr.employee, {}).setdefault(lr.shift, {})
-# 					attendance_map[lr.employee][lr.shift][day] = "Leave Application"
-# 			elif int(filters.month) == int(lr.to_month):
-# 				for day in range(1, lr.to_date + 1):
-# 					attendance_map.setdefault(lr.employee, {}).setdefault(lr.shift, {})
-# 					attendance_map[lr.employee][lr.shift][day] = "Leave Application"
-	
-# 	for ar in draft_data.get("attendance_requests", []):
-# 		if ar.start_date is None or ar.to_date is None:
-# 			continue
-# 		if ar.start_month == ar.to_month:
-# 			for day in range(ar.start_date, ar.to_date + 1):
-# 				attendance_map.setdefault(ar.employee, {}).setdefault(ar.shift, {})
-# 				attendance_map[ar.employee][ar.shift][day] = "Attendance Request"
-# 		else:
-# 			if int(filters.month) == int(ar.start_month):
-# 				for day in range(ar.start_date, get_total_days_in_month(filters) + 1):
-# 					attendance_map.setdefault(ar.employee, {}).setdefault(ar.shift, {})
-# 					attendance_map[ar.employee][ar.shift][day] = "Attendance Request"
-# 			elif int(filters.month) == int(ar.to_month):
-# 				for day in range(1, ar.to_date + 1):
-# 					attendance_map.setdefault(ar.employee, {}).setdefault(ar.shift, {})
-# 					attendance_map[ar.employee][ar.shift][day] = "Attendance Request"
-
-# 	# Return the merged attendance map
-# 	return attendance_map
 def get_attendance_map(filters: Filters) -> Dict:
     """Returns a dictionary of employee-wise attendance map as per shifts for all the days of the month."""
     attendance_list = get_attendance_records(filters)
@@ -498,7 +283,6 @@ def get_attendance_map(filters: Filters) -> Dict:
                     attendance_map[ar.employee][ar.shift][day] = "Attendance Request"
 
     # Return the merged attendance map
-    print(attendance_map)
     return attendance_map
 
 
@@ -506,7 +290,21 @@ def get_draft_requests(filters: Filters) -> Dict:
     """Returns draft leave applications and attendance requests"""
     LeaveApp = frappe.qb.DocType("Leave Application")
     Employee = frappe.qb.DocType("Employee")
-    leave_apps = (
+    AttendanceRequest = frappe.qb.DocType("Attendance Request")
+    
+    # Status condition
+    if filters.get("is_active"):
+        status_condition = (Employee.status == "Active")
+    else:
+        status_condition = (Employee.status != "Active")
+    
+    # Department condition
+    department_condition = None
+    if filters.get("department"):
+        department_condition = (Employee.department == filters.department)
+    
+    # Query draft leave applications
+    leave_query = (
         frappe.qb.from_(LeaveApp)
         .join(Employee).on(Employee.name == LeaveApp.employee)
         .select(
@@ -528,13 +326,19 @@ def get_draft_requests(filters: Filters) -> Dict:
                 (Extract("year", LeaveApp.from_date) == filters.year) |
                 (Extract("year", LeaveApp.to_date) == filters.year)
             )
+            & (status_condition)
         )
-    ).run(as_dict=True)
+    )
+    
+    if department_condition:
+        leave_query = leave_query.where(department_condition)
+    
+    leave_apps = leave_query.run(as_dict=True)
     
     # Query draft attendance requests
-    AttendanceRequest = frappe.qb.DocType("Attendance Request")
-    att_requests = (
+    att_query = (
         frappe.qb.from_(AttendanceRequest)
+        .join(Employee).on(Employee.name == AttendanceRequest.employee)
         .select(
             AttendanceRequest.employee,
             AttendanceRequest.excel_shift.as_("shift"),
@@ -547,10 +351,22 @@ def get_draft_requests(filters: Filters) -> Dict:
             (AttendanceRequest.docstatus == 0)
             & (AttendanceRequest.workflow_state == "Applied")
             & (AttendanceRequest.company == filters.company)
-            & (Extract("month", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.month)
-            & (Extract("year", AttendanceRequest.from_date or AttendanceRequest.to_date) == filters.year)
+            & (
+                (Extract("month", AttendanceRequest.from_date) == filters.month) |
+                (Extract("month", AttendanceRequest.to_date) == filters.month)
+            )
+            & (
+                (Extract("year", AttendanceRequest.from_date) == filters.year) |
+                (Extract("year", AttendanceRequest.to_date) == filters.year)
+            )
+            & (status_condition)
         )
-    ).run(as_dict=True)
+    )
+    
+    if department_condition:
+        att_query = att_query.where(department_condition)
+    
+    att_requests = att_query.run(as_dict=True)
     
     return {
         "leave_applications": leave_apps,
@@ -558,9 +374,21 @@ def get_draft_requests(filters: Filters) -> Dict:
     }
 
 
-
 def get_attendance_records(filters: Filters) -> List[Dict]:
 	Attendance = frappe.qb.DocType("Attendance")
+	Employee = frappe.qb.DocType("Employee")
+	employee_subquery = (
+        frappe.qb.from_(Employee)
+        .select(Employee.name)
+        .where(Employee.company == filters.company)
+    )
+	if filters.department:
+		employee_subquery = employee_subquery.where(Employee.department == filters.department)
+	if filters.get("is_active"):
+		employee_subquery = employee_subquery.where(Employee.status == "Active")
+	else:
+		employee_subquery = employee_subquery.where(Employee.status != "Active")
+
 	query = (
 		frappe.qb.from_(Attendance)
 		.select(
@@ -575,63 +403,76 @@ def get_attendance_records(filters: Filters) -> List[Dict]:
 			(Attendance.company == filters.company)
 			& (Extract("month", Attendance.attendance_date) == filters.month)
 			& (Extract("year", Attendance.attendance_date) == filters.year)
+			& Attendance.employee.isin(employee_subquery)
 		)
 	)
 
 	if filters.employee:
-		query = query.where(Attendance.employee == filters.employee)
+		if isinstance(filters.employee, str):
+			filters.employee = [filters.employee]
+		query = query.where(Attendance.employee.isin(filters.employee))
 	query = query.orderby(Attendance.employee, Attendance.attendance_date)
+		
 
 	return query.run(as_dict=1)
 
 
 def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
-	"""Returns
-	1. nested dict for employee details
-	2. list of values for the group by filter
-	"""
-	Employee = frappe.qb.DocType("Employee")
-	query = (
-		frappe.qb.from_(Employee)
-		.select(
-			Employee.name,
-			Employee.employee_name,
-			Employee.designation,
-			Employee.grade,
-			Employee.department,
-			Employee.branch,
-			Employee.company,
-			Employee.holiday_list,
-		)
-		.where(Employee.company == filters.company)
-		.where(Employee.status == "Active")
-	)
+    """Returns
+    1. nested dict for employee details
+    2. list of values for the group by filter
+    """
+    Employee = frappe.qb.DocType("Employee")
+    
+    query = (
+        frappe.qb.from_(Employee)
+        .select(
+            Employee.name,
+            Employee.employee_name,
+            Employee.designation,
+            Employee.grade,
+            Employee.department,
+            Employee.branch,
+            Employee.company,
+            Employee.holiday_list,
+        )
+        .where(Employee.company == filters.company)
+    )
+	
+    
+    # Use filters.get("is_active") for consistency
+    if filters.get("department"):
+        query = query.where(Employee.department == filters.department)
+    if filters.get("is_active"):
+        query = query.where(Employee.status == "Active")
+    else:
+        query = query.where(Employee.status != "Active")
+    if filters.employee:
+        if isinstance(filters.employee, str):
+            filters.employee = [filters.employee]
+        query = query.where(Employee.name.isin(filters.employee))
+    group_by = filters.group_by
+    if group_by:
+        group_by = group_by.lower()
+        query = query.orderby(group_by)
 
-	if filters.employee:
-		query = query.where(Employee.name == filters.employee)
+    employee_details = query.run(as_dict=True)
 
-	group_by = filters.group_by
-	if group_by:
-		group_by = group_by.lower()
-		query = query.orderby(group_by)
+    group_by_param_values = []
+    emp_map = {}
 
-	employee_details = query.run(as_dict=True)
+    if group_by:
+        for parameter, employees in groupby(employee_details, key=lambda d: d[group_by]):
+            group_by_param_values.append(parameter)
+            emp_map.setdefault(parameter, frappe._dict())
 
-	group_by_param_values = []
-	emp_map = {}
+            for emp in employees:
+                emp_map[parameter][emp.name] = emp
+    else:
+        for emp in employee_details:
+            emp_map[emp.name] = emp
 
-	if group_by:
-		for parameter, employees in groupby(employee_details, key=lambda d: d[group_by]):
-			group_by_param_values.append(parameter)
-			emp_map.setdefault(parameter, frappe._dict())
-
-			for emp in employees:
-				emp_map[parameter][emp.name] = emp
-	else:
-		for emp in employee_details:
-			emp_map[emp.name] = emp
-
-	return emp_map, group_by_param_values
+    return emp_map, group_by_param_values
 
 
 def get_holiday_map(filters: Filters) -> Dict[str, List[Dict]]:

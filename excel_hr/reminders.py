@@ -3,10 +3,55 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, add_months, comma_sep, getdate, today
 from hrms.controllers.employee_reminders import get_sender_email,get_employees_who_are_born_today,get_employees_having_an_event_today 
+from frappe.utils import getdate, add_days, formatdate
 
 
 from frappe.core.doctype.sms_settings.sms_settings import send_sms 
 from excel_hr.api import send_anniversary_wish,send_birthday_wish
+
+def send_absent_alert_for_missing_attendance():
+    yesterday = add_days(getdate(), -1)
+    yesterday_str = formatdate(yesterday)
+
+    employees = frappe.get_all('Employee', filters={'status': 'Active'}, fields=['name', 'employee_name', 'company_email'])
+    
+    for emp in employees:
+        attendance_exists = frappe.db.exists('Attendance', {
+            'employee': emp.name,
+            'attendance_date': yesterday,
+            'docstatus': 1,
+            'status': 'Active'
+        })
+
+        if not attendance_exists and emp.company_email:
+            subject = f"Absent Alert on {yesterday_str}"
+
+            # HTML email template with placeholders
+            message = f"""
+            <div>
+                <p><b>Dear {emp.employee_name},</b></p>
+
+                <p>Our records show that your attendance was not marked for yesterday, <strong>{yesterday_str}</strong>.</p>
+
+                <p>Please take a moment to confirm your attendance for that day by applying an Attendance request or Leave application. If you were present, please let us know.</p>
+
+                <p>Accurate attendance records are important, so your prompt attention to this is appreciated.</p>
+
+                <p><strong>Best regards,<br>
+                Excel Technologies Ltd.</strong></p>
+
+                <p style="color: #888; font-size: 13px; font-style: italic;">
+                    This is a system-generated email. Please do not reply, as responses to this email are not monitored.
+                </p>
+            </div>
+            """
+
+            frappe.sendmail(
+                recipients=emp.company_email,
+                subject=subject,
+                message=message,
+                is_html=True
+            )
 
 
 def send_birthday_reminders():

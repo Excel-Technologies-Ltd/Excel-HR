@@ -10,8 +10,170 @@ import random
 from frappe import _
 from hrms.controllers.employee_reminders import send_birthday_reminders
 from datetime import datetime, timedelta
-
 import math
+import json
+import re
+
+@frappe.whitelist()
+def get_departments_for_company(company):
+    departments = frappe.db.sql_list("""
+        SELECT DISTINCT department FROM `tabEmployee`
+        WHERE company = %s AND department IS NOT NULL AND department != ''
+        ORDER BY department
+    """, company)
+    return departments  # Returns list of strings
+
+
+
+
+def get_employees_todays_checkin(employees):
+    today_checkin = frappe.get_list(
+        "Employee Checkin",
+        fields=["*"],
+        filters={"employee": ["in", employees], "time": ["between", [today() + " 00:00:00", today() + " 23:59:59"]]},
+        order_by="time asc",
+        ignore_permissions=False
+    )
+    return today_checkin
+
+@frappe.whitelist()
+def get_has_role(filters=None):
+    roles_response = frappe.db.get_all(
+        "Has Role",
+        fields=["role", "parent"],
+        filters= filters or {},
+    ),
+    if roles_response and isinstance(roles_response[0], list):
+        roles = roles_response[0]
+    else:
+        roles = roles_response
+    email_pattern = re.compile(r"[^@]+@[^@]+\.[^@]+")
+    filtered = [r for r in roles if email_pattern.match(r.get("parent", ""))]
+    return filtered
+     
+
+
+@frappe.whitelist()
+def get_attendance_report_with_todays_checkin_and_checkout(
+    filters=None,
+    or_filters=None,
+    order_by=None,
+    limit_start=0,
+    limit_page_length=20,
+    fields=None
+):
+    from frappe.utils import today, getdate, date_diff, add_days
+    import json
+
+    filters = json.loads(filters) if isinstance(filters, str) else filters or []
+    or_filters = json.loads(or_filters) if isinstance(or_filters, str) else or_filters or []
+    fields = json.loads(fields) if isinstance(fields, str) else fields or ["*"]
+
+    today_date = today()
+    attendance_list = []
+
+    # Extract date range
+    from_date = to_date = today_date
+    for f in filters:
+        if f[0] == "attendance_date" and f[1] == "between":
+            from_date, to_date = f[2][0], f[2][1]
+
+    from_date = str(getdate(from_date))
+    to_date = str(getdate(to_date))
+
+    # Step 1: Get Attendance documents
+    attendance_filters = [["attendance_date", "between", [from_date, to_date]]] + [f for f in filters if f[0] != "attendance_date"]
+    existing_attendance = frappe.get_all(
+        "Attendance",
+        filters=attendance_filters,
+        or_filters=or_filters,
+        fields=["name", "employee", "attendance_date", "status"]
+    )
+    attendance_map = {(att["employee"], str(att["attendance_date"])): att for att in existing_attendance}
+
+    # Step 2: Get check-ins for the full date range
+    checkin_filters = [["time", "between", [from_date + " 00:00:00", to_date + " 23:59:59"]]]
+    checkin_filters += [f for f in filters if f[0] != "attendance_date"]
+
+    checkins = frappe.get_all(
+        "Employee Checkin",
+        fields=["*"],
+        filters=checkin_filters,
+        or_filters=or_filters,
+        order_by="time asc",
+        ignore_permissions=False
+    )
+
+    # Group check-ins by (employee, date)
+    checkins_dict = {}
+    for c in checkins:
+        key = (c["employee"], str(getdate(c["time"])))
+        checkins_dict.setdefault(key, []).append(c)
+
+    # Step 3: Get filtered employee list
+    # employee_filters = [f for f in filters if f[0] != "attendance_date"] { "status": "Active" }
+    employee_filters = [f for f in filters if f[0] != "attendance_date"]
+    employee_list = frappe.get_all("Employee", filters=employee_filters, or_filters=or_filters, fields=["name"])
+
+    # Step 4: Build full attendance list
+    num_days = date_diff(to_date, from_date) + 1
+    for emp in employee_list:
+        emp_id = emp["name"]
+        for i in range(num_days):
+            current_date = str(add_days(from_date, i))
+            key = (emp_id, current_date)
+
+            # Case 1: Document exists
+            if key in attendance_map:
+                att_doc = frappe.get_doc("Attendance", attendance_map[key]["name"])
+                row = att_doc.as_dict()
+                row["source"] = "Document"
+                row["checkin_list"] = checkins_dict.get(key, [])[:1] + checkins_dict.get(key, [])[-1:]
+            # Case 2: Check-in exists, but no document
+            elif key in checkins_dict:
+                checkins_for_day = checkins_dict[key]
+                row = {
+                    "employee": emp_id,
+                    "full_name": frappe.get_value("Employee", emp_id, "employee_name"),
+                    "department": frappe.get_value("Employee", emp_id, "department"),
+                    "job_location": frappe.get_value("Employee", emp_id, "excel_job_location"),
+                    "shift": frappe.get_value("Employee",emp_id, "default_shift"),
+                    "attendance_date": current_date,
+                    "status": "Present",
+                    "source": "Checkin",
+                    "checkin_list": [checkins_for_day[0], checkins_for_day[-1]]
+                }
+            # Case 3: No data at all
+            else:
+                continue
+                # row = {
+                #     "employee": emp_id,
+                #     "full_name": frappe.get_value("Employee", emp_id, "employee_name"),
+                #     "department": frappe.get_value("Employee", emp_id, "department"),
+                #     "job_location": frappe.get_value("Employee", emp_id, "excel_job_location"),
+                #     "shift": frappe.get_value("Employee",emp_id, "default_shift"),
+                #     "attendance_date": current_date,
+                #     "status": "Absent",
+                #     "source": "Assumed",
+                #     "checkin_list": []
+                # }
+
+            # Respect fields filter
+            if fields == ["*"]:
+                attendance_list.append(row)
+            else:
+                filtered_row = {k: row[k] for k in fields if k in row}
+                attendance_list.append(filtered_row)
+
+    # Step 5: Pagination
+    paginated_result = attendance_list[int(limit_start):int(limit_start) + int(limit_page_length)]
+
+    return paginated_result
+
+
+
+
+
 @frappe.whitelist()
 def get_holiday_list(parent):
     dynamic_parent = parent
@@ -438,15 +600,31 @@ def get_employee_overview(email):
 #        attendance.checkout_list = frappe.db.get_list("Employee Checkin",filters={"attendance":attendance.name,"log_type":"OUT"},fields=["*"],order_by="time asc")
 #    return attendance_list
 @frappe.whitelist()
-def attendance_list_with_checkin_and_checkout(filters=None):
-    # Initialize filters
-    # Fetch up to 300 attendance records
+def attendance_list_with_checkin_and_checkout(
+    filters=None, 
+    or_filters=None,  # Corrected parameter name here
+    order_by=None,
+    limit_start=0,
+    limit_page_length=10,
+    fields=None):
+    
+    # Check if filters are properly passed
+    if filters:
+        filters = json.loads(filters) if isinstance(filters, str) else filters
+    if or_filters:  # Corrected variable name here
+        or_filters = json.loads(or_filters) if isinstance(or_filters, str) else or_filters
+    if fields:
+        fields = json.loads(fields) if isinstance(fields, str) else fields
+
+    # Fetch attendance records
     attendance_list = frappe.get_list(
         "Attendance",
-        fields=["*"],
+        fields=fields if fields else ["*"],
         filters=filters if filters else None,
-        order_by="creation desc",
-        page_length=300,
+        or_filters=or_filters if or_filters else None,  # Corrected argument here
+        order_by=order_by if order_by else "creation desc",
+        limit_start=limit_start if limit_start else 0,
+        limit_page_length=limit_page_length if limit_page_length else 10,
         ignore_permissions=False
     )
 
@@ -456,7 +634,7 @@ def attendance_list_with_checkin_and_checkout(filters=None):
             "Employee Checkin",
             filters={"attendance": attendance.name,},
             fields=["*"],
-            order_by="time asc",
+            order_by="time asc",  # Ascending order to get the first check-in
             limit=1
         )
         
@@ -465,7 +643,7 @@ def attendance_list_with_checkin_and_checkout(filters=None):
             "Employee Checkin",
             filters={"attendance": attendance.name,},
             fields=["*"],
-            order_by="time desc",
+            order_by="time desc",  # Descending order to get the last check-out
             limit=1
         )
 
@@ -473,9 +651,6 @@ def attendance_list_with_checkin_and_checkout(filters=None):
         attendance["checkout_list"] = checkout if checkout else []
 
     return attendance_list
-
-
-
     
 @frappe.whitelist()    
 def get_permitted_employee():

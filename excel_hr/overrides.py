@@ -6,6 +6,11 @@ from frappe.utils import getdate, nowdate, format_date
 from frappe import _
 
 class CustomAttendanceRequest(AttendanceRequest):
+    def before_save(self):
+        aleart_doc=frappe.get_doc("Excel Alert Settings")
+        if aleart_doc.validate_future_date_in_attendance_request == 1:
+            if getdate(self.from_date) > getdate(nowdate()):
+                frappe.throw(_("You cannot create an attendance request for future dates."))
     def validate_dates(self):
         date_of_joining, relieving_date = frappe.db.get_value(
             "Employee", self.employee, ["date_of_joining", "relieving_date"]

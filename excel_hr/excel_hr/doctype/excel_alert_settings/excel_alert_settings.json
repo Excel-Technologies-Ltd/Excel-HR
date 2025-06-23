@@ -52,13 +52,13 @@
    "default": "0",
    "fieldname": "validate_future_date_in_attendance_request",
    "fieldtype": "Check",
-   "label": "Validate Future Date In Attendance Request"
+   "label": "Validate Future Attendance Request"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-06-22 15:00:14.128584",
+ "modified": "2025-06-23 12:33:26.496310",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "Excel Alert Settings",

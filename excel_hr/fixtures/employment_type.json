@@ -1,128 +1,119 @@
 [
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Full-time",
   "modified": "2023-09-27 11:39:53.292742",
-  "name": "Full-time",
-  "sub_type": []
+  "name": "Full-time"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Part-time",
   "modified": "2023-09-27 11:39:53.294670",
-  "name": "Part-time",
-  "sub_type": []
+  "name": "Part-time"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Probation",
   "modified": "2023-09-27 11:39:53.296473",
-  "name": "Probation",
-  "sub_type": []
+  "name": "Probation"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Contractual",
   "modified": "2025-06-22 19:21:00.307000",
-  "name": "Contractual",
-  "sub_type": [
-   {
-    "parent": "Contractual",
-    "parentfield": "sub_type",
-    "parenttype": "Employment Type",
-    "sub_type_name": "sfsdfsdf"
-   }
-  ]
+  "name": "Contractual"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Commission",
   "modified": "2023-09-27 11:39:53.300042",
-  "name": "Commission",
-  "sub_type": []
+  "name": "Commission"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Piecework",
   "modified": "2023-09-27 11:39:53.301829",
-  "name": "Piecework",
-  "sub_type": []
+  "name": "Piecework"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Intern",
   "modified": "2023-09-27 11:39:53.303664",
-  "name": "Intern",
-  "sub_type": []
+  "name": "Intern"
  },
  {
+  "custom_sub_type": [
+   {
+    "parent_employment_type": null,
+    "sub_type_name": "Test"
+   }
+  ],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Apprentice",
-  "modified": "2025-06-22 11:53:07.194755",
-  "name": "Apprentice",
-  "sub_type": [
-   {
-    "parent": "Apprentice",
-    "parentfield": "sub_type",
-    "parenttype": "Employment Type",
-    "sub_type_name": "Test One"
-   }
-  ]
+  "modified": "2025-06-23 10:28:44.322743",
+  "name": "Apprentice"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Permanent",
   "modified": "2023-10-01 18:27:05.525675",
-  "name": "Permanent",
-  "sub_type": []
+  "name": "Permanent"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Probationary",
   "modified": "2023-10-01 18:27:13.602678",
-  "name": "Probationary",
-  "sub_type": []
+  "name": "Probationary"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Probation Extension",
   "modified": "2023-11-11 12:37:14.801397",
-  "name": "Probation Extension",
-  "sub_type": []
+  "name": "Probation Extension"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Extended Permanent",
   "modified": "2023-11-11 12:37:28.172371",
-  "name": "Extended Permanent",
-  "sub_type": []
+  "name": "Extended Permanent"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Regular",
   "modified": "2025-06-22 11:45:58.558184",
-  "name": "Regular",
-  "sub_type": []
+  "name": "Regular"
  },
  {
+  "custom_sub_type": [],
   "docstatus": 0,
   "doctype": "Employment Type",
   "employee_type_name": "Interm",
   "modified": "2025-06-22 11:46:04.762614",
-  "name": "Interm",
-  "sub_type": []
+  "name": "Interm"
  }
 ]

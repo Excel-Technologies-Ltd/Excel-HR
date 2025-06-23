@@ -144,10 +144,14 @@ fixtures = ["Print Format", "Custom Field", "Property Setter", "Client Script",]
 # DocType Class
 # ---------------
 # Override standard doctype classes
+patches = [
+    "custom_hr.patches.add_allow_future_attendance_field"
+]
 
 override_doctype_class = {
     "Employee": "excel_hr.overrides.UserWithEmployee",
     "Attendance Request": "excel_hr.attendance_request.NewAttendanceRequest",
+    "Attendance Request": "excel_hr.overrides.CustomAttendanceRequest",
 }
 
 # Document Events
@@ -173,7 +177,10 @@ scheduler_events = {
     "cron": {
         "*/2 * * * *": [
             "erpnext.stock.doctype.repost_item_valuation.repost_item_valuation.repost_entries",
-        ]
+        ],
+        "0 7 * * *": [
+            "excel_hr.reminders.send_absent_alert_for_missing_attendance",
+        ],
     },
     "daily": [
 		"excel_hr.reminders.send_birthday_reminders",

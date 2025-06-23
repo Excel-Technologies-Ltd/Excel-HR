@@ -41,23 +41,10 @@ frappe.query_reports["Excel Employees In-Exit Time Report"] = {
     {
       fieldname: "year",
       label: __("Year"),
-      fieldtype: "Select",
-      default: frappe.datetime
-        .str_to_obj(frappe.datetime.get_today())
-        .getFullYear(),
-      options: [
-        { value: 2023, label: __("2023") },
-        { value: 2024, label: __("2024") },
-        { value: 2025, label: __("2025") },
-        { value: 2026, label: __("2026") },
-        { value: 2027, label: __("2027") },
-        { value: 2028, label: __("2028") },
-        { value: 2029, label: __("2029") },
-      ],
-      on_change: function () {
-        // Trigger month change to recalculate the date range when year changes
-        frappe.query_report.get_filter("month").on_change();
-      },
+      fieldtype: "Link",
+      options: "Fiscal Year",
+      reqd: 1,
+      default: erpnext.utils.get_fiscal_year(frappe.datetime.get_today()),
     },
     {
       fieldname: "date_range",
@@ -183,5 +170,15 @@ frappe.query_reports["Excel Employees In-Exit Time Report"] = {
       fieldtype: "Link",
       options: "Branch",
     },
+    {
+    fieldname: "is_active",
+    label: __("Is Active Employees"),
+    fieldtype: "Check",
+    default: 1,
+    },
   ],
+  onload: function () {
+    report.get_filter_value("is_active")
+  },
 };
+

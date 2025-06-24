@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:sub_type_name",
+ "creation": "2025-06-22 10:35:45.222960",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sub_type_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "sub_type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Sub Type Name",
+   "reqd": 1,
+   "unique": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-06-23 11:31:47.622975",
+ "modified_by": "Administrator",
+ "module": "Excel Hr",
+ "name": "Employment Sub Type",
+ "name_case": "Title Case",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

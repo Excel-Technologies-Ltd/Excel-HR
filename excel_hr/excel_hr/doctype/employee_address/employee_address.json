@@ -1,0 +1,126 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:address_name",
+ "creation": "2025-06-22 19:34:44.626668",
+ "default_view": "List",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_address_details_section",
+  "disabled",
+  "address_name",
+  "column_break_3",
+  "parent_name",
+  "lft",
+  "rgt",
+  "is_group",
+  "old_parent",
+  "parent_employee_address"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee_address_details_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Address Details",
+   "oldfieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Disabled"
+  },
+  {
+   "fieldname": "address_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Address Name",
+   "oldfieldname": "warehouse_name",
+   "oldfieldtype": "Data",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_group",
+   "fieldtype": "Check",
+   "label": "Is Group"
+  },
+  {
+   "bold": 1,
+   "fieldname": "parent_name",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Parent Address",
+   "options": "Employee Address",
+   "search_index": 1
+  },
+  {
+   "fieldname": "lft",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Left",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "rgt",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Right",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_group",
+   "fieldtype": "Check",
+   "label": "Is Group"
+  },
+  {
+   "fieldname": "old_parent",
+   "fieldtype": "Link",
+   "label": "Old Parent",
+   "options": "Employee Address"
+  },
+  {
+   "fieldname": "parent_employee_address",
+   "fieldtype": "Link",
+   "label": "Parent Employee Address",
+   "options": "Employee Address"
+  }
+ ],
+ "icon": "fa fa-building",
+ "is_tree": 1,
+ "links": [],
+ "modified": "2025-06-22 19:35:09.083091",
+ "modified_by": "Administrator",
+ "module": "Excel Hr",
+ "name": "Employee Address",
+ "naming_rule": "By fieldname",
+ "nsm_parent_field": "parent_employee_address",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "select": 1,
+   "write": 1
+  }
+ ],
+ "show_name_in_global_search": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

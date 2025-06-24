@@ -151,7 +151,6 @@ patches = [
 override_doctype_class = {
     "Employee": "excel_hr.overrides.UserWithEmployee",
     "Attendance Request": "excel_hr.attendance_request.NewAttendanceRequest",
-    "Attendance Request": "excel_hr.overrides.CustomAttendanceRequest",
 }
 
 # Document Events

@@ -56,7 +56,7 @@ def send_absent_alert_for_missing_attendance():
 
 def send_birthday_reminders():
     """Send Employee birthday reminders if no 'Stop Birthday Reminders' is not set."""
-    to_send = int(frappe.db.get_single_value("Excel Alert Settings", "birthday_reminder"))
+    to_send = int(frappe.db.get_single_value("ArcHR Settings", "birthday_reminder"))
     if not to_send:
         return
     
@@ -78,7 +78,7 @@ def send_birthday_reminders():
         
 def send_work_anniversary_reminders():
     """Send Employee work anniversary reminders if no 'Stop Work Anniversary Reminders' is not set."""
-    to_send = int(frappe.db.get_single_value("Excel Alert Settings", "anniversary_reminder"))
+    to_send = int(frappe.db.get_single_value("ArcHR Settings", "anniversary_reminder"))
     if not to_send:
         return
     sender = get_sender_email()

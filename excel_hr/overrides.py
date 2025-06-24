@@ -7,7 +7,7 @@ from frappe import _
 
 class CustomAttendanceRequest(AttendanceRequest):
     def before_save(self):
-        aleart_doc=frappe.get_doc("Excel Alert Settings")
+        aleart_doc=frappe.get_doc("ArcHR Settings")
         if aleart_doc.validate_future_date_in_attendance_request == 1:
             if getdate(self.from_date) > getdate(nowdate()):
                 frappe.throw(_("You cannot create an attendance request for future dates."))

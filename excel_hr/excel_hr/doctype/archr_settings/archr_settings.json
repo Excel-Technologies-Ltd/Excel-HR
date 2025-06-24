@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-02-23 14:59:53.975368",
+ "creation": "2025-06-24 10:43:37.277183",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -22,6 +22,11 @@
    "label": "Greetings"
   },
   {
+   "fieldname": "greetings_notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Greetings Notifications"
+  },
+  {
    "default": "0",
    "fieldname": "birthday_reminder",
    "fieldtype": "Check",
@@ -39,11 +44,6 @@
    "label": "CC Mail"
   },
   {
-   "fieldname": "greetings_notifications_section",
-   "fieldtype": "Section Break",
-   "label": "Greetings Notifications"
-  },
-  {
    "fieldname": "attendance_tab",
    "fieldtype": "Tab Break",
    "label": "Attendance"
@@ -52,16 +52,16 @@
    "default": "0",
    "fieldname": "validate_future_date_in_attendance_request",
    "fieldtype": "Check",
-   "label": "Validate Future Attendance Request"
+   "label": "Restrict Future Date (Attendance Request)"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-06-23 12:33:26.496310",
+ "modified": "2025-06-24 10:47:37.967442",
  "modified_by": "Administrator",
  "module": "Excel Hr",
- "name": "Excel Alert Settings",
+ "name": "ArcHR Settings",
  "owner": "Administrator",
  "permissions": [
   {

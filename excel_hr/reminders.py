@@ -74,7 +74,7 @@ def send_absent_alert_for_missing_attendance():
 
             <p>Our records show that some of your team member's attendance was not marked for yesterday, <strong>{yesterday_str}</strong>.</p>
             
-            <p>Here is the absent member list:</p>
+            <p>Here is the absent members list:</p>
             <ol>
                 {absent_list_html}
             </ol>

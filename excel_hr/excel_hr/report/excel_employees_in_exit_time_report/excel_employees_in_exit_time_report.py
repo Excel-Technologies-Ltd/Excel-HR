@@ -179,7 +179,7 @@ def get_data(filters):
             if is_today and employee in checkin_data:
                 checkins = checkin_data[employee]
                 in_times = [c['time'] for c in checkins if c['type'] == 'IN' and c['time'] is not None]
-                out_times = [c['time'] for c in checkins if c['type'] ==  'IN' or 'OUT' and c['time'] is not None]
+                out_times = ''
                 
                 if in_times or out_times:
                     row[f'in_{current_date.day}'] = format_with_color(

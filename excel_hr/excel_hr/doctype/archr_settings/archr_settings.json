@@ -8,9 +8,12 @@
  "engine": "InnoDB",
  "field_order": [
   "reminders_tab",
-  "greetings_notifications_section",
   "birthday_reminder",
+  "column_break_sotia",
+  "absent_reminder",
+  "section_break_oglh5",
   "anniversary_reminder",
+  "column_break_psfpg",
   "cc_mail",
   "attendance_tab",
   "validate_future_date_in_attendance_request",
@@ -23,12 +26,7 @@
   {
    "fieldname": "reminders_tab",
    "fieldtype": "Tab Break",
-   "label": "Greetings"
-  },
-  {
-   "fieldname": "greetings_notifications_section",
-   "fieldtype": "Section Break",
-   "label": "Greetings Notifications"
+   "label": "Notifications"
   },
   {
    "default": "0",
@@ -78,12 +76,30 @@
    "fieldname": "enabled_date_validation",
    "fieldtype": "Check",
    "label": "Enabled Date validation"
+  },
+  {
+   "fieldname": "section_break_oglh5",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "absent_reminder",
+   "fieldtype": "Check",
+   "label": "Absent Reminder"
+  },
+  {
+   "fieldname": "column_break_sotia",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_psfpg",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-06-26 11:25:25.167452",
+ "modified": "2025-06-26 12:07:21.295338",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

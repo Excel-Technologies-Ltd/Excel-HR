@@ -148,7 +148,7 @@ def get_data(filters):
                     'employee': employee_id,
                     'employee_name': employee_name,
                     'in_time': first_checkin,
-                    'out_time': last_checkout,
+                    'out_time': '',
                     'status': 'Present',
                     'working_hours': (last_checkout - first_checkin).seconds / 3600.0,
                     'leave_application': None,
@@ -197,7 +197,7 @@ def get_data(filters):
             worked_hours = "" if attendance.get('status') in ["Work From Home", "On Leave"] else f"{attendance.get('working_hours', ''):.1f} h" if attendance.get('working_hours') else ""
 
             if current_date == datetime.today().date() and attendance.get('in_time'):
-                payroll_status = "<span style='color:lime;'>Pending</span>"
+                payroll_status = "<span style='color:#318ad8;'>Pending</span>"
             else:
                 payroll_status = ("Present" if attendance.get('status') in ["On Leave", "Work From Home", "Weekend"] 
                                 else attendance.get('status'))
@@ -206,7 +206,7 @@ def get_data(filters):
             attendance.get('employee_name'),
             shift_time_string,
             in_time_str,
-            "",
+            out_time_str,
             worked_hours,
             get_status(attendance, holidays_data, current_date),
             payroll_status,

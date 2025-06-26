@@ -13,7 +13,11 @@
   "anniversary_reminder",
   "cc_mail",
   "attendance_tab",
-  "validate_future_date_in_attendance_request"
+  "validate_future_date_in_attendance_request",
+  "leave_application_tab",
+  "enabled_day_validation_annual_leave",
+  "column_break_2jvum",
+  "enabled_date_validation"
  ],
  "fields": [
   {
@@ -53,12 +57,33 @@
    "fieldname": "validate_future_date_in_attendance_request",
    "fieldtype": "Check",
    "label": "Restrict Future Date (Attendance Request)"
+  },
+  {
+   "fieldname": "leave_application_tab",
+   "fieldtype": "Tab Break",
+   "label": "Leave Application"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled_day_validation_annual_leave",
+   "fieldtype": "Check",
+   "label": "Enabled Day validation (Annual Leave)"
+  },
+  {
+   "fieldname": "column_break_2jvum",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled_date_validation",
+   "fieldtype": "Check",
+   "label": "Enabled Date validation"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-06-24 10:47:37.967442",
+ "modified": "2025-06-26 11:25:25.167452",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

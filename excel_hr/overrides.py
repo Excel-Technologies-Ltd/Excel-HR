@@ -12,19 +12,84 @@ from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 class EnabledDayValidation(LeaveApplication):
     def before_save(self):
         aleart_doc = frappe.get_doc("ArcHR Settings")
-        print("Enabled Day Validation Annual Leave:", aleart_doc.enabled_day_validation_annual_leave)
         if aleart_doc.enabled_day_validation_annual_leave == 1:
             self.validate_annual_leave_balance()
+
+        aleart_doc = frappe.get_doc("ArcHR Settings")
+        if aleart_doc.enabled_date_validation == 1:
+            self.validate_posting_date_range()
     def validate(self):
         aleart_doc = frappe.get_doc("ArcHR Settings")
         print("Enabled Day Validation Annual Leave:", aleart_doc.enabled_day_validation_annual_leave)
         if aleart_doc.enabled_day_validation_annual_leave == 1:
             self.validate_annual_leave_balance()
+        aleart_doc = frappe.get_doc("ArcHR Settings")
+        if aleart_doc.enabled_date_validation == 1:
+            self.validate_posting_date_range()    
     def before_submit(self):
         aleart_doc = frappe.get_doc("ArcHR Settings")
         print("Enabled Day Validation Annual Leave:", aleart_doc.enabled_day_validation_annual_leave)
         if aleart_doc.enabled_day_validation_annual_leave == 1:
-            self.validate_annual_leave_balance()    
+            self.validate_annual_leave_balance()  
+        aleart_doc = frappe.get_doc("ArcHR Settings")
+        if aleart_doc.enabled_date_validation == 1:
+            self.validate_posting_date_range()      
+    
+    def validate_posting_date_range(self):
+        if not self.posting_date:
+            return
+
+        # Use getdate() which handles both strings and date objects
+        posting_date = getdate(self.posting_date)
+        current_date = getdate()
+        current_month = current_date.month  # Current month (1-12)
+        current_year = current_date.year
+
+        # Handle month/year rollover for January
+        if current_month == 1:
+            last_month_year = current_year - 1
+            last_month = 12
+        else:
+            last_month_year = current_year
+            last_month = current_month - 1
+
+        # Get month names
+        last_month_name = datetime(last_month_year, last_month, 1).strftime('%B')  # Full month name
+        current_month_name = datetime(current_year, current_month, 1).strftime('%B')
+
+        if not self.from_date:
+            return
+            
+        from_date = getdate(self.from_date)
+
+        # Skip validation if from_date is after posting_date
+        if from_date > posting_date:
+            return
+
+        # Check if posting date is between 1st and 25th of current month
+        if 1 <= posting_date.day <= 25:
+            range_start = datetime(last_month_year, last_month, 21).date()
+            
+            if from_date < range_start:
+                frappe.throw(
+                    _('The maximum "From Date" <b>21st {0} {1}</b> is allowed.').format(
+                        last_month_name, last_month_year
+                    )
+                )
+
+        # Check if posting date is between 26th and 31st of current month
+        elif 26 <= posting_date.day <= 31:
+            range_start = datetime(current_year, current_month, 21).date()
+            last_day_of_month = (datetime(current_year, current_month + 1, 1) - timedelta(days=1)).date()
+
+            if from_date < range_start or from_date > last_day_of_month:
+                frappe.throw(
+                    _('The maximum "From Date" <b>21st {0} {1}</b> is allowed.').format(
+                        current_month_name, current_year
+                    )
+                )
+
+
     def validate_annual_leave_balance(self):
         if not self.employee:
             frappe.throw(_("Please select an employee."))
@@ -101,73 +166,25 @@ class EnabledDayValidation(LeaveApplication):
     
 
 class EnabledDateValidation(LeaveApplication):
-    def before_save(self):
-        aleart_doc = frappe.get_doc("ArcHR Settings")
-        if aleart_doc.enabled_date_validation == 1:
-            self.validate_posting_date_range()    
-    def validate(self):
-        aleart_doc = frappe.get_doc("ArcHR Settings")
-        if aleart_doc.enabled_date_validation == 1:
-            self.validate_posting_date_range()
-    def before_submit(self):
-        aleart_doc = frappe.get_doc("ArcHR Settings")
-        if aleart_doc.enabled_date_validation == 1:
-            self.validate_posting_date_range()        
+    print("\n\n\n\n")
+    print("Enabled Date Validation Leave Application")
 
-    def validate_posting_date_range(self):
-        if not self.posting_date:
-            return
+    print("\n\n\n\n")
+    # def before_save(self):
+    #     aleart_doc = frappe.get_doc("ArcHR Settings")
+    #     print("Enabled Date Validation Leave Application:", aleart_doc.enabled_date_validation)
+    #     if aleart_doc.enabled_date_validation == 1:
+    #         self.validate_posting_date_range()    
+    # def validate(self):
+    #     aleart_doc = frappe.get_doc("ArcHR Settings")
+    #     if aleart_doc.enabled_date_validation == 1:
+    #         self.validate_posting_date_range()
+    # def before_submit(self):
+    #     aleart_doc = frappe.get_doc("ArcHR Settings")
+    #     if aleart_doc.enabled_date_validation == 1:
+    #         self.validate_posting_date_range()        
 
-        # Convert string dates to datetime objects
-        if isinstance(self.posting_date, str):
-            posting_date = datetime.strptime(self.posting_date, "%Y-%m-%d").date()
-        else:
-            posting_date = self.posting_date
-            
-        current_date = datetime.now().date()
-        current_month = current_date.month  # Current month (1-12)
-        current_year = current_date.year
-
-        # Get month names
-        last_month_date = datetime(current_year, current_month - 1, 1)
-        last_month_name = last_month_date.strftime('%B')  # Full month name
-
-        current_month_name = datetime(current_year, current_month, 1).strftime('%B')
-
-        if not self.from_date:
-            return
-            
-        from_date = datetime.strptime(self.from_date, "%Y-%m-%d").date()
-
-        # Check if posting date is between 1st and 25th of the current month
-        if posting_date.day >= 1 and posting_date.day <= 25:
-            # Set from_date range to last month's 21st to current month's 20th
-            range_start = datetime(current_year, current_month - 1, 21).date()  # 21st of last month
-            range_end = datetime(current_year, current_month, 25).date()  # 25th of current month
-
-            # Skip validation if from_date is after posting_date
-            if from_date > posting_date:
-                return
-
-            if from_date < range_start:
-                frappe.throw(
-                    _('The maximum "From Date" <b>21st {0} {1}</b> is allowed.').format(
-                        last_month_name, current_year
-                    )
-                )
-
-        # Check if posting date is between 26th and 31st of the current month
-        elif posting_date.day >= 26 and posting_date.day <= 31:
-            # Set from_date range to 21st of current month to last day of month
-            range_start = datetime(current_year, current_month, 21).date()
-            last_day_of_month = (datetime(current_year, current_month + 1, 1) - timedelta(days=1)).date()
-
-            if from_date < range_start or from_date > last_day_of_month:
-                frappe.throw(
-                    _('The maximum "From Date" <b>21st {0} {1}</b> is allowed.').format(
-                        current_month_name, current_year
-                    )
-                )
+    
 
 
 class CustomAttendanceRequest(AttendanceRequest):

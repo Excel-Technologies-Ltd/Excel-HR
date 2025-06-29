@@ -1,16 +1,17 @@
+from __future__ import unicode_literals
 import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import add_days, date_diff, format_date, getdate, nowdate
+from datetime import datetime, timedelta
 from erpnext.setup.doctype.employee.employee import Employee
 from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
 from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
-from frappe.model.document import Document
-from frappe.utils import getdate, nowdate, format_date
-from datetime import datetime, timedelta
-from frappe import _
+
 
 class EnabledDayValidation(LeaveApplication):
-    
     def validate(self):
-        aleart_doc=frappe.get_doc("ArcHR Settings")
+        aleart_doc = frappe.get_doc("ArcHR Settings")
         if aleart_doc.enabled_day_validation_annual_leave == 1:
             self.validate_annual_leave_balance()
         
@@ -83,7 +84,7 @@ class EnabledDayValidation(LeaveApplication):
 
 class EnabledDateValidation(LeaveApplication):
     def validate(self):
-        aleart_doc=frappe.get_doc("ArcHR Settings")
+        aleart_doc = frappe.get_doc("ArcHR Settings")
         if aleart_doc.enabled_date_validation == 1:
             self.validate_posting_date_range()
 
@@ -138,12 +139,49 @@ class EnabledDateValidation(LeaveApplication):
                     )
                 )
 
+
 class CustomAttendanceRequest(AttendanceRequest):
+    def should_mark_attendance(self, attendance_date: str) -> bool:
+        # Only check for leave records, skip holiday check
+        if self.has_leave_record(attendance_date):
+            frappe.msgprint(
+                _("Attendance not submitted for {0} as {1} is on leave.").format(
+                    frappe.bold(format_date(attendance_date)), frappe.bold(self.employee)
+                )
+            )
+            return False
+        return True
+
+    @frappe.whitelist()
+    def get_attendance_warnings(self) -> list:
+        attendance_warnings = []
+        request_days = date_diff(self.to_date, self.from_date) + 1
+
+        for day in range(request_days):
+            attendance_date = add_days(self.from_date, day)
+
+            if self.has_leave_record(attendance_date):
+                attendance_warnings.append({"date": attendance_date, "reason": "On Leave", "action": "Skip"})
+            else:
+                attendance = self.get_attendance_record(attendance_date)
+                if attendance:
+                    attendance_warnings.append(
+                        {
+                            "date": attendance_date,
+                            "reason": "Attendance already marked",
+                            "record": attendance,
+                            "action": "Overwrite",
+                        }
+                    )
+
+        return attendance_warnings
+
     def before_save(self):
-        aleart_doc=frappe.get_doc("ArcHR Settings")
-        if aleart_doc.validate_future_date_in_attendance_request == 1:
+        alert_doc = frappe.get_doc("ArcHR Settings")
+        if alert_doc.validate_future_date_in_attendance_request == 1:
             if getdate(self.from_date) > getdate(nowdate()):
                 frappe.throw(_("You cannot create an attendance request for future dates."))
+
     def validate_dates(self):
         date_of_joining, relieving_date = frappe.db.get_value(
             "Employee", self.employee, ["date_of_joining", "relieving_date"]
@@ -220,5 +258,4 @@ class UserWithEmployee(Employee):
         self.create_user_permission = 1
 
         # Save the Employee document
-
         frappe.msgprint("User created successfully.")

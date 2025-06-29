@@ -10,11 +10,21 @@ from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 
 
 class EnabledDayValidation(LeaveApplication):
-    def validate(self):
+    def before_save(self):
         aleart_doc = frappe.get_doc("ArcHR Settings")
+        print("Enabled Day Validation Annual Leave:", aleart_doc.enabled_day_validation_annual_leave)
         if aleart_doc.enabled_day_validation_annual_leave == 1:
             self.validate_annual_leave_balance()
-        
+    def validate(self):
+        aleart_doc = frappe.get_doc("ArcHR Settings")
+        print("Enabled Day Validation Annual Leave:", aleart_doc.enabled_day_validation_annual_leave)
+        if aleart_doc.enabled_day_validation_annual_leave == 1:
+            self.validate_annual_leave_balance()
+    def before_submit(self):
+        aleart_doc = frappe.get_doc("ArcHR Settings")
+        print("Enabled Day Validation Annual Leave:", aleart_doc.enabled_day_validation_annual_leave)
+        if aleart_doc.enabled_day_validation_annual_leave == 1:
+            self.validate_annual_leave_balance()    
     def validate_annual_leave_balance(self):
         if not self.employee:
             frappe.throw(_("Please select an employee."))
@@ -77,23 +87,43 @@ class EnabledDayValidation(LeaveApplication):
         if not self.from_date or not self.to_date:
             return None
             
-        from_date = datetime.strptime(self.from_date, "%Y-%m-%d").date()
-        to_date = datetime.strptime(self.to_date, "%Y-%m-%d").date()
+        if isinstance(self.from_date, str):
+            from_date = datetime.strptime(self.from_date, "%Y-%m-%d").date()
+        else:
+            from_date = self.from_date
+            
+        if isinstance(self.to_date, str):
+            to_date = datetime.strptime(self.to_date, "%Y-%m-%d").date()
+        else:
+            to_date = self.to_date
+            
         return (to_date - from_date).days + 1
     
 
 class EnabledDateValidation(LeaveApplication):
+    def before_save(self):
+        aleart_doc = frappe.get_doc("ArcHR Settings")
+        if aleart_doc.enabled_date_validation == 1:
+            self.validate_posting_date_range()    
     def validate(self):
         aleart_doc = frappe.get_doc("ArcHR Settings")
         if aleart_doc.enabled_date_validation == 1:
             self.validate_posting_date_range()
+    def before_submit(self):
+        aleart_doc = frappe.get_doc("ArcHR Settings")
+        if aleart_doc.enabled_date_validation == 1:
+            self.validate_posting_date_range()        
 
     def validate_posting_date_range(self):
         if not self.posting_date:
             return
 
         # Convert string dates to datetime objects
-        posting_date = datetime.strptime(self.posting_date, "%Y-%m-%d").date()
+        if isinstance(self.posting_date, str):
+            posting_date = datetime.strptime(self.posting_date, "%Y-%m-%d").date()
+        else:
+            posting_date = self.posting_date
+            
         current_date = datetime.now().date()
         current_month = current_date.month  # Current month (1-12)
         current_year = current_date.year
@@ -181,7 +211,11 @@ class CustomAttendanceRequest(AttendanceRequest):
         if alert_doc.validate_future_date_in_attendance_request == 1:
             if getdate(self.from_date) > getdate(nowdate()):
                 frappe.throw(_("You cannot create an attendance request for future dates."))
-
+    def before_submit(self):
+        alert_doc = frappe.get_doc("ArcHR Settings")
+        if alert_doc.validate_future_date_in_attendance_request == 1:
+            if getdate(self.from_date) > getdate(nowdate()):
+                frappe.throw(_("You cannot create an attendance request for future dates."))
     def validate_dates(self):
         date_of_joining, relieving_date = frappe.db.get_value(
             "Employee", self.employee, ["date_of_joining", "relieving_date"]

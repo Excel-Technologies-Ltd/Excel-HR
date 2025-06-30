@@ -115,7 +115,7 @@ class EnabledDayValidation(LeaveApplication):
         
         # Step 4: Check if the total exceeds the allocated annual leave
         total_after_new = total_used_leaves + new_leave_days
-        if total_after_new > leave_details:
+        if total_after_new > leave_details and self.leave_type == "Annual Leave":
             frappe.throw(_(
                 "<b>Total of the leave days exceeds your current allowance.</b> "
                 "Please reduce the number of days or select a different leave type."

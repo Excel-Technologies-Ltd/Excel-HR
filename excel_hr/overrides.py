@@ -41,7 +41,7 @@ class EnabledDayValidation(LeaveApplication):
 
         # Use getdate() which handles both strings and date objects
         posting_date = getdate(self.posting_date)
-        current_date = getdate()
+        current_date = posting_date
         current_month = current_date.month  # Current month (1-12)
         current_year = current_date.year
 

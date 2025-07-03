@@ -949,12 +949,13 @@ def get_attendance_status_for_detailed_view(
         for day in range(1, total_days + 1):
             status = status_dict.get(day, "Absent")  # Default to Absent if no status
             
-            # Only check for holiday status if current status is Absent
-            if status == "Absent" and holidays:
-                holiday_status = get_holiday_status(day, holidays)
-                if holiday_status:
-                    status = holiday_status
-
+            # Check if there's a holiday status for this day
+            holiday_status = get_holiday_status(day, holidays)
+            
+            # Only show holiday status if there's no attendance marked for this day
+            if holiday_status and status == "Absent":
+                status = holiday_status
+            
             abbr = status_map.get(status, "A")  # Default to "A" for Absent if no mapping
             color = get_color_for_status(status)
             
@@ -987,16 +988,17 @@ def get_color_for_status(status: str) -> str:
 
 
 def get_holiday_status(day: int, holidays: List) -> str:
-	status = "Absent"
-	if holidays:
-		for holiday in holidays:
-			if day == holiday.get("day_of_month"):
-				if holiday.get("weekly_off"):
-					status = "Weekly Off"
-				else:
-					status = "Holiday"
-				break
-	return status
+    """Returns holiday status only if there's no attendance marked for that day"""
+    status = None  # Default to None - meaning no holiday status
+    if holidays:
+        for holiday in holidays:
+            if day == holiday.get("day_of_month"):
+                if holiday.get("weekly_off"):
+                    status = "Weekly Off"
+                else:
+                    status = "Holiday"
+                break
+    return status
 
 
 def get_leave_summary(employee: str, filters: Filters) -> Dict[str, float]:

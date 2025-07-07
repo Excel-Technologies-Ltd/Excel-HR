@@ -9,43 +9,39 @@ from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequ
 from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 
 
-class EnabledDayValidation(LeaveApplication):
+class CustomLeaveDayAndDateValidation(LeaveApplication):
     def before_save(self):
+        self.run_validations()
+        
+    def validate(self):
+        self.run_validations()
+    
+    def before_submit(self):
+        self.run_validations()
+    
+    def run_validations(self):
+        """Centralized validation method called from all hooks"""
         aleart_doc = frappe.get_doc("ArcHR Settings")
+        
         if aleart_doc.enabled_day_validation_annual_leave == 1:
             self.validate_annual_leave_balance()
 
-        aleart_doc = frappe.get_doc("ArcHR Settings")
         if aleart_doc.enabled_date_validation == 1:
             self.validate_posting_date_range()
-    def validate(self):
-        aleart_doc = frappe.get_doc("ArcHR Settings")
-        print("Enabled Day Validation Annual Leave:", aleart_doc.enabled_day_validation_annual_leave)
-        if aleart_doc.enabled_day_validation_annual_leave == 1:
-            self.validate_annual_leave_balance()
-        aleart_doc = frappe.get_doc("ArcHR Settings")
-        if aleart_doc.enabled_date_validation == 1:
-            self.validate_posting_date_range()    
-    def before_submit(self):
-        aleart_doc = frappe.get_doc("ArcHR Settings")
-        print("Enabled Day Validation Annual Leave:", aleart_doc.enabled_day_validation_annual_leave)
-        if aleart_doc.enabled_day_validation_annual_leave == 1:
-            self.validate_annual_leave_balance()  
-        aleart_doc = frappe.get_doc("ArcHR Settings")
-        if aleart_doc.enabled_date_validation == 1:
-            self.validate_posting_date_range()      
-    
+            
+        # Ensure total_leave_days is calculated properly
+        if not self.total_leave_days or self.total_leave_days == 0:
+            self.total_leave_days = self.calculate_leave_days()
+
     def validate_posting_date_range(self):
         if not self.posting_date:
             return
 
-        # Use getdate() which handles both strings and date objects
         posting_date = getdate(self.posting_date)
         current_date = posting_date
-        current_month = current_date.month  # Current month (1-12)
+        current_month = current_date.month
         current_year = current_date.year
 
-        # Handle month/year rollover for January
         if current_month == 1:
             last_month_year = current_year - 1
             last_month = 12
@@ -53,8 +49,7 @@ class EnabledDayValidation(LeaveApplication):
             last_month_year = current_year
             last_month = current_month - 1
 
-        # Get month names
-        last_month_name = datetime(last_month_year, last_month, 1).strftime('%B')  # Full month name
+        last_month_name = datetime(last_month_year, last_month, 1).strftime('%B')
         current_month_name = datetime(current_year, current_month, 1).strftime('%B')
 
         if not self.from_date:
@@ -62,11 +57,9 @@ class EnabledDayValidation(LeaveApplication):
             
         from_date = getdate(self.from_date)
 
-        # Skip validation if from_date is after posting_date
         if from_date > posting_date:
             return
 
-        # Check if posting date is between 1st and 25th of current month
         if 1 <= posting_date.day <= 25:
             range_start = datetime(last_month_year, last_month, 21).date()
             
@@ -77,7 +70,6 @@ class EnabledDayValidation(LeaveApplication):
                     )
                 )
 
-        # Check if posting date is between 26th and 31st of current month
         elif 26 <= posting_date.day <= 31:
             range_start = datetime(current_year, current_month, 21).date()
             last_day_of_month = (datetime(current_year, current_month + 1, 1) - timedelta(days=1)).date()
@@ -89,31 +81,25 @@ class EnabledDayValidation(LeaveApplication):
                     )
                 )
 
-
     def validate_annual_leave_balance(self):
         if not self.employee:
             frappe.throw(_("Please select an employee."))
             return
 
-        # Step 1: Fetch the annual leave allocation for the employee
         leave_details = self.get_leave_allocation_details()
         if not leave_details:
             frappe.throw(_("Could not fetch leave allocation details."))
             return
 
-        # Step 2: Query previous leave applications within the same year
         current_year = datetime.now().year
         existing_leaves = self.get_existing_leaves(current_year)
 
-        # Calculate new leave days
         new_leave_days = self.calculate_leave_days()
         if new_leave_days is None:
             return
 
-        # Step 3: Sum the leave days from previous applications
         total_used_leaves = sum(leave["total_leave_days"] for leave in existing_leaves)
         
-        # Step 4: Check if the total exceeds the allocated annual leave
         total_after_new = total_used_leaves + new_leave_days
         if total_after_new > leave_details and self.leave_type == "Annual Leave":
             frappe.throw(_(
@@ -122,7 +108,6 @@ class EnabledDayValidation(LeaveApplication):
             ))
 
     def get_leave_allocation_details(self):
-        """Get the total allocated annual leaves for the employee"""
         try:
             leave_details = frappe.get_doc("Leave Allocation", {
                 "employee": self.employee,
@@ -134,7 +119,6 @@ class EnabledDayValidation(LeaveApplication):
             return None
 
     def get_existing_leaves(self, year):
-        """Get all approved/annual leaves for the employee in the given year"""
         return frappe.get_all("Leave Application",
             filters=[
                 ["employee", "=", self.employee],
@@ -142,7 +126,7 @@ class EnabledDayValidation(LeaveApplication):
                 ["from_date", ">=", f"{year}-01-01"],
                 ["from_date", "<=", f"{year}-12-31"],
                 ["status", "in", ["Open", "Approved"]],
-                ["name", "!=", self.name]  # Exclude current document if updating
+                ["name", "!=", self.name]
             ],
             fields=["total_leave_days"]
         )
@@ -150,43 +134,20 @@ class EnabledDayValidation(LeaveApplication):
     def calculate_leave_days(self):
         """Calculate the number of leave days in the current application"""
         if not self.from_date or not self.to_date:
-            return None
+            return 0
             
-        if isinstance(self.from_date, str):
-            from_date = datetime.strptime(self.from_date, "%Y-%m-%d").date()
-        else:
-            from_date = self.from_date
+        try:
+            from_date = getdate(self.from_date)
+            to_date = getdate(self.to_date)
             
-        if isinstance(self.to_date, str):
-            to_date = datetime.strptime(self.to_date, "%Y-%m-%d").date()
-        else:
-            to_date = self.to_date
-            
-        return (to_date - from_date).days + 1
+            if from_date > to_date:
+                return 0
+                
+            return (to_date - from_date).days + 1
+        except Exception as e:
+            frappe.log_error(f"Error calculating leave days: {str(e)}")
+            return 0
     
-
-class EnabledDateValidation(LeaveApplication):
-    print("\n\n\n\n")
-    print("Enabled Date Validation Leave Application")
-
-    print("\n\n\n\n")
-    # def before_save(self):
-    #     aleart_doc = frappe.get_doc("ArcHR Settings")
-    #     print("Enabled Date Validation Leave Application:", aleart_doc.enabled_date_validation)
-    #     if aleart_doc.enabled_date_validation == 1:
-    #         self.validate_posting_date_range()    
-    # def validate(self):
-    #     aleart_doc = frappe.get_doc("ArcHR Settings")
-    #     if aleart_doc.enabled_date_validation == 1:
-    #         self.validate_posting_date_range()
-    # def before_submit(self):
-    #     aleart_doc = frappe.get_doc("ArcHR Settings")
-    #     if aleart_doc.enabled_date_validation == 1:
-    #         self.validate_posting_date_range()        
-
-    
-
-
 class CustomAttendanceRequest(AttendanceRequest):
     def should_mark_attendance(self, attendance_date: str) -> bool:
         # Only check for leave records, skip holiday check

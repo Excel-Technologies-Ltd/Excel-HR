@@ -21,7 +21,9 @@
   "leave_application_tab",
   "enabled_day_validation_annual_leave",
   "column_break_2jvum",
-  "enabled_date_validation"
+  "enabled_date_validation",
+  "column_break_haypv",
+  "zero_days_validation"
  ],
  "fields": [
   {
@@ -99,12 +101,22 @@
   {
    "fieldname": "column_break_adzdi",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_haypv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "zero_days_validation",
+   "fieldtype": "Check",
+   "label": "Zero Day's Validation"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-06-26 15:57:14.866101",
+ "modified": "2025-07-08 17:13:30.034631",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

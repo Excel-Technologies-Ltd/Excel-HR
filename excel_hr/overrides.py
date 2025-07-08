@@ -21,6 +21,42 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
     
     def run_validations(self):
         """Centralized validation method called from all hooks"""
+        filters = [
+            ["employee", "=", self.employee],
+            ["docstatus", "<", 2],  # Draft(0) or Submitted(1) documents
+            ["status", "!=", "Rejected"],  # Ignore rejected leaves
+            ["from_date", "<=", self.to_date],
+            ["to_date", ">=", self.from_date]
+         ]
+    
+        # Exclude current document if it's being updated
+        if self.name:
+            filters.append(["name", "!=", self.name])
+        
+        existing_leaves = frappe.get_all(
+            "Leave Application",
+            filters=filters,
+            fields=["name", "from_date", "to_date", "leave_type", "status"]
+        )
+        
+        if existing_leaves:
+            # Prepare details of conflicting leaves
+            conflict_details = []
+            for leave in existing_leaves:
+                conflict_details.append(
+                    _("({0} to {1})").format(
+                        format_date(leave.from_date),
+                        format_date(leave.to_date)
+                    )
+                )
+            
+            frappe.throw(
+                _("You've already applied for leave during the following dates: {0}").format(
+                    "<br>".join(conflict_details),
+                ),
+                title=_("Leave Date Overlaps")
+            )
+            
         aleart_doc = frappe.get_doc("ArcHR Settings")
         
         if aleart_doc.enabled_day_validation_annual_leave == 1:
@@ -32,6 +68,7 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         # Ensure total_leave_days is calculated properly
         if not self.total_leave_days or self.total_leave_days == 0:
             self.total_leave_days = self.calculate_leave_days()
+            
 
     def validate_posting_date_range(self):
         if not self.posting_date:
@@ -107,6 +144,8 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
                 "Please reduce the number of days or select a different leave type."
             ))
 
+    
+    
     def get_leave_allocation_details(self):
         try:
             leave_details = frappe.get_doc("Leave Allocation", {
@@ -141,12 +180,53 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
             to_date = getdate(self.to_date)
             
             if from_date > to_date:
+                if frappe.get_doc("ArcHR Settings").zero_days_validation:
+                    frappe.throw(_("From date cannot be after To date"))
                 return 0
-                
-            return (to_date - from_date).days + 1
+            
+            # Get leave type settings
+            leave_type = frappe.get_doc("Leave Type", self.leave_type)
+            include_holidays = leave_type.include_holiday
+            zero_days_validation = frappe.get_doc("ArcHR Settings").zero_days_validation
+
+            if include_holidays:
+                # Simple date difference if holidays are included
+                total_days = (to_date - from_date).days + 1
+                if zero_days_validation and total_days <= 0:
+                    frappe.throw(_("Leave days cannot be zero or negative."))
+                return total_days
+            else:
+                # Calculate working days excluding holidays and weekends
+                working_days = self.calculate_working_days(from_date, to_date)
+                if zero_days_validation and working_days <= 0:
+                    frappe.throw(_("Leave days cannot be zero or negative after excluding holidays and weekends."))
+                return working_days
+
         except Exception as e:
-            frappe.log_error(f"Error calculating leave days: {str(e)}")
+            if frappe.get_doc("ArcHR Settings").zero_days_validation:
+                frappe.throw(_(""))
             return 0
+
+    def calculate_working_days(self, from_date, to_date):
+        """Calculate working days between two dates excluding holidays and weekends"""
+        from erpnext.setup.doctype.holiday_list.holiday_list import is_holiday
+        
+        # Get employee's holiday list
+        holiday_list = frappe.get_cached_value("Employee", self.employee, "holiday_list")
+        if not holiday_list:
+            frappe.throw(_("Please set Holiday List for employee {0}").format(self.employee))
+        
+        working_days = 0
+        current_date = from_date
+        
+        while current_date <= to_date:
+            # Check if it's a weekday (Monday-Friday)
+            if current_date.weekday() < 5:  # 0=Monday, 4=Friday
+                # Check if it's not a holiday
+                if not is_holiday(holiday_list, current_date):
+                    working_days += 1
+            current_date += timedelta(days=1)
+        return working_days
     
 class CustomAttendanceRequest(AttendanceRequest):
     def should_mark_attendance(self, attendance_date: str) -> bool:

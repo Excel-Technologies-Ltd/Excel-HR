@@ -211,20 +211,15 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         """Calculate working days between two dates excluding holidays and weekends"""
         from erpnext.setup.doctype.holiday_list.holiday_list import is_holiday
         
-        # Get employee's holiday list
-        holiday_list = frappe.get_cached_value("Employee", self.employee, "holiday_list")
+        holiday_list = frappe.db.get_value("Employee", self.employee, "holiday_list")
         if not holiday_list:
             frappe.throw(_("Please set Holiday List for employee {0}").format(self.employee))
         
         working_days = 0
         current_date = from_date
-        
         while current_date <= to_date:
-            # Check if it's a weekday (Monday-Friday)
-            if current_date.weekday() < 5:  # 0=Monday, 4=Friday
-                # Check if it's not a holiday
-                if not is_holiday(holiday_list, current_date):
-                    working_days += 1
+            if not is_holiday(holiday_list, current_date):
+                working_days += 1
             current_date += timedelta(days=1)
         return working_days
     

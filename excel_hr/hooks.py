@@ -33,7 +33,7 @@ app_license = "MIT"
 # override_doctype_dashboards = {
 # "Task": "custom_field_prefixing.task.get_dashboard_data"
 # }
-fixtures = ["Print Format", "Custom Field", "Property Setter", "Client Script",]
+fixtures = ["Print Format", "Custom Field", "Property Setter",]
 #     {
 #         "dt": "Custom Field",
 #         "filters": [
@@ -151,6 +151,9 @@ patches = [
 override_doctype_class = {
     "Employee": "excel_hr.overrides.UserWithEmployee",
     "Attendance Request": "excel_hr.attendance_request.NewAttendanceRequest",
+    "Attendance Request": "excel_hr.overrides.CustomAttendanceRequest",
+    "Leave Application": "excel_hr.overrides.CustomLeaveDayAndDateValidation",
+    
 }
 
 # Document Events

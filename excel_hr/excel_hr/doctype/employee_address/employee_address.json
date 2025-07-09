@@ -3,17 +3,13 @@
  "allow_import": 1,
  "allow_rename": 1,
  "autoname": "field:address_name",
- "creation": "2025-06-22 19:34:44.626668",
+ "creation": "2025-06-24 09:59:46.696327",
  "default_view": "List",
  "doctype": "DocType",
  "document_type": "Setup",
  "engine": "InnoDB",
  "field_order": [
-  "employee_address_details_section",
-  "disabled",
   "address_name",
-  "column_break_3",
-  "parent_name",
   "lft",
   "rgt",
   "is_group",
@@ -22,46 +18,15 @@
  ],
  "fields": [
   {
-   "fieldname": "employee_address_details_section",
-   "fieldtype": "Section Break",
-   "label": "Employee Address Details",
-   "oldfieldtype": "Section Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "disabled",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Disabled"
-  },
-  {
    "fieldname": "address_name",
    "fieldtype": "Data",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Address Name",
-   "oldfieldname": "warehouse_name",
+   "oldfieldname": "department_name",
    "oldfieldtype": "Data",
    "reqd": 1,
    "unique": 1
-  },
-  {
-   "fieldname": "column_break_3",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_group",
-   "fieldtype": "Check",
-   "label": "Is Group"
-  },
-  {
-   "bold": 1,
-   "fieldname": "parent_name",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "Parent Address",
-   "options": "Employee Address",
-   "search_index": 1
   },
   {
    "fieldname": "lft",
@@ -88,6 +53,7 @@
   {
    "fieldname": "old_parent",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Old Parent",
    "options": "Employee Address"
   },
@@ -96,12 +62,18 @@
    "fieldtype": "Link",
    "label": "Parent Employee Address",
    "options": "Employee Address"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_group",
+   "fieldtype": "Check",
+   "label": "Is Group"
   }
  ],
- "icon": "fa fa-building",
+ "icon": "fa fa-sitemap",
  "is_tree": 1,
  "links": [],
- "modified": "2025-06-22 19:35:09.083091",
+ "modified": "2025-06-24 10:29:30.749228",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "Employee Address",
@@ -110,17 +82,40 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User"
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager"
+  },
+  {
+   "read": 1,
+   "role": "Employee"
+  },
+  {
    "create": 1,
    "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
    "read": 1,
+   "report": 1,
    "role": "System Manager",
    "select": 1,
+   "share": 1,
    "write": 1
   }
  ],
  "show_name_in_global_search": 1,
  "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+ "sort_order": "ASC",
+ "states": []
 }

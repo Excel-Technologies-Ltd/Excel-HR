@@ -148,9 +148,9 @@ def get_data(filters):
                     'employee': employee_id,
                     'employee_name': employee_name,
                     'in_time': first_checkin,
-                    'out_time': last_checkout,
+                    'out_time': '',
                     'status': 'Present',
-                    'working_hours': (last_checkout - first_checkin).seconds / 3600.0,
+                    'working_hours': '', #(last_checkout - first_checkin).seconds / 3600.0,
                     'leave_application': None,
                     'attendance_request': None,
                     'late_entry': 0,
@@ -197,7 +197,7 @@ def get_data(filters):
             worked_hours = "" if attendance.get('status') in ["Work From Home", "On Leave"] else f"{attendance.get('working_hours', ''):.1f} h" if attendance.get('working_hours') else ""
 
             if current_date == datetime.today().date() and attendance.get('in_time'):
-                payroll_status = "Pending"
+                payroll_status = "<span style='color:#1d88e5; text-style=bold'>Pending</span>"
             else:
                 payroll_status = ("Present" if attendance.get('status') in ["On Leave", "Work From Home", "Weekend"] 
                                 else attendance.get('status'))
@@ -273,7 +273,7 @@ def get_employee_details(employee_id):
         "Designation": employee.get('designation', ''),
         "Department": employee.get('department', ''),
         # "Shift Time": shift_time_string,
-        "Job Location": employee.get('excel_job_location', ''),
+        "Job Location": employee.get('custom_job_location', ''),
         "Joining Date": employee.get('date_of_joining', ''),
         "Contact Number": employee.get('excel_official_mobile_no', ''),
         "Email": employee.get('company_email', ''),

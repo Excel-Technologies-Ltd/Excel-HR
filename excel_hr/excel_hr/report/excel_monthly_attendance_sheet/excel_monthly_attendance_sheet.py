@@ -11,6 +11,7 @@ from frappe import _
 from frappe.query_builder.functions import Count, Extract, Sum
 from frappe.utils import cint, cstr, getdate
 from typing import Dict
+from datetime import datetime
 
 Filters = frappe._dict
 
@@ -315,79 +316,80 @@ def get_data(filters: Filters, attendance_map: Dict) -> List[Dict]:
 
 
 def get_draft_requests(filters: Filters) -> Dict:
-    """
-    Query draft Leave Applications and Attendance Requests for the filter month and year.
-    Returns a dictionary with two keys: 'leave_applications' and 'attendance_requests'.
-    Each record contains the employee, start day, and end day of the draft request.
-    """
-    
+    # Status condition
+    if filters.get("is_active"):
+        status_condition = "AND emp.status = 'Active'"
+    else:
+        status_condition = "AND emp.status != 'Active'"
+
     # Query draft Leave Applications
-    LeaveApp = frappe.qb.DocType("Leave Application")
-    Employee = frappe.qb.DocType("Employee")
-    status_condition = (Employee.status == "Active") if filters.get("is_active") else (Employee.status != "Active")
-    print("Filters: status_condition", status_condition)
-    leave_apps = (
-        frappe.qb.from_(LeaveApp)
-        .join(Employee).on(Employee.name == LeaveApp.employee)
-        .select(
-            LeaveApp.employee,
-            Employee.default_shift.as_("shift"),
-            Extract("day", LeaveApp.from_date).as_("start_date"),
-            Extract("day", LeaveApp.to_date).as_("to_date"),
-            Extract("month", LeaveApp.from_date).as_("start_month"),
-            Extract("month", LeaveApp.to_date).as_("to_month"),
-        )
-        .where(
-            (LeaveApp.docstatus == 0) &
-            (LeaveApp.status == "Open") &
-            (LeaveApp.company == filters.company) &
-            (
-                (Extract("month", LeaveApp.from_date) == filters.month) |
-                (Extract("month", LeaveApp.to_date) == filters.month)
-            ) &
-            (
-                (Extract("year", LeaveApp.from_date) == filters.year) |
-                (Extract("year", LeaveApp.to_date) == filters.year)
+    leave_apps = frappe.db.sql(f"""
+        SELECT 
+            la.employee,
+            emp.default_shift as shift,
+            EXTRACT(day FROM la.from_date) as start_date,
+            EXTRACT(day FROM la.to_date) as to_date,
+            EXTRACT(month FROM la.from_date) as start_month,
+            EXTRACT(month FROM la.to_date) as to_month
+        FROM 
+            `tabLeave Application` la
+        JOIN 
+            `tabEmployee` emp ON la.employee = emp.name
+        WHERE 
+            la.docstatus = 0
+            AND la.status = 'Open'
+            AND la.company = %(company)s
+            AND (
+                EXTRACT(month FROM la.from_date) = %(month)s
+                OR EXTRACT(month FROM la.to_date) = %(month)s
             )
-            & (status_condition)
-           
-        )
-    ).run(as_dict=True)
+            AND (
+                EXTRACT(year FROM la.from_date) = %(year)s
+                OR EXTRACT(year FROM la.to_date) = %(year)s
+            )
+            {status_condition}
+    """, {
+        "company": filters.company,
+        "month": filters.month,
+        "year": filters.year
+    }, as_dict=True)
 
     # Query draft Attendance Requests
-    AttendanceRequest = frappe.qb.DocType("Attendance Request")
-    att_requests = (
-        frappe.qb.from_(AttendanceRequest)
-        .join(Employee).on(Employee.name == AttendanceRequest.employee)
-        .select(
-            AttendanceRequest.employee,
-            AttendanceRequest.excel_shift.as_("shift"),
-            Extract("day", AttendanceRequest.from_date).as_("start_date"),
-            Extract("day", AttendanceRequest.to_date).as_("to_date"),
-            Extract("month", AttendanceRequest.from_date).as_("start_month"),
-            Extract("month", AttendanceRequest.to_date).as_("to_month"),
-        )
-        .where(
-            (AttendanceRequest.docstatus == 0) &
-            (AttendanceRequest.workflow_state == "Applied") &
-            (AttendanceRequest.company == filters.company) &
-            (
-                (Extract("month", AttendanceRequest.from_date) == filters.month) |
-                (Extract("month", AttendanceRequest.to_date) == filters.month)
-            ) &
-            (
-                (Extract("year", AttendanceRequest.from_date) == filters.year) |
-                (Extract("year", AttendanceRequest.to_date) == filters.year)
+    att_requests = frappe.db.sql(f"""
+        SELECT 
+            ar.employee,
+            ar.excel_shift as shift,
+            EXTRACT(day FROM ar.from_date) as start_date,
+            EXTRACT(day FROM ar.to_date) as to_date,
+            EXTRACT(month FROM ar.from_date) as start_month,
+            EXTRACT(month FROM ar.to_date) as to_month
+        FROM 
+            `tabAttendance Request` ar
+        JOIN 
+            `tabEmployee` emp ON ar.employee = emp.name
+        WHERE 
+            ar.docstatus = 0
+            AND ar.workflow_state = 'Applied'
+            AND ar.company = %(company)s
+            AND (
+                EXTRACT(month FROM ar.from_date) = %(month)s
+                OR EXTRACT(month FROM ar.to_date) = %(month)s
             )
-            & (status_condition)
-        )
-    ).run(as_dict=True)
+            AND (
+                EXTRACT(year FROM ar.from_date) = %(year)s
+                OR EXTRACT(year FROM ar.to_date) = %(year)s
+            )
+            {status_condition}
+    """, {
+        "company": filters.company,
+        "month": filters.month,
+        "year": filters.year
+    }, as_dict=True)
 
     return {
         "leave_applications": leave_apps,
         "attendance_requests": att_requests
     }
-
 
 def get_attendance_map(filters: Filters) -> Dict:
     """Returns a dictionary of employee-wise attendance map as per shifts for all the days of the month."""
@@ -570,57 +572,66 @@ def get_attendance_map(filters: Filters) -> Dict:
     return attendance_map
 
 
-
-
-from datetime import datetime
-
 def get_attendance_records(filters: Filters) -> List[Dict]:
     conditions = ""
     if filters.get("is_active"):
-        conditions += " AND status = 'Active'"
+        conditions += " AND emp.status = 'Active'"
     else:
-        conditions += " AND status != 'Active'"
-    sql_query =f"""
+        conditions += " AND emp.status != 'Active'"
+    
+    if filters.get("employee"):
+        if isinstance(filters.employee, list):
+            employee_placeholders = ", ".join([f"%({f'emp_{i}'})s" for i in range(len(filters.employee))])
+            conditions += f" AND att.employee IN ({employee_placeholders})"
+        else:
+            conditions += " AND att.employee = %(employee)s"
+
+    sql_query = f"""
         SELECT
-            employee,
-            EXTRACT(day FROM attendance_date) AS day_of_month,
-            status,
-            late_entry,
-            shift,
-            attendance_request,
-            leave_application
+            att.employee,
+            EXTRACT(day FROM att.attendance_date) AS day_of_month,
+            att.status,
+            att.late_entry,
+            att.shift,
+            att.attendance_request,
+            att.leave_application
         FROM
-            tabAttendance
+            `tabAttendance` att
+        JOIN
+            `tabEmployee` emp ON att.employee = emp.name
         WHERE
-            docstatus = 1
-            AND company = %(company)s
-           	AND EXTRACT(year FROM attendance_date) = %(year)s
-            AND EXTRACT(month FROM attendance_date) = %(month)s
+            att.docstatus = 1
+            AND att.company = %(company)s
+            AND EXTRACT(year FROM att.attendance_date) = %(year)s
+            AND EXTRACT(month FROM att.attendance_date) = %(month)s
             {conditions}
         ORDER BY
-            employee, attendance_date
+            att.employee, att.attendance_date
     """
 
-    # Assuming filters is a dictionary
     params = {
         "company": filters.company,
         "year": filters.year,
         "month": filters.month,
     }
 
-    # Execute the SQL query and fetch results from the database
-    results = frappe.db.sql(sql_query, params, as_dict=True)
-    print({"records":get_attendance_records})
+    if filters.get("employee"):
+        if isinstance(filters.employee, list):
+            for i, emp_id in enumerate(filters.employee):
+                params[f"emp_{i}"] = emp_id
+        else:
+            params["employee"] = filters.employee
 
-    return results
+    return frappe.db.sql(sql_query, params, as_dict=True)
 
 
 def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
-    """Returns
-    1. nested dict for employee details
-    2. list of values for the group by filter
-    """
-    # Assuming Employee is the name of your table
+    conditions = ""
+    if filters.get("is_active"):
+        conditions += " AND status = 'Active'"
+    else:
+        conditions += " AND status != 'Active'"
+
     sql_query = f"""
         SELECT
             name,
@@ -635,17 +646,18 @@ def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
         FROM
             `tabEmployee`
         WHERE
-            company = '{filters.company}'
+            company = %(company)s
+            {conditions}
     """
 
-    if filters.get("is_active"):
-        sql_query += " AND status = 'Active'"
-    else:
-        sql_query += " AND status != 'Active'"
     if filters.employee:
-        employee_list = "','".join(filters.employee)
-        sql_query += f" AND employee IN ('{employee_list}')"
+        if isinstance(filters.employee, list):
+            employee_list = "','".join(filters.employee)
+            sql_query += f" AND name IN ('{employee_list}')"
+        else:
+            sql_query += " AND name = %(employee)s"
 
+    # Rest of your existing conditions...
     if filters.excel_department:
         sql_query += f" AND excel_parent_department = '{filters.excel_department}'"
 
@@ -665,8 +677,14 @@ def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
         group_by = group_by.lower()
         sql_query += f" ORDER BY {group_by}"
 
-    # Assuming your database connection object is `db`
-    employee_details = frappe.db.sql(sql_query, as_dict=True)
+    params = {
+        "company": filters.company,
+    }
+    
+    if filters.employee and not isinstance(filters.employee, list):
+        params["employee"] = filters.employee
+
+    employee_details = frappe.db.sql(sql_query, params, as_dict=True)
 
     group_by_param_values = []
     emp_map = {}
@@ -931,12 +949,13 @@ def get_attendance_status_for_detailed_view(
         for day in range(1, total_days + 1):
             status = status_dict.get(day, "Absent")  # Default to Absent if no status
             
-            # Only check for holiday status if current status is Absent
-            if status == "Absent" and holidays:
-                holiday_status = get_holiday_status(day, holidays)
-                if holiday_status:
-                    status = holiday_status
-
+            # Check if there's a holiday status for this day
+            holiday_status = get_holiday_status(day, holidays)
+            
+            # Only show holiday status if there's no attendance marked for this day
+            if holiday_status and status == "Absent":
+                status = holiday_status
+            
             abbr = status_map.get(status, "A")  # Default to "A" for Absent if no mapping
             color = get_color_for_status(status)
             
@@ -969,16 +988,17 @@ def get_color_for_status(status: str) -> str:
 
 
 def get_holiday_status(day: int, holidays: List) -> str:
-	status = "Absent"
-	if holidays:
-		for holiday in holidays:
-			if day == holiday.get("day_of_month"):
-				if holiday.get("weekly_off"):
-					status = "Weekly Off"
-				else:
-					status = "Holiday"
-				break
-	return status
+    """Returns holiday status only if there's no attendance marked for that day"""
+    status = None  # Default to None - meaning no holiday status
+    if holidays:
+        for holiday in holidays:
+            if day == holiday.get("day_of_month"):
+                if holiday.get("weekly_off"):
+                    status = "Weekly Off"
+                else:
+                    status = "Holiday"
+                break
+    return status
 
 
 def get_leave_summary(employee: str, filters: Filters) -> Dict[str, float]:

@@ -1,0 +1,139 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-06-24 10:43:37.277183",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "reminders_tab",
+  "birthday_reminder",
+  "column_break_sotia",
+  "anniversary_reminder",
+  "column_break_adzdi",
+  "cc_mail",
+  "section_break_oglh5",
+  "absent_reminder",
+  "column_break_psfpg",
+  "attendance_tab",
+  "validate_future_date_in_attendance_request",
+  "leave_application_tab",
+  "enabled_day_validation_annual_leave",
+  "column_break_2jvum",
+  "enabled_date_validation",
+  "column_break_haypv",
+  "zero_days_validation"
+ ],
+ "fields": [
+  {
+   "fieldname": "reminders_tab",
+   "fieldtype": "Tab Break",
+   "label": "Notifications"
+  },
+  {
+   "default": "0",
+   "fieldname": "birthday_reminder",
+   "fieldtype": "Check",
+   "label": "Birthday Greetings"
+  },
+  {
+   "default": "0",
+   "fieldname": "anniversary_reminder",
+   "fieldtype": "Check",
+   "label": "Work Anniversary"
+  },
+  {
+   "fieldname": "cc_mail",
+   "fieldtype": "Data",
+   "label": "CC Mail"
+  },
+  {
+   "fieldname": "attendance_tab",
+   "fieldtype": "Tab Break",
+   "label": "Attendance"
+  },
+  {
+   "default": "0",
+   "fieldname": "validate_future_date_in_attendance_request",
+   "fieldtype": "Check",
+   "label": "Restrict Future Date (Attendance Request)"
+  },
+  {
+   "fieldname": "leave_application_tab",
+   "fieldtype": "Tab Break",
+   "label": "Leave Application"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled_day_validation_annual_leave",
+   "fieldtype": "Check",
+   "label": "Enabled Day validation (Annual Leave)"
+  },
+  {
+   "fieldname": "column_break_2jvum",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled_date_validation",
+   "fieldtype": "Check",
+   "label": "Enabled Date validation"
+  },
+  {
+   "fieldname": "section_break_oglh5",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "absent_reminder",
+   "fieldtype": "Check",
+   "label": "Absent Reminder"
+  },
+  {
+   "fieldname": "column_break_sotia",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_psfpg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_adzdi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_haypv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "zero_days_validation",
+   "fieldtype": "Check",
+   "label": "Enabled Zero Day's Validation"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-07-09 18:24:21.232548",
+ "modified_by": "Administrator",
+ "module": "Excel Hr",
+ "name": "ArcHR Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

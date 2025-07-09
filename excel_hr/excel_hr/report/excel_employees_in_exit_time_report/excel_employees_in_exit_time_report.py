@@ -179,7 +179,7 @@ def get_data(filters):
             if is_today and employee in checkin_data:
                 checkins = checkin_data[employee]
                 in_times = [c['time'] for c in checkins if c['type'] == 'IN' and c['time'] is not None]
-                out_times = [c['time'] for c in checkins if c['type'] == 'OUT' and c['time'] is not None]
+                out_times = ''
                 
                 if in_times or out_times:
                     row[f'in_{current_date.day}'] = format_with_color(
@@ -199,11 +199,11 @@ def get_data(filters):
             
             if attendance and attendance['status'] == 'Present':
                 row[f'in_{current_date.day}'] = format_with_color(
-                    convert_to_am_pm(attendance['in_time']) if attendance['in_time'] else '-', 
+                    convert_to_am_pm(attendance['in_time']) if attendance['in_time'] else 'P', 
                     'green'
                 )
                 row[f'out_{current_date.day}'] = format_with_color(
-                    convert_to_am_pm(attendance['out_time']) if attendance['out_time'] else '-', 
+                    convert_to_am_pm(attendance['out_time']) if attendance['out_time'] else 'P', 
                     'green'
                 )
             elif attendance and attendance['status'] == 'Work From Home':

@@ -248,7 +248,7 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahma
                          department="Engineering And Technology", job_location="Baridhara HR", 
                          anniversary_years="5th"):
 
-    cc_mail = frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
+    cc_mail = frappe.db.get_single_value("ArcHR Settings", "cc_mail")
     
     
     birthday_image_path = "assets/excel_hr/ann.jpg"
@@ -395,7 +395,7 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahma
 @frappe.whitelist()
 def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin Khan", 
                       department="Engineering And Technology", job_location="Baridhara HR"):
-    cc_mail=frappe.db.get_single_value("Excel Alert Settings", "cc_mail")
+    cc_mail=frappe.db.get_single_value("ArcHR Settings", "cc_mail")
     cc_mail = cc_mail.split(",")
     birthday_image_path = "assets/excel_hr/birth.jpg"
     font_path = "assets/excel_hr/Ubuntu/Ubuntu-Bold.ttf"

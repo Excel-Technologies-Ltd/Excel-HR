@@ -1,7 +1,7 @@
 // Copyright (c) 2025, Shaid Azmin and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on('Excel Alert Settings', {
+frappe.ui.form.on('ArcHR Settings', {
 	// refresh: function(frm) {
 
 	// }

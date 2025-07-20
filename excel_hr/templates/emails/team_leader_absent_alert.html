@@ -1,0 +1,32 @@
+<div>
+    <p><b>Dear {{ approver_name }},</b></p>
+    <p>Our records show that some of your team member's attendance was not marked for yesterday, <strong>{{ yesterday_str }}</strong>.</p>
+    
+    <p>Here are the absent team members:</p>
+    
+    <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+        <thead>
+            <tr style="background-color: #f5f5f5;">
+                <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Employee Name</th>
+                <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Department</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for employee in absent_employees %}
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ employee.name }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ employee.department }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <p>Please take a moment to confirm their attendance for that day.</p>
+    <p>Accurate attendance records are important, so your prompt attention to this is appreciated.</p>
+    
+    <p><strong>Best regards,<br>{{ company }}</strong></p>
+    
+    <p style="color: #888; font-size: 13px; font-style: italic;">
+        This is a system-generated email. Please do not reply.
+    </p>
+</div>

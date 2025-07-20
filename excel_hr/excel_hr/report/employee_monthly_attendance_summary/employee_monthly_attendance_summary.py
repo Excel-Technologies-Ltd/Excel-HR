@@ -273,7 +273,7 @@ def get_employee_details(employee_id):
         "Designation": employee.get('designation', ''),
         "Department": employee.get('department', ''),
         # "Shift Time": shift_time_string,
-        "Job Location": employee.get('excel_job_location', ''),
+        "Job Location": employee.get('custom_job_location', ''),
         "Joining Date": employee.get('date_of_joining', ''),
         "Contact Number": employee.get('excel_official_mobile_no', ''),
         "Email": employee.get('company_email', ''),

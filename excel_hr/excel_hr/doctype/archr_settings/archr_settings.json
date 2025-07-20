@@ -110,13 +110,13 @@
    "default": "0",
    "fieldname": "zero_days_validation",
    "fieldtype": "Check",
-   "label": "Zero Day's Validation"
+   "label": "Enabled Zero Day's Validation"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-07-08 17:13:30.034631",
+ "modified": "2025-07-09 18:24:21.232548",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

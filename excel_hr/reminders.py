@@ -10,124 +10,128 @@ from frappe.core.doctype.sms_settings.sms_settings import send_sms
 from excel_hr.api import send_anniversary_wish,send_birthday_wish
 
 def send_absent_alert_for_missing_attendance():
-    yesterday = add_days(getdate(), -1)
-    yesterday_str = formatdate(yesterday)
+    """Send email alerts to team leaders and employees who were absent yesterday."""
     
-    # Get all active employees
-    employees = frappe.get_all('Employee', 
-        filters={'status': 'Active'}, 
-        fields=['name', 'employee_name', 'company_email', 'leave_approver']
-    )
-    
-    absent_employees = {}
-    leave_approvers = set()
-    
-    # First pass: Identify absent employees and collect leave approvers
-    for emp in employees:
-        # Check if attendance exists
-        attendance_exists = frappe.db.exists('Attendance', {
-            'employee': emp.name,
-            'attendance_date': yesterday,
-            'docstatus': 1
-        })
+    try:
+        # Check if absent reminders are enabled
+        absent_reminder = int(frappe.db.get_single_value("ArcHR Settings", "absent_reminder"))
+        if not absent_reminder:
+            frappe.log("Absent reminder notifications are disabled in ArcHR Settings")
+            return
+
+        yesterday = add_days(getdate(), -1)
+        yesterday_str = formatdate(yesterday)
         
-        # Check if leave application exists
-        leave_exists = frappe.db.exists('Leave Application', {
-            'employee': emp.name,
-            'from_date': ['<=', yesterday],
-            'to_date': ['>=', yesterday],
-            'status': 'Approved',
-            'docstatus': 1
-        })
-        
-        if not attendance_exists and not leave_exists and emp.company_email:
-            # Store absent employee details
-            approver = emp.leave_approver
-            if approver:
-                if approver not in absent_employees:
-                    absent_employees[approver] = []
-                absent_employees[approver].append({
-                    'name': emp.employee_name,
-                    'email': emp.company_email
-                })
-                leave_approvers.add(approver)
-    
-    # Second pass: Send emails to absent employees and their approvers
-    for approver, employees_list in absent_employees.items():
-        # Get approver details
-        approver_details = frappe.get_value('Employee', approver, 
-                                          ['employee_name', 'company_email'], as_dict=True)
-        
-        if not approver_details or not approver_details.company_email:
-            continue
-        
-        # Prepare data for team leader email
-        absent_list_html = "\n".join(
-            [f"<li>{emp['name']}</li>" for emp in employees_list]
+        # Get all active employees
+        employees = frappe.get_all('Employee', 
+            filters={'status': 'Active'}, 
+            fields=['name', 'employee_name', 'company_email', 'leave_approver', ]
         )
         
-        # Send email to team leader
-        team_leader_subject = f"Absent Alert for your team members on {yesterday_str}"
-        team_leader_message = f"""
-        <div>
-            <p><b>Dear {approver_details.employee_name},</b></p>
-
-            <p>Our records show that some of your team member's attendance was not marked for yesterday, <strong>{yesterday_str}</strong>.</p>
+        if not employees:
+            frappe.log("No active employees found")
+            return
             
-            <p>Here is the absent members list:</p>
-            <ol>
-                {absent_list_html}
-            </ol>
-
-            <p>Please take a moment to confirm their attendance for that day by applying an Attendance request or Leave application. If they were present, please let us know.</p>
-
-            <p>Accurate attendance records are important, so your prompt attention to this is appreciated.</p>
-
-            <p><strong>Best regards,<br>
-            Excel Technologies Ltd.</strong></p>
-
-            <p style="color: #888; font-size: 13px; font-style: italic;">
-                This is a system-generated email. Please do not reply, as responses to this email are not monitored.
-            </p>
-        </div>
-        """
+        absent_employees = {}
+        leave_approvers = set()
+        total_absent = 0
         
-        frappe.sendmail(
-            recipients=approver_details.company_email,
-            subject=team_leader_subject,
-            message=team_leader_message,
-            is_html=True
-        )
-        
-        # Send individual emails to absent employees
-        for emp in employees_list:
-            if emp['email']:
-                employee_subject = f"Absent Alert on {yesterday_str}"
-                employee_message = f"""
-                <div>
-                    <p><b>Dear {emp['name']},</b></p>
-
-                    <p>Our records show that your attendance was not marked for yesterday, <strong>{yesterday_str}</strong>.</p>
-
-                    <p>Please take a moment to confirm your attendance for that day by applying an Attendance request or Leave application. If you were present, please let us know.</p>
-
-                    <p>Accurate attendance records are important, so your prompt attention to this is appreciated.</p>
-
-                    <p><strong>Best regards,<br>
-                    Excel Technologies Ltd.</strong></p>
-
-                    <p style="color: #888; font-size: 13px; font-style: italic;">
-                        This is a system-generated email. Please do not reply, as responses to this email are not monitored.
-                    </p>
-                </div>
-                """
+        # Identify absent employees
+        for emp in employees:
+            if not emp.company_email:
+                continue  # Skip employees without email
                 
-                frappe.sendmail(
-                    recipients=emp['email'],
-                    subject=employee_subject,
-                    message=employee_message,
-                    is_html=True
-                )
+            # Check attendance
+            attendance_exists = frappe.db.exists('Attendance', {
+                'employee': emp.name,
+                'attendance_date': yesterday,
+                'docstatus': 1
+            })
+            
+    
+            if not attendance_exists:
+                approver = emp.leave_approver
+                if approver:
+                    if approver not in absent_employees:
+                        absent_employees[approver] = []
+                    absent_employees[approver].append({
+                        'name': emp.employee_name,
+                        'email': emp.company_email
+                    })
+                    leave_approvers.add(approver)
+                    total_absent += 1
+        
+        frappe.log(f"Found {total_absent} absent employees for {yesterday_str}")
+        
+        if not absent_employees:
+            return  # No absent employees
+            
+        # Send notifications
+        for approver, employees_list in absent_employees.items():
+            # print(f"Processing approver: {approver}")
+            approver_details = frappe.get_value('Employee', { 'company_email': approver},['employee_name', 'company_email'], as_dict=True)
+            
+            if not approver_details or not approver_details.company_email:
+                frappe.log(f"No email found for approver {approver}")
+                continue
+            
+            # Prepare email for team leader
+            absent_list_html = "\n".join(
+                [f"<li>{emp['name']})</li>" for emp in employees_list]
+            )
+            
+            team_leader_subject = f"Absent Alert for your team members on {yesterday_str}"
+            team_leader_message = f"""
+            <div>
+                <p><b>Dear {approver_details.employee_name},</b></p>
+                <p>Our records show that some of your team member's attendance was not marked for yesterday, <strong>{yesterday_str}</strong>.</p>
+                <p>Here is the absent members list:</p>
+                <ol>{absent_list_html}</ol>
+                <p>Please take a moment to confirm their attendance for that day.</p>
+                <p>Accurate attendance records are important, so your prompt attention to this is appreciated.</p>
+                <p><strong>Best regards,<br>Excel Technologies Ltd.</strong></p>
+                <p style="color: #888; font-size: 13px; font-style: italic;">
+                    This is a system-generated email. Please do not reply.
+                </p>
+            </div>
+            """
+            
+            # Send email to team leader
+            frappe.sendmail(
+                recipients=approver_details.company_email,
+                subject=team_leader_subject,
+                message=team_leader_message,
+                is_html=True
+            )
+            frappe.log(f"Sent absent alert to team leader {approver_details.employee_name}, email: {approver_details.company_email}")
+            
+            # Send individual emails
+            for emp in employees_list:
+                if emp['email']:
+                    employee_subject = f"Attendance Missing for {yesterday_str}"
+                    employee_message = f"""
+                    <div>
+                        <p><b>Dear {emp['name']},</b></p>
+                        <p>Our records show that your attendance was not marked for yesterday, <strong>{yesterday_str}</strong>.</p>
+                        <p>Please submit an Attendance request or Leave application if applicable.</p>
+                        <p><strong>Best regards,<br>Excel Technologies Ltd.</strong></p>
+                        <p style="color: #888; font-size: 13px; font-style: italic;">
+                            This is a system-generated email.
+                        </p>
+                    </div>
+                    """
+                    
+                    frappe.sendmail(
+                        recipients=emp['email'],
+                        subject=employee_subject,
+                        message=employee_message,
+                        is_html=True
+                    )
+                    frappe.log(f"Sent absent alert to employee {emp['name']}")     
+                    
+    except Exception as e:
+        frappe.log_error(f"Failed to send absent alerts: {str(e)}", "Absent Alert Error")
+        frappe.throw("Failed to process absent alerts. Please check error logs.")
 
 
 def send_birthday_reminders():

@@ -121,7 +121,7 @@ def send_absent_alert_for_missing_attendance():
                     
                     frappe.sendmail(
                         recipients=[emp['email']],
-                        subject=f"Attendance Missing for {yesterday_str}",
+                        subject=f"Absent Alert for {yesterday_str}",
                         template="employee_absent_alert",
                         args=email_args
                     )

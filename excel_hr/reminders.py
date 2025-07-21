@@ -105,7 +105,6 @@ def send_absent_alert_for_missing_attendance():
                 subject=f"Absent Alert for your team members on {yesterday_str}",
                 template="team_leader_absent_alert",
                 args=email_args,
-                header=[f"Absent Alert for {yesterday_str}", "green"]
             )
             
             frappe.log(f"Sent absent alert to team leader {approver_details.employee_name}")

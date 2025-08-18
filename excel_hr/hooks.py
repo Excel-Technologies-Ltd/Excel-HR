@@ -91,8 +91,9 @@ fixtures = ["Print Format", "Custom Field", "Property Setter",]
 
 # add methods and filters to jinja environment
 # jinja = {
-# "methods": "excel_hr.utils.jinja_methods",
-# "filters": "excel_hr.utils.jinja_filters"
+#     "methods": [
+#         "excel_hr.leave_application.leave_application.get_leave_dashboard_data"
+#     ]
 # }
 
 # Installation
@@ -217,9 +218,9 @@ scheduler_events = {
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
-override_doctype_dashboards = {
-"Leave Application": "excel_hr.employee_leave_balance.get_dashboard_data"
-}
+# override_doctype_dashboards = {
+# "Leave Application": "excel_hr.employee_leave_balance.get_dashboard_data"
+# }
 
 # exempt linked doctypes from being automatically cancelled
 #

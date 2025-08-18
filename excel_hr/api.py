@@ -50,7 +50,114 @@ def get_has_role(filters=None):
     email_pattern = re.compile(r"[^@]+@[^@]+\.[^@]+")
     filtered = [r for r in roles if email_pattern.match(r.get("parent", ""))]
     return filtered
-     
+
+@frappe.whitelist()
+def get_leave_dashboard_data(employee=None, date=None):
+    """
+    Custom function to get leave dashboard data with proper fiscal year handling
+    Available Leaves = (Total Allocated Leaves - (Used Leaves + Leaves Pending Approval))
+    """
+    if not employee:
+        frappe.throw(_("Employee is required"))
+
+    if not date:
+        date = today()
+
+    # Get fiscal year for the selected date
+    fiscal_year = frappe.db.get_value("Fiscal Year", {
+        "year_start_date": ("<=", date),
+        "year_end_date": (">=", date)
+    }, ["name", "year_start_date", "year_end_date"], as_dict=True)
+
+    if not fiscal_year:
+        frappe.throw(_("No fiscal year found for date {0}").format(date))
+
+    # 1. Get total allocated leaves (consider allocations before the selected date)
+    allocation_query = """
+    SELECT 
+        leave_type,
+        SUM(leaves) as total_allocated
+    FROM `tabLeave Ledger Entry`
+    WHERE 
+        docstatus = 1
+        AND transaction_type = 'Leave Allocation'
+        AND employee = %(employee)s
+        AND from_date <= %(date)s
+    GROUP BY leave_type
+    """
+
+    # 2. Get leaves taken (up to the selected date)
+    taken_query = """
+    SELECT 
+        leave_type,
+        SUM(ABS(leaves)) as total_taken
+    FROM `tabLeave Ledger Entry`
+    WHERE 
+        docstatus = 1
+        AND transaction_type = 'Leave Application'
+        AND employee = %(employee)s
+        AND from_date <= %(date)s
+    GROUP BY leave_type
+    """
+
+    # 3. Get pending leave requests (for current fiscal year)
+    pending_query = """
+    SELECT 
+        leave_type,
+        SUM(total_leave_days) as pending_requests
+    FROM `tabLeave Application`
+    WHERE 
+        docstatus = 0
+        AND employee = %(employee)s
+        AND from_date BETWEEN %(year_start)s AND %(year_end)s
+    GROUP BY leave_type
+    """
+
+    # Execute all queries
+    allocations = frappe.db.sql(allocation_query, {
+        "employee": employee,
+        "date": date
+    }, as_dict=True)
+
+    leaves_taken = frappe.db.sql(taken_query, {
+        "employee": employee,
+        "date": date
+    }, as_dict=True)
+
+    pending_requests = frappe.db.sql(pending_query, {
+        "employee": employee,
+        "year_start": fiscal_year.year_start_date,
+        "year_end": fiscal_year.year_end_date
+    }, as_dict=True)
+
+    # Convert to dictionaries for easier processing
+    alloc_map = {a.leave_type: a.total_allocated for a in allocations}
+    taken_map = {t.leave_type: t.total_taken for t in leaves_taken}
+    pending_map = {p.leave_type: p.pending_requests for p in pending_requests}
+
+    # Combine all leave types
+    all_leave_types = set(alloc_map.keys()).union(
+        set(taken_map.keys()),
+        set(pending_map.keys())
+    )
+
+    leave_data = {}
+    for leave_type in all_leave_types:
+        total_allocated = alloc_map.get(leave_type, 0)
+        total_taken = taken_map.get(leave_type, 0)
+        pending = pending_map.get(leave_type, 0)
+        
+        remaining = total_allocated - (total_taken + pending)
+        
+        leave_data[leave_type] = {
+            "total_leaves": total_allocated,
+            "expired_leaves": 0,  # Would need additional logic for expired leaves
+            "leaves_taken": total_taken,
+            "leaves_pending_approval": pending,
+            "remaining_leaves": max(remaining, 0)  # Ensure not negative
+        }
+
+    return leave_data
 
 
 @frappe.whitelist()

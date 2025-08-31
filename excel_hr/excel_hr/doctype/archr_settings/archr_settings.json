@@ -9,8 +9,10 @@
  "field_order": [
   "reminders_tab",
   "birthday_reminder",
+  "birthday_sender_email",
   "column_break_sotia",
   "anniversary_reminder",
+  "anniversary_sender_email",
   "column_break_adzdi",
   "cc_mail",
   "section_break_oglh5",
@@ -111,12 +113,26 @@
    "fieldname": "zero_days_validation",
    "fieldtype": "Check",
    "label": "Enabled Zero Day's Validation"
+  },
+  {
+   "fieldname": "birthday_sender_email",
+   "fieldtype": "Link",
+   "label": "Birthday Sender Email",
+   "mandatory_depends_on": "eval:doc.birthday_reminder==1",
+   "options": "Email Account"
+  },
+  {
+   "fieldname": "anniversary_sender_email",
+   "fieldtype": "Link",
+   "label": "Anniversary Sender Email",
+   "mandatory_depends_on": "eval:doc.anniversary_reminder==1",
+   "options": "Email Account"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-07-09 18:24:21.232548",
+ "modified": "2025-07-22 22:57:11.138677",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

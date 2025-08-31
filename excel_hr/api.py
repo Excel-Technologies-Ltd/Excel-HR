@@ -247,7 +247,7 @@ def generate_token(email):
 def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahman Lelin Khan Mia", 
                          department="Engineering And Technology", job_location="Baridhara HR", 
                          anniversary_years="5th"):
-
+    arc_hr_settings = frappe.get_doc("ArcHR Settings")
     cc_mail = frappe.db.get_single_value("ArcHR Settings", "cc_mail")
     
     
@@ -386,6 +386,7 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahma
         recipients=[email],
         cc=cc_mail if cc_mail else None,
         subject=f"Happy Work Anniversary to {name}",
+        sender=arc_hr_settings.anniversary_sender_email,
         template="birthday",
         args={"img_url": base_url + file.file_url},
         expose_recipients = 'header'
@@ -395,6 +396,7 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahma
 @frappe.whitelist()
 def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin Khan", 
                       department="Engineering And Technology", job_location="Baridhara HR"):
+    arc_hr_settings = frappe.get_doc("ArcHR Settings")
     cc_mail=frappe.db.get_single_value("ArcHR Settings", "cc_mail")
     cc_mail = cc_mail.split(",")
     birthday_image_path = "assets/excel_hr/birth.jpg"
@@ -514,6 +516,7 @@ def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin
         recipients=email,
         subject=f"Happy Birthday to {name}",
         cc=cc_mail if cc_mail else None,
+        sender=arc_hr_settings.birthday_sender_email,
         template="birthday",
         args={
             "img_url": base_url + file.file_url,

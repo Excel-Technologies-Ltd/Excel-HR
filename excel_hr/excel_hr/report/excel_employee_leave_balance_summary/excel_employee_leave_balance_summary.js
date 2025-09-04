@@ -43,15 +43,10 @@ frappe.query_reports["Excel Employee Leave Balance Summary"] = {
     {
       fieldname: "year",
       label: __("Year"),
-      fieldtype: "Select",
-      default: "2024",
-      options: [
-        { value: 2023, label: __("2023") },
-        { value: 2024, label: __("2024") },
-        { value: 2025, label: __("2025") },
-        { value: 2026, label: __("2026") },
-        { value: 2027, label: __("2027") },
-      ],
+      fieldtype: "Link",
+      default: erpnext.utils.get_fiscal_year(frappe.datetime.get_today()),
+      options:"Fiscal Year",
+      reqd: 1,
     },
 
     //   {

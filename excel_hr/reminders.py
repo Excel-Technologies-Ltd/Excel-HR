@@ -145,7 +145,10 @@ def send_birthday_reminders():
             company_email = get_company_email(person.user_id)
             full_name = get_employee_full_name(person.user_id)
             location,department= get_job_location_and_department(person.user_id)
-            send_birthday_wish(company_email,full_name,department,location)
+            if check_active_and_intern_employee(person.user_id):
+                send_birthday_wish(company_email,full_name,department,location)
+            else:
+                print(f"Employee {full_name} is not active or an intern")
             
 def send_work_anniversary_reminders():
     """Send Employee work anniversary reminders if no 'Stop Work Anniversary Reminders' is not set."""
@@ -162,7 +165,10 @@ def send_work_anniversary_reminders():
             year= count_anniversary_year(person.date_of_joining)
             location,department= get_job_location_and_department(person.user_id)
             print(company_email,full_name,department,location,year)
-            send_anniversary_wish(company_email,full_name,department,location,year)
+            if check_active_and_intern_employee(person.user_id):
+                send_anniversary_wish(company_email,full_name,department,location,year)
+            else:
+                print(f"Employee {full_name} is not active or an intern")
         
     
     
@@ -187,7 +193,22 @@ def get_employee_full_name(userid):
         return ""
 
     
+def check_active_and_intern_employee(userid):
+    employee = frappe.get_doc("Employee", {"user_id": userid})
+    if employee.status != "Active":
+        return False
+    if employee.company_email is None:
+        return False
     
+    if employee.employment_type == "Regular":
+        return True
+    
+    if (employee.employment_type == "Contractual" and
+        employee.custom_employment_subtype == "Contractual"):
+        return True
+    
+    return False
+
     
     
 

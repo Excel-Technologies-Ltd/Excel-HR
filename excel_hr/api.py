@@ -662,6 +662,21 @@ def get_permitted_employee():
 
     
     
+@frappe.whitelist()   
+def get_pending_leave_application(employee="ETL17060114"):
+    # make summary of total_leave_days
+    query = """
+    SELECT SUM(total_leave_days) as total_leave_days FROM `tabLeave Application`
+    WHERE employee = %s
+    AND status = 'Open'
+    AND docstatus = 0
+    AND YEAR(from_date) = YEAR(CURDATE())
+    AND YEAR(to_date) = YEAR(CURDATE())
+    """
+    results = frappe.db.sql(query, (employee,), as_dict=True)
+    # return only total_leave_days
+    return results[0].total_leave_days if results else 0
+    
     
 
     

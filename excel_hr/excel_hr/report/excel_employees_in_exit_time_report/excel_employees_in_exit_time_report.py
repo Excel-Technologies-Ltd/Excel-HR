@@ -39,6 +39,12 @@ def get_columns(filters):
         "options": "Employee",
         "width": 120
     })
+    columns.append({
+        "label": "Employee Name",
+        "fieldname": "employee_name",
+        "fieldtype": "Data",
+        "width": 120
+    })
 
     date_range = filters.get("date_range")
     if not date_range or len(date_range) != 2:
@@ -78,7 +84,7 @@ def get_todays_checkins(employee_ids):
             'time': ['between', [today + ' 00:00:00', today + ' 23:59:59']],
             'log_type': ['in', ['IN', 'OUT']]
         },
-        fields=['employee', 'time', 'log_type'],
+        fields=['employee','employee_name', 'time', 'log_type'],
         order_by='employee,time'
     )
     
@@ -132,7 +138,7 @@ def get_data(filters):
         'attendance_date': ['between', [start_date_str, end_date_str]],
         'employee': ['in', employee_ids],
         'docstatus': 1
-    }, fields=['employee', 'attendance_date', 'in_time', 'out_time', 'status'])
+    }, fields=['employee', 'employee_name', 'attendance_date', 'in_time', 'out_time', 'status'])
 
     attendance_dict = {}
     for record in attendance_records:
@@ -148,7 +154,8 @@ def get_data(filters):
     for employee in employee_ids:
         row = {
             'serial_number': serial_number,
-            'employee_id': employee
+            'employee_id': employee,
+            'employee_name': frappe.db.get_value("Employee", employee, "employee_name")
         }
         
         get_holiday = frappe.db.get_value("Attendance", {

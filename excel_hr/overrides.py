@@ -21,6 +21,9 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
     
     def run_validations(self):
         """Centralized validation method called from all hooks"""
+
+        self.validate_leave_allocation_exists()
+
         filters = [
             ["employee", "=", self.employee],
             ["docstatus", "<", 2],  # Draft(0) or Submitted(1) documents
@@ -68,7 +71,29 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         # Ensure total_leave_days is calculated properly
         if not self.total_leave_days or self.total_leave_days == 0:
             self.total_leave_days = self.calculate_leave_days()
+
+    def validate_leave_allocation_exists(self):
+        """Validate that employee has allocation for the selected leave type"""
+        if not self.employee or not self.leave_type:
+            return
             
+        allocation = frappe.db.exists(
+            "Leave Allocation",
+            {
+                "employee": self.employee,
+                "leave_type": self.leave_type,
+                "docstatus": 1,
+                "to_date": [">=", self.from_date] if self.from_date else [">=", today()]
+            }
+        )
+        
+        if not allocation:
+            frappe.throw(
+                _("You don't have any allocated leave for {0}.").format(
+                    frappe.bold(self.leave_type)
+                ),
+                title=_("No Leave Allocation")
+            )        
 
     def validate_posting_date_range(self):
         if not self.posting_date:

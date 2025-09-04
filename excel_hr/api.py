@@ -50,7 +50,141 @@ def get_has_role(filters=None):
     email_pattern = re.compile(r"[^@]+@[^@]+\.[^@]+")
     filtered = [r for r in roles if email_pattern.match(r.get("parent", ""))]
     return filtered
-     
+
+@frappe.whitelist()
+def get_leave_dashboard_data(employee=None, date=None):
+    """
+    Custom function to get leave dashboard data
+    All metrics calculated for the selected date's fiscal year only
+    Special Leave always shows Available Leaves = 0
+    """
+    if not employee:
+        frappe.throw(_("Employee is required"))
+
+    if not date:
+        date = today()
+
+    # Get fiscal year for the selected date
+    fiscal_year = frappe.db.get_value("Fiscal Year", {
+        "year_start_date": ("<=", date),
+        "year_end_date": (">=", date)
+    }, ["name", "year_start_date", "year_end_date"], as_dict=True)
+
+    if not fiscal_year:
+        frappe.throw(_("No fiscal year found for date {0}").format(date))
+
+    # Base query parameters
+    params = {
+        "employee": employee,
+        "year_start": fiscal_year.year_start_date,
+        "year_end": fiscal_year.year_end_date,
+        "date": date
+    }
+
+    # 1. Get allocated leaves for current fiscal year
+    allocation_query = """
+    SELECT 
+        leave_type,
+        SUM(leaves) as total_allocated
+    FROM `tabLeave Ledger Entry`
+    WHERE 
+        docstatus = 1
+        AND transaction_type = 'Leave Allocation'
+        AND employee = %(employee)s
+        AND from_date BETWEEN %(year_start)s AND %(year_end)s
+    GROUP BY leave_type
+    """
+
+    # 2. Get leaves taken in current fiscal year (up to selected date)
+    taken_query = """
+    SELECT 
+        leave_type,
+        SUM(ABS(leaves)) as total_taken
+    FROM `tabLeave Ledger Entry`
+    WHERE 
+        docstatus = 1
+        AND transaction_type = 'Leave Application'
+        AND employee = %(employee)s
+        AND from_date BETWEEN %(year_start)s AND %(date)s
+    GROUP BY leave_type
+    """
+
+    # 3. Get pending leave requests for current fiscal year
+    pending_query = """
+    SELECT 
+        leave_type,
+        SUM(total_leave_days) as pending_requests
+    FROM `tabLeave Application`
+    WHERE 
+        docstatus = 0
+        AND employee = %(employee)s
+        AND from_date BETWEEN %(year_start)s AND %(year_end)s
+    GROUP BY leave_type
+    """
+
+    # 4. Get expired leaves (allocations that expired before selected date)
+    expired_query = """
+    SELECT 
+        leave_type,
+        SUM(leaves) as expired_leaves
+    FROM `tabLeave Ledger Entry`
+    WHERE 
+        docstatus = 1
+        AND transaction_type = 'Leave Allocation'
+        AND employee = %(employee)s
+        AND to_date < %(date)s
+        AND from_date BETWEEN %(year_start)s AND %(year_end)s
+    GROUP BY leave_type
+    """
+
+    # Execute all queries
+    allocations = frappe.db.sql(allocation_query, params, as_dict=True)
+    leaves_taken = frappe.db.sql(taken_query, params, as_dict=True)
+    pending_requests = frappe.db.sql(pending_query, params, as_dict=True)
+    expired_leaves = frappe.db.sql(expired_query, params, as_dict=True)
+
+    # Convert to dictionaries
+    alloc_map = {a.leave_type: a.total_allocated for a in allocations}
+    taken_map = {t.leave_type: t.total_taken for t in leaves_taken}
+    pending_map = {p.leave_type: p.pending_requests for p in pending_requests}
+    expired_map = {e.leave_type: e.expired_leaves for e in expired_leaves}
+
+    # Combine all leave types
+    all_leave_types = set(alloc_map.keys()).union(
+        set(taken_map.keys()),
+        set(pending_map.keys()),
+        set(expired_map.keys())
+    )
+
+    leave_data = {}
+    for leave_type in all_leave_types:
+        allocated = alloc_map.get(leave_type, 0)
+        taken = taken_map.get(leave_type, 0)
+        pending = pending_map.get(leave_type, 0)
+        expired = expired_map.get(leave_type, 0)
+        
+        # Special handling for Special Leave
+        if leave_type == "Special Leave":
+            leave_data[leave_type] = {
+                "total_leaves": allocated,
+                "expired_leaves": expired,
+                "leaves_taken": taken,
+                "leaves_pending_approval": pending,
+                "remaining_leaves": 0 
+            }
+        else:
+            # Available leaves calculation (allocated - (taken + pending + expired))
+            available = allocated - (taken + pending + expired)
+            
+            leave_data[leave_type] = {
+                "total_leaves": allocated,
+                "expired_leaves": expired,
+                "leaves_taken": taken,
+                "leaves_pending_approval": pending,
+                "remaining_leaves": max(available, 0)  # Ensure not negative
+            }
+
+    return leave_data
 
 
 @frappe.whitelist()
@@ -549,7 +683,7 @@ def get_employee_overview(email):
         (SUM(CASE WHEN lle.transaction_type = 'Leave Allocation' THEN lle.leaves ELSE 0 END) - 
         SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END)) AS remaining_leave,
 
-        -- Pending Leave Applications (status = 0)
+        -- Pending Leave Applications (count)
         COALESCE((
             SELECT COUNT(*) 
             FROM `tabLeave Application` la 
@@ -558,6 +692,15 @@ def get_employee_overview(email):
             AND YEAR(la.from_date) = YEAR(CURDATE())
         ), 0) AS pending_leave_requests,
 
+        -- Pending Leave Applications (total days)
+        COALESCE((
+            SELECT SUM(DATEDIFF(la.to_date, la.from_date))
+            FROM `tabLeave Application` la 
+            WHERE la.employee = emp.name 
+            AND la.docstatus = 0  -- Pending applications
+            AND YEAR(la.from_date) = YEAR(CURDATE())
+        ), 0) AS pending_leave_days,
+
         -- Pending Attendance Requests (workflow_state = 'Applied')
         COALESCE((
             SELECT COUNT(*) 
@@ -565,7 +708,28 @@ def get_employee_overview(email):
             WHERE ar.employee = emp.name 
             AND ar.workflow_state = 'Applied'  -- Only applied requests
             AND YEAR(ar.from_date) = YEAR(CURDATE())
-        ), 0) AS pending_attendance_requests
+        ), 0) AS pending_attendance_requests,
+        
+        -- Pending Compensatory Leave Requests (workflow_state = 'Applied')
+        COALESCE((
+            SELECT COUNT(*) 
+            FROM `tabCompensatory Leave Request` clr 
+            WHERE clr.employee = emp.name 
+            AND clr.workflow_state = 'Applied'
+            AND YEAR(clr.creation) = YEAR(CURDATE())
+        ), 0) AS pending_compensatory_leave_requests,
+        
+        -- Used Leave (Approved leaves + Pending leaves days)
+        (
+            SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END) +  -- Approved leaves
+            COALESCE((
+                SELECT SUM(DATEDIFF(la.to_date, la.from_date) )
+                FROM `tabLeave Application` la 
+                WHERE la.employee = emp.name 
+                AND la.docstatus = 0  -- Pending applications
+                AND YEAR(la.from_date) = YEAR(CURDATE())
+            ), 0)
+        ) AS used_leave
 
     FROM `tabLeave Ledger Entry` lle
     JOIN `tabEmployee` emp ON lle.employee = emp.name
@@ -585,7 +749,6 @@ def get_employee_overview(email):
         frappe.throw(_("No leave records found for this employee."))
 
     return results
-
 # @frappe.whitelist()
 # def attendance_list_with_checkin_and_checkout(from_date=None,to_date=None,filter="zmin"):
 #    if not from_date:

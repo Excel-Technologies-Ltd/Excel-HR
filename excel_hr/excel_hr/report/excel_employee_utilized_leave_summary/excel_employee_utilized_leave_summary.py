@@ -105,6 +105,51 @@ def get_conditions(filters):
 
 # ... (rest of your code)
 
+# def get_data(filters, leave_types):
+#     user = frappe.session.user
+#     conditions = get_conditions(filters)
+#     active_employees = frappe.get_list(
+#         "Employee",
+#         filters=conditions,
+#         fields=["name", "employee_name", "department", "user_id"],
+#     )
+
+#     data = []
+#     for employee in active_employees:
+#         row = [employee.name, employee.employee_name, employee.department]
+#         available_leave = get_leave_details(employee.name, filters.date)
+
+#         # Initialize total used leave for each employee
+#         total_used_leave = {leave_type: 0 for leave_type in leave_types}
+
+#         # Fetch leave applications for the employee
+#         leave_applications = frappe.get_all(
+#             "Leave Application",
+#             filters={
+#                 "employee": employee.name,
+#                 "status": ("=", "Approved"),
+#                 "from_date": (">=",filters.date_range[0]),
+#                 "to_date": ("<=", filters.date_range[1])
+#             },
+#             fields=["leave_type", "total_leave_days"],
+#         )
+#         print(leave_applications)
+#         # Calculate total used leave for each leave type
+#         for leave_application in leave_applications:
+#             leave_type = leave_application.leave_type
+#             total_leave_days = leave_application.total_leave_days
+#             total_used_leave[leave_type] += total_leave_days
+
+#         # Append total used leave for each leave type to the row
+#         for leave_type in leave_types:
+#             row.append(total_used_leave[leave_type])
+
+#         data.append(row)
+
+#     return data
+
+
+
 def get_data(filters, leave_types):
     user = frappe.session.user
     conditions = get_conditions(filters)
@@ -117,32 +162,53 @@ def get_data(filters, leave_types):
     data = []
     for employee in active_employees:
         row = [employee.name, employee.employee_name, employee.department]
-        available_leave = get_leave_details(employee.name, filters.date)
+        
+        # Initialize total used + pending leave for each employee
+        total_leave = {leave_type: 0 for leave_type in leave_types}
 
-        # Initialize total used leave for each employee
-        total_used_leave = {leave_type: 0 for leave_type in leave_types}
-
-        # Fetch leave applications for the employee
-        leave_applications = frappe.get_all(
+        # Fetch APPROVED leave applications (used leaves)
+        approved_applications = frappe.get_all(
             "Leave Application",
             filters={
                 "employee": employee.name,
-                "status": ("=", "Approved"),
-                "from_date": (">=",filters.date_range[0]),
+                "status": "Approved",
+                "from_date": (">=", filters.date_range[0]),
                 "to_date": ("<=", filters.date_range[1])
             },
             fields=["leave_type", "total_leave_days"],
         )
-        print(leave_applications)
+        
+
+        pending_applications = frappe.get_all(
+            "Leave Application",
+            filters={
+                "employee": employee.name,
+                "status": "Open",
+                "docstatus": 0,
+                "from_date": (">=", filters.date_range[0]),
+                "to_date": ("<=", filters.date_range[1])
+            },
+            fields=["leave_type", "total_leave_days"],
+        )
+        
+        print(f"Approved: {approved_applications}")
+        print(f"Pending: {pending_applications}")
+        
         # Calculate total used leave for each leave type
-        for leave_application in leave_applications:
+        for leave_application in approved_applications:
             leave_type = leave_application.leave_type
             total_leave_days = leave_application.total_leave_days
-            total_used_leave[leave_type] += total_leave_days
+            total_leave[leave_type] += total_leave_days
+            
+        # Add pending leave applications
+        for leave_application in pending_applications:
+            leave_type = leave_application.leave_type
+            total_leave_days = leave_application.total_leave_days
+            total_leave[leave_type] += total_leave_days
 
-        # Append total used leave for each leave type to the row
+        # Append total (used + pending) leave for each leave type to the row
         for leave_type in leave_types:
-            row.append(total_used_leave[leave_type])
+            row.append(total_leave[leave_type])
 
         data.append(row)
 

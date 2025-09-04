@@ -141,11 +141,12 @@ def send_birthday_reminders():
     employees_born_today = get_employees_who_are_born_today()
     
     for company, birthday_persons in employees_born_today.items():
-        for person in birthday_persons:
-            company_email = get_company_email(person.user_id)
+        for person in birthday_persons:  
             full_name = get_employee_full_name(person.user_id)
             location,department= get_job_location_and_department(person.user_id)
             if check_active_and_intern_employee(person.user_id):
+                company_email = get_company_email(person.user_id)
+                print("sending birthday wish to",company_email,full_name,department,location)
                 send_birthday_wish(company_email,full_name,department,location)
             else:
                 print(f"Employee {full_name} is not active or an intern")
@@ -160,12 +161,12 @@ def send_work_anniversary_reminders():
     print(employees_joined_today.items())
     for company, anniversary_persons in employees_joined_today.items():
         for person in anniversary_persons:
-            company_email = get_company_email(person.user_id)
             full_name = get_employee_full_name(person.user_id)
             year= count_anniversary_year(person.date_of_joining)
             location,department= get_job_location_and_department(person.user_id)
-            print(company_email,full_name,department,location,year)
             if check_active_and_intern_employee(person.user_id):
+                company_email = get_company_email(person.user_id)
+                print("sending anniversary wish to",company_email,full_name,department,location,year)
                 send_anniversary_wish(company_email,full_name,department,location,year)
             else:
                 print(f"Employee {full_name} is not active or an intern")
@@ -177,7 +178,7 @@ def send_work_anniversary_reminders():
 def get_company_email(userid):
     Employee = frappe.get_doc("Employee", {"user_id": userid})
     company_email= Employee.company_email
-    if not company_email or company_email.startswith("etl") or company_email.startswith("eisl"):
+    if company_email.startswith("etl") or company_email.startswith("eisl"):
         return Employee.leave_approver if Employee.leave_approver else Employee.personal_email
     else:
         return company_email
@@ -197,7 +198,7 @@ def check_active_and_intern_employee(userid):
     employee = frappe.get_doc("Employee", {"user_id": userid})
     if employee.status != "Active":
         return False
-    if employee.company_email is None:
+    if not employee.company_email :
         return False
     
     if employee.employment_type == "Regular":
@@ -241,4 +242,4 @@ def get_ordinal_suffix(n):
         return "th"
 def get_job_location_and_department(id):
     employee= frappe.get_doc('Employee',{"user_id": id})
-    return employee.excel_job_location,employee.excel_parent_department
+    return employee.custom_job_location,employee.excel_parent_department

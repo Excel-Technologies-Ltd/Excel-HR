@@ -87,16 +87,25 @@ def get_data(filters, leave_types):
     for employee in active_employees:
         row = [employee.name, employee.employee_name, employee.department]
         available_leave = get_leave_details(employee.name, get_last_date)
+        print(available_leave)
         for leave_type in leave_types:
             remaining = 0
             if leave_type in available_leave["leave_allocation"]:
+                allocation = available_leave["leave_allocation"][leave_type]
                 remaining = available_leave["leave_allocation"][leave_type]["remaining_leaves"]
+                if leave_type == "Annual Leave":
+                    pending_leaves = allocation.get("leaves_pending_approval", 0)
+                    remaining = remaining - pending_leaves
+                    remaining = max(0, remaining)
                 if leave_type == "Special Leave" :
                     remaining = 0
+                
             row += [remaining]
 
         data.append(row)
     return data
+
+
 
 # ... (rest of your code)
 

@@ -516,6 +516,7 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahma
     })
    
     file.insert(ignore_permissions=True)
+    print("sending anniversary wish to by email api",email,name,department,job_location,anniversary_years)
     frappe.sendmail(
         recipients=[email],
         cc=cc_mail if cc_mail else None,
@@ -525,6 +526,8 @@ def send_anniversary_wish(email="sohan.dev@excelbd.com", name="Mr. Sohanur Rahma
         args={"img_url": base_url + file.file_url},
         expose_recipients = 'header'
     )
+    print(arc_hr_settings.anniversary_sender_email)
+    
     
     
 @frappe.whitelist()
@@ -645,6 +648,8 @@ def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin
     })
     
     file.insert(ignore_permissions=True)
+    print("sending birthday wish to by email api",email,name,department,job_location)
+    print(arc_hr_settings.birthday_sender_email)
     
     frappe.sendmail(
         recipients=email,

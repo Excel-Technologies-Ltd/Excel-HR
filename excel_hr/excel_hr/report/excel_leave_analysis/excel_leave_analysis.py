@@ -132,8 +132,8 @@ def get_data(filters, leave_types):
                 "employee": employee.name,
                 "status": "Approved",
                 "docstatus": 1,
-                "from_date": ("<=", end_date),
-                "to_date": (">=", start_date)
+                "from_date": (">=", start_date),
+                "to_date": (">=", end_date)
             },
             fields=["leave_type", "total_leave_days"]
         )
@@ -143,8 +143,8 @@ def get_data(filters, leave_types):
             "Leave Application",
             filters={
                 "employee": employee.name,
-                "docstatus": 0,  # Pending applications
-                "from_date": ("<=", end_date),
+                "status": "Open",
+                "from_date": (">=", start_date),
                 "to_date": (">=", start_date)
             },
             fields=["leave_type", "total_leave_days"]

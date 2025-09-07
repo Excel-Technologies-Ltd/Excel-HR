@@ -4,11 +4,11 @@ from datetime import datetime, date, timedelta
 import calendar
 from frappe.query_builder.functions import Count, Extract, Sum
 
-# def execute(filters=None):
-#     columns = get_columns()
-#     data = get_data(filters)
-#     employee_details_message = get_employee_details(filters.get('employee'))
-#     return columns, data, employee_details_message
+def execute(filters=None):
+    columns = get_columns()
+    data = get_data(filters)
+    employee_details_message = get_employee_details(filters.get('employee'))
+    return columns, data, employee_details_message
 
 
 
@@ -271,16 +271,16 @@ def get_employee_details(employee_id):
         shift_time_string = ""
 
     employee_details = {
-        "Employee Name": employee.get('employee_name', ''),
-        "Employee ID": employee.get('name', ''),
-        "Designation": employee.get('designation', ''),
-        "Department": employee.get('department', ''),
+        "Employee Name": employee.get('employee_name', '') if employee.get('employee_name') else "",
+        "Employee ID": employee.get('name', '') if employee.get('name') else "",
+        "Designation": employee.get('designation', '') if employee.get('designation') else "",
+        "Department": employee.get('department', '') if employee.get('department') else "",
         # "Shift Time": shift_time_string,
-        "Job Location": employee.get('custom_job_location', ''),
-        "Joining Date": employee.get('date_of_joining', ''),
-        "Contact Number": employee.get('excel_official_mobile_no', ''),
-        "Email": employee.get('company_email', ''),
-        "Manager Name": frappe.db.get_value("User", employee.get('leave_approver'), 'full_name')
+        "Job Location": employee.get('custom_job_location') if employee.get('custom_job_location') else "",
+        "Joining Date": employee.get('date_of_joining', '') if employee.get('date_of_joining') else "",
+        "Contact Number": employee.get('excel_official_mobile_no', '') if employee.get('excel_official_mobile_no') else "",
+        "Email": employee.get('company_email', '') if employee.get('company_email') else "",
+        "Manager Name": frappe.db.get_value("User", employee.get('leave_approver'), 'full_name') if employee.get('leave_approver') else ""
     }
 
     message = "<div style='font-family: Arial, sans-serif;'>"

@@ -87,6 +87,7 @@ def get_data(filters, leave_types):
     for employee in active_employees:
         row = [employee.name, employee.employee_name, employee.department]
         available_leave = get_leave_details(employee.name, get_last_date)
+        print("available_leave",available_leave)
         print(available_leave)
         for leave_type in leave_types:
             remaining = 0

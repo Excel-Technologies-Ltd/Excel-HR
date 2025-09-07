@@ -133,11 +133,10 @@ def get_data(filters, leave_types):
                 "status": "Approved",
                 "docstatus": 1,
                 "from_date": (">=", start_date),
-                "to_date": (">=", end_date)
+               
             },
             fields=["leave_type", "total_leave_days"]
         )
-
         # Get pending leave applications
         pending_leaves = frappe.get_all(
             "Leave Application",
@@ -145,7 +144,6 @@ def get_data(filters, leave_types):
                 "employee": employee.name,
                 "status": "Open",
                 "from_date": (">=", start_date),
-                "to_date": (">=", start_date)
             },
             fields=["leave_type", "total_leave_days"]
         )

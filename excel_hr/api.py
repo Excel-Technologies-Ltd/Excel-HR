@@ -843,6 +843,17 @@ def get_pending_leave_application(employee="ETL17060114"):
     results = frappe.db.sql(query, (employee,), as_dict=True)
     # return only total_leave_days
     return results[0].total_leave_days if results else 0
+
+
+
+
+@frappe.whitelist()
+def delete_banner_images():
+    # from_date = today() - timedelta(days=1)
+    # to_date = today()
+    files = frappe.get_list("File",filters={"file_name":["like","%customer_banners%"]})
+    for file in files:
+        frappe.delete_doc("File",file.name)
     
     
 

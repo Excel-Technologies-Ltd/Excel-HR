@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestEmploymentSubType(FrappeTestCase):
+class TestBulkVisualGenerate(FrappeTestCase):
 	pass

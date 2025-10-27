@@ -1,7 +1,7 @@
 // Copyright (c) 2025, Shaid Azmin and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on('Employment Sub Type', {
+frappe.ui.form.on('Excel Employment Sub Type', {
 	// refresh: function(frm) {
 
 	// }

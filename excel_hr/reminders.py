@@ -205,7 +205,7 @@ def check_active_and_intern_employee(userid):
         return True
     
     if (employee.employment_type == "Contractual" and
-        employee.custom_employment_subtype == "Contractual"):
+        employee.custom_employment_sub_type == "Contractual"):
         return True
     
     return False

@@ -6,6 +6,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_days, date_diff, format_date, get_link_to_form, getdate
+from datetime import datetime, timedelta
 
 from erpnext.setup.doctype.employee.employee import is_holiday
 
@@ -18,11 +19,13 @@ class OverlappingAttendanceRequestError(frappe.ValidationError):
 
 class NewAttendanceRequest(Document):
     def validate(self):
+        frappe.msgprint("working validate")
         Alert_Doc=frappe.get_doc("ArcHR Settings")
         validate_active_employee(self.employee)
         validate_dates(self, self.from_date, self.to_date,bool(Alert_Doc.validate_future_date_in_attendance_request))
         self.validate_half_day()
         self.validate_request_overlap()
+        self.validate_posting_date_range()
 
     def before_save(self):
         self.test_holiday()
@@ -223,3 +226,47 @@ class NewAttendanceRequest(Document):
                     )
 
         return attendance_warnings
+    
+    def validate_posting_date_range(self):
+        frappe.msgprint("working")
+        frappe.msgprint(str(datetime.now().date()))
+        self.creation= datetime.now().date()
+        current_month = self.creation.month
+        current_year = self.creation.year
+
+        if current_month == 1:
+            last_month_year = current_year - 1
+            last_month = 12
+        else:
+            last_month_year = current_year
+            last_month = current_month - 1
+
+        last_month_name = datetime(last_month_year, last_month, 1).strftime('%B')
+        current_month_name = datetime(current_year, current_month, 1).strftime('%B')
+
+            
+        from_date = getdate(self.from_date)
+
+        if from_date > self.creation:
+            return
+
+        if 1 <= self.creation.day <= 25:
+            range_start = datetime(last_month_year, last_month, 21).date()
+            
+            if from_date < range_start:
+                frappe.throw(
+                    _('The maximum "From Date" <b>21st {0} {1}</b> is allowed.').format(
+                        last_month_name, last_month_year
+                    )
+                )
+
+        elif 26 <= self.creation.day <= 31:
+            range_start = datetime(current_year, current_month, 21).date()
+            last_day_of_month = (datetime(current_year, current_month + 1, 1) - timedelta(days=1)).date()
+
+            if from_date < range_start or from_date > last_day_of_month:
+                frappe.throw(
+                    _('The maximum "From Date" <b>21st {0} {1}</b> is allowed.').format(
+                        current_month_name, current_year
+                    )
+                )

@@ -14,7 +14,49 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         self.run_validations()
         
     def validate(self):
+        super().validate()
         self.run_validations()
+        if self.leave_type == "Monthly Paid Leave":
+            if self.to_date != self.from_date:
+                frappe.throw(_("To Date must be the same as From Date for Monthly Paid Leave"))
+            self.check_existing_monthly_paid_leave()
+    
+    def check_existing_monthly_paid_leave(self):
+        if not self.from_date:
+            return
+        
+        from_date = getdate(self.from_date)
+        month_start = from_date.replace(day=1)
+        if from_date.month == 12:
+            month_end = from_date.replace(day=31)
+        else:
+            next_month = from_date.replace(month=from_date.month + 1, day=1)
+            month_end = frappe.utils.add_days(next_month, -1)
+        filters = {
+            "employee": self.employee,
+            "leave_type": "Monthly Paid Leave",
+            "from_date": ["between", [month_start, month_end]],
+            "name": ["!=", self.name]  
+        }
+        or_filters = [
+            ["docstatus", "!=", 2],
+            ["status", "!=", "Rejected"]
+        ]
+        
+        existing_leave = frappe.db.get_list(
+            "Leave Application",
+            filters=filters,
+            or_filters=or_filters,
+            fields=["name", "from_date"]
+        )
+        
+        if existing_leave:
+            frappe.throw(
+                _("Monthly Paid Leave already exists for {0} in {1}").format(
+                    self.employee,
+                    from_date.strftime("%B %Y")
+                )
+            )
     
     def before_submit(self):
         self.run_validations()
@@ -315,9 +357,59 @@ class CustomAttendanceRequest(AttendanceRequest):
             frappe.throw(_("From date cannot be less than employee's joining date"))
         elif relieving_date and getdate(self.to_date) > getdate(relieving_date):
             frappe.throw(_("To date cannot be greater than employee's relieving date"))
+    def validate(self):
+        super().validate()
+        alert_doc = frappe.get_doc("ArcHR Settings")
+        if not bool(alert_doc.enabled_date_validation_att_req):
+            return
+        current_month = datetime.now().date().month
+        current_year = datetime.now().date().year
+
+        if current_month == 1:
+            last_month_year = current_year - 1
+            last_month = 12
+        else:
+            last_month_year = current_year
+            last_month = current_month - 1
+
+        last_month_name = datetime(last_month_year, last_month, 1).strftime('%B')
+        current_month_name = datetime(current_year, current_month, 1).strftime('%B')
+
+            
+        from_date = getdate(self.from_date)
+
+        if from_date > datetime.now().date():
+            return
+
+        if 1 <= datetime.now().date().day <= 25:
+            range_start = datetime(last_month_year, last_month, 21).date()
+            
+            if from_date < range_start:
+                frappe.throw(
+                    _('The maximum "From Date" <b>21st {0} {1}</b> is allowed.').format(
+                        last_month_name, last_month_year
+                    )
+                )
+
+        elif 26 <= datetime.now().date().day <= 31:
+            range_start = datetime(current_year, current_month, 21).date()
+            
+            frappe.msgprint(str(range_start))
+            last_day_of_month = (datetime(current_year, current_month + 1, 1) - timedelta(days=1)).date()
+            
+            frappe.msgprint(str(last_day_of_month))
+            if from_date < range_start or from_date > last_day_of_month:
+                frappe.throw(
+                    _('The maximum "From Date" <b>21st {0} {1}</b> is allowed.').format(
+                        current_month_name, current_year
+                    )
+                )
 
 
 class UserWithEmployee(Employee):
+    def on_update(self):
+        self.branch=self.custom_job_location
+        # self.create_leave_without_pay_after_insert()
     def before_save(self):
         user_company_mail = self.get("company_email")
         employee_number = self.get("employee_number")
@@ -370,4 +462,30 @@ class UserWithEmployee(Employee):
         self.create_user_permission = 1
 
         # Save the Employee document
-        frappe.msgprint("User created successfully.")
+        frappe.msgprint("User created successfully.")    
+    def create_leave_without_pay_after_insert(self):
+        joining_date = self.get("date_of_joining")
+        if not joining_date:
+            return
+
+        if joining_date.day == 1:
+            return
+
+        from_date = joining_date.replace(day=1)
+        to_date = joining_date - timedelta(days=1)
+
+        # Create the Leave Without Pay record
+        leave_without_pay = frappe.get_doc({
+            "doctype": "Leave Application",
+            "employee": self.name,
+            "leave_type": "Leave Without Pay",
+            "from_date": from_date,
+            "to_date": to_date,
+            "status": "Approved",
+            "company": self.company if hasattr(self, "company") else None
+        })
+        leave_without_pay.insert(ignore_permissions=True)
+        frappe.msgprint(f"Leave Without Pay created for {from_date} to {to_date}.")
+
+        
+        

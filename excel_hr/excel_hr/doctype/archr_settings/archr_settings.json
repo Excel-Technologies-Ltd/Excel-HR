@@ -20,6 +20,8 @@
   "column_break_psfpg",
   "attendance_tab",
   "validate_future_date_in_attendance_request",
+  "enabled_date_validation_att_req",
+  "column_break_blree",
   "leave_application_tab",
   "enabled_day_validation_annual_leave",
   "column_break_2jvum",
@@ -127,12 +129,21 @@
    "label": "Anniversary Sender Email",
    "mandatory_depends_on": "eval:doc.anniversary_reminder==1",
    "options": "Email Account"
+  },
+  {
+   "fieldname": "enabled_date_validation_att_req",
+   "fieldtype": "Data",
+   "label": "Enabled Date validation (Att. req)"
+  },
+  {
+   "fieldname": "column_break_blree",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-07-22 22:57:11.138677",
+ "modified": "2025-10-22 18:16:18.714937",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

@@ -154,6 +154,7 @@ override_doctype_class = {
     "Attendance Request": "excel_hr.attendance_request.NewAttendanceRequest",
     "Attendance Request": "excel_hr.overrides.CustomAttendanceRequest",
     "Leave Application": "excel_hr.overrides.CustomLeaveDayAndDateValidation",
+    "Employee Transfer": "excel_hr.override.employee_transfer.EmployeeTransfer",
     
 }
 
@@ -187,7 +188,8 @@ scheduler_events = {
     },
     "daily": [
 		"excel_hr.reminders.send_birthday_reminders",
-		"excel_hr.reminders.send_work_anniversary_reminders"
+		"excel_hr.reminders.send_work_anniversary_reminders",
+        "excel_hr.api.delete_banner_images"
 	],
     # "all": [
     #     "excel_hr.tasks.all"

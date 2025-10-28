@@ -25,7 +25,8 @@ class NewAttendanceRequest(Document):
         validate_dates(self, self.from_date, self.to_date,bool(Alert_Doc.validate_future_date_in_attendance_request))
         self.validate_half_day()
         self.validate_request_overlap()
-        self.validate_posting_date_range()
+        if bool(Alert_Doc.enabled_date_validation_att_req):
+            self.validate_posting_date_range
 
     def before_save(self):
         self.test_holiday()
@@ -228,8 +229,6 @@ class NewAttendanceRequest(Document):
         return attendance_warnings
     
     def validate_posting_date_range(self):
-        frappe.msgprint("working")
-        frappe.msgprint(str(datetime.now().date()))
         self.creation= datetime.now().date()
         current_month = self.creation.month
         current_year = self.creation.year

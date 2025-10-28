@@ -2,10 +2,11 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import add_days, date_diff, format_date, getdate, nowdate
+from frappe.utils import add_days, date_diff, format_date, getdate, nowdate,today
 from datetime import datetime, timedelta
 from erpnext.setup.doctype.employee.employee import Employee
 from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
+from frappe.utils import getdate
 from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 
 
@@ -62,6 +63,8 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         self.run_validations()
     
     def run_validations(self):
+        if self.leave_type=="Leave Without Pay":
+            return
         """Centralized validation method called from all hooks"""
 
         self.validate_leave_allocation_exists()
@@ -118,7 +121,6 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         """Validate that employee has allocation for the selected leave type"""
         if not self.employee or not self.leave_type:
             return
-            
         allocation = frappe.db.exists(
             "Leave Allocation",
             {
@@ -129,7 +131,7 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
             }
         )
         
-        if not allocation:
+        if not allocation :
             frappe.throw(
                 _("You don't have any allocated leave for {0}.").format(
                     frappe.bold(self.leave_type)
@@ -409,7 +411,7 @@ class CustomAttendanceRequest(AttendanceRequest):
 class UserWithEmployee(Employee):
     def on_update(self):
         self.branch=self.custom_job_location
-        # self.create_leave_without_pay_after_insert()
+        self.create_leave_without_pay_after_insert()
     def before_save(self):
         user_company_mail = self.get("company_email")
         employee_number = self.get("employee_number")
@@ -464,7 +466,7 @@ class UserWithEmployee(Employee):
         # Save the Employee document
         frappe.msgprint("User created successfully.")    
     def create_leave_without_pay_after_insert(self):
-        joining_date = self.get("date_of_joining")
+        joining_date = getdate(self.get("date_of_joining"))
         if not joining_date:
             return
 
@@ -485,6 +487,7 @@ class UserWithEmployee(Employee):
             "company": self.company if hasattr(self, "company") else None
         })
         leave_without_pay.insert(ignore_permissions=True)
+        leave_without_pay.submit()
         frappe.msgprint(f"Leave Without Pay created for {from_date} to {to_date}.")
 
         

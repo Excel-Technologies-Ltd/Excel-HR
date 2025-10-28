@@ -20,6 +20,7 @@
   "column_break_psfpg",
   "attendance_tab",
   "validate_future_date_in_attendance_request",
+  "column_break_wbfsh",
   "enabled_date_validation_att_req",
   "column_break_blree",
   "leave_application_tab",
@@ -131,19 +132,24 @@
    "options": "Email Account"
   },
   {
+   "default": "0",
    "fieldname": "enabled_date_validation_att_req",
-   "fieldtype": "Data",
-   "label": "Enabled Date validation (Att. req)"
+   "fieldtype": "Check",
+   "label": "Enabled Date validation (Att. Req)"
   },
   {
    "fieldname": "column_break_blree",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wbfsh",
    "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-10-22 18:16:18.714937",
+ "modified": "2025-10-28 11:25:44.136214",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

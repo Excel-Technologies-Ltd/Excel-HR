@@ -141,7 +141,9 @@ fixtures = ["Print Format", "Custom Field", "Property Setter",]
 # has_permission = {
 # "Event": "frappe.desk.doctype.event.event.has_permission",
 # }
-
+override_whitelisted_methods = {
+    "hrms.hr.utils.get_employee_field_property": "excel_hr.api.get_employee_field_property"
+}
 # DocType Class
 # ---------------
 # Override standard doctype classes

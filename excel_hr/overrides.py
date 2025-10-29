@@ -409,9 +409,14 @@ class CustomAttendanceRequest(AttendanceRequest):
 
 
 class UserWithEmployee(Employee):
+    def after_insert(self):
+        settings = frappe.get_doc("ArcHR Settings")
+        if settings.create_leave_without_pay_after_insert == 1:
+            self.create_leave_without_pay_after_insert()
     def on_update(self):
         self.branch=self.custom_job_location
-        self.create_leave_without_pay_after_insert()
+
+        
     def before_save(self):
         user_company_mail = self.get("company_email")
         employee_number = self.get("employee_number")

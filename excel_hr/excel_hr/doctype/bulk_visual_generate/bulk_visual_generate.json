@@ -10,6 +10,7 @@
  "field_order": [
   "attach_image",
   "font_style",
+  "color",
   "customer_list"
  ],
  "fields": [
@@ -28,19 +29,24 @@
    "reqd": 1
   },
   {
-   
    "fieldname": "font_style",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Font Style",
    "options": "\nHind Siliguri\nGilroy\nRoboto\nUnbounded",
    "reqd": 1
-   
+  },
+  {
+   "fieldname": "color",
+   "fieldtype": "Select",
+   "label": "Color",
+   "options": "White\nBlack",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-26 11:53:42.619848",
+ "modified": "2025-10-29 17:28:29.928925",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "Bulk Visual Generate",

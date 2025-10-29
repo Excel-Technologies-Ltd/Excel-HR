@@ -91,7 +91,7 @@ def get_custom_font_path(font_name, bold=False):
         return None
 
 @frappe.whitelist()
-def generate_customer_banner(customer_name, customer_address, base_image_path,font_style,):
+def generate_customer_banner(customer_name, customer_address, base_image_path,font_style,color="White"):
     """
     Generate a single promotional banner with customer details
     
@@ -104,6 +104,11 @@ def generate_customer_banner(customer_name, customer_address, base_image_path,fo
     Returns:
         PIL Image object
     """
+ 
+    if color == "White":
+        color = "white"
+    else:
+        color = "black"
     try:
         # Load the base image
         if base_image_path.startswith('/files/'):
@@ -179,7 +184,7 @@ def generate_customer_banner(customer_name, customer_address, base_image_path,fo
                 lw = len(line) * 20
             lx = (width - lw) // 2
             ly = bottom_section_start + (i * 35)
-            draw.text((lx, ly), line, fill="white", font=name_font,spacing=10)
+            draw.text((lx, ly), line, fill=f"{color}", font=name_font,spacing=10)
         
 
         address_start_y = bottom_section_start + (len(name_lines[:2]) * 35) + 15
@@ -221,11 +226,11 @@ def generate_customer_banner(customer_name, customer_address, base_image_path,fo
                     line_width = len(line) * 8
                 
                 line_x = (width - line_width) // 2
-                draw.text((line_x, address_start_y + (i * 35)), line, fill="#CCCCCC", font=address_font,spacing=10)
+                draw.text((line_x, address_start_y + (i * 35)), line, fill=f"{color}", font=address_font,spacing=10)
         else:
             # Single line address - CENTER ALIGNED
             address_x = (width - text_width) // 2
-            draw.text((address_x, address_start_y), customer_address, fill="#CCCCCC", font=address_font)
+            draw.text((address_x, address_start_y), customer_address, fill=f"{color}", font=address_font)
         
         return img
         
@@ -235,7 +240,7 @@ def generate_customer_banner(customer_name, customer_address, base_image_path,fo
 
 
 @frappe.whitelist()
-def generate_bulk_banners(customers_data, base_image_path=None,font_style=None):
+def generate_bulk_banners(customers_data, base_image_path=None,font_style=None,color="White"):
     """
     Generate banners for multiple customers and return as ZIP file
     
@@ -283,7 +288,7 @@ def generate_bulk_banners(customers_data, base_image_path=None,font_style=None):
             
             for idx, customer in enumerate(customers_data, 1):
                 customer_name = customer.get('customer_name', f'Customer_{idx}')
-                customer_address = customer.get('customer_address', 'No address provided')
+                customer_address = customer.get('customer_address', '')
                 
                 try:
                     # Generate banner for this customer
@@ -291,7 +296,8 @@ def generate_bulk_banners(customers_data, base_image_path=None,font_style=None):
                         customer_name=customer_name,
                         customer_address=customer_address,
                         base_image_path=base_image_path,
-                        font_style=font_style
+                        font_style=font_style,
+                        color=color
                     )
                     
                     # Save image to buffer as PNG

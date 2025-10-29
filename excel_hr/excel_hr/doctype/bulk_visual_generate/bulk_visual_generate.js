@@ -30,7 +30,8 @@ function generate_banners_from_array(frm) {
         args: {
             customers_data: frm.doc.customer_list,
             base_image_path: frm.doc.attach_image  ,
-            font_style: frm.doc.font_style
+            font_style: frm.doc.font_style,
+            color: frm.doc.color
         },
         freeze: true,
         freeze_message: __('Generating Banners...'),

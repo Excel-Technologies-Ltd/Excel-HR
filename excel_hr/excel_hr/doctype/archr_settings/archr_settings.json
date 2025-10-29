@@ -25,6 +25,7 @@
   "column_break_blree",
   "leave_application_tab",
   "enabled_day_validation_annual_leave",
+  "auto_l_app_for_new_employee",
   "column_break_2jvum",
   "enabled_date_validation",
   "column_break_haypv",
@@ -144,12 +145,18 @@
   {
    "fieldname": "column_break_wbfsh",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_l_app_for_new_employee",
+   "fieldtype": "Check",
+   "label": "Auto L. App. for new employee"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-10-28 11:25:44.136214",
+ "modified": "2025-10-29 15:30:06.286733",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

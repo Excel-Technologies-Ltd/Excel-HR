@@ -13,6 +13,8 @@ from datetime import datetime, timedelta
 import math
 import json
 import re
+from frappe.utils import (
+	format_datetime,formatdate)
 
 @frappe.whitelist()
 def get_departments_for_company(company):
@@ -860,7 +862,52 @@ def delete_banner_images():
     
     
 
+@frappe.whitelist()
+@frappe.whitelist()
+def get_employee_field_property(employee, fieldname):
+	if not (employee and fieldname):
+		return
 
+	field = frappe.get_meta("Employee").get_field(fieldname)
+	if not field:
+		return
+
+	value = frappe.db.get_value("Employee", employee, fieldname)
+	if field.fieldtype == "Date":
+		value = formatdate(value)
+	elif field.fieldtype == "Datetime":
+		value = format_datetime(value)
+
+	options = field.options
+	filters = None
+
+	# Add filter for excel_hr_section based on excel_parent_department
+	if fieldname == "excel_hr_section":
+		parent_department = frappe.db.get_value("Employee", employee, "excel_parent_department")
+		if parent_department:
+			filters = {"parent_department": parent_department}
+
+	# Add filter for excel_hr_sub_section based on excel_hr_section
+	if fieldname == "excel_hr_sub_section":
+		hr_section = frappe.db.get_value("Employee", employee, "excel_hr_section")
+		if hr_section:
+			filters = {"parent_department": hr_section}
+
+	if fieldname == "custom_employment_sub_type":
+		employment_type = frappe.db.get_value("Employee", employee, "employment_type")
+		if employment_type:
+			filters = {"parent_employment": employment_type}
+	response = {
+		"value": value,
+		"datatype": field.fieldtype,
+		"label": field.label,
+		"options": options,
+	}
+
+	if filters:
+		response["filters"] = filters
+
+	return response
 
 
 

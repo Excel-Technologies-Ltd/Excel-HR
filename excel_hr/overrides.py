@@ -37,19 +37,22 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
             "employee": self.employee,
             "leave_type": "Monthly Paid Leave",
             "from_date": ["between", [month_start, month_end]],
-            "name": ["!=", self.name]  
+            "name": ["!=", self.name],
+            "docstatus": ["!=", 2],  
+        "status": ["!=", "Rejected"]  
         }
-        or_filters = [
-            ["docstatus", "!=", 2],
-            ["status", "!=", "Rejected"]
-        ]
+        # or_filters = [
+        #     ["docstatus", "=", 2],
+        #     ["status", "=", "Rejected"]
+        # ]
         
-        existing_leave = frappe.db.get_list(
+        existing_leave = frappe.get_all(
             "Leave Application",
             filters=filters,
-            or_filters=or_filters,
+            # or_filters=or_filters,
             fields=["name", "from_date"]
         )
+        print(existing_leave)
         
         if existing_leave:
             frappe.throw(
@@ -411,13 +414,21 @@ class CustomAttendanceRequest(AttendanceRequest):
 class UserWithEmployee(Employee):
     def after_insert(self):
         settings = frappe.get_doc("ArcHR Settings")
-        if settings.create_leave_without_pay_after_insert == 1:
+        if settings.auto_l_app_for_new_employee == 1:
             self.create_leave_without_pay_after_insert()
-    def on_update(self):
-        self.branch=self.custom_job_location
+        if len(self.internal_work_history)==0:
+            self.create_internal_history()
+            self.save()
+
 
         
     def before_save(self):
+        if self.has_value_changed('custom_job_location'):
+            self.branch = self.custom_job_location
+        elif self.has_value_changed('branch'):
+            self.custom_job_location = self.branch
+    
+
         user_company_mail = self.get("company_email")
         employee_number = self.get("employee_number")
         self.name = employee_number
@@ -495,5 +506,41 @@ class UserWithEmployee(Employee):
         leave_without_pay.submit()
         frappe.msgprint(f"Leave Without Pay created for {from_date} to {to_date}.")
 
+    def create_internal_history(self):
+        """Create internal work history entries based on employee details."""
         
-        
+        if self.custom_job_location:
+            self.append("internal_work_history", {
+                "branch": self.custom_job_location,
+                "from_date": self.date_of_joining
+            })
+
+        if self.excel_parent_department:
+            self.append("internal_work_history", {
+                "custom_parent_department": self.excel_parent_department,
+                "from_date": self.date_of_joining
+            })
+
+        if self.excel_hr_section:
+            self.append("internal_work_history", {
+                "custom_excel_hr_section": self.excel_hr_section,
+                "from_date": self.date_of_joining
+            })
+
+        if self.excel_hr_sub_section:
+            self.append("internal_work_history", {
+                "custom_excel_hr_sub_section": self.excel_hr_sub_section,
+                "from_date": self.date_of_joining
+            })
+
+        if self.custom_employment_sub_type:
+            self.append("internal_work_history", {
+                "custom_employment_sub_type": self.custom_employment_sub_type,
+                "from_date": self.date_of_joining
+            })
+
+        if self.designation:
+            self.append("internal_work_history", {
+                "designation": self.designation,
+                "from_date": self.date_of_joining
+            })

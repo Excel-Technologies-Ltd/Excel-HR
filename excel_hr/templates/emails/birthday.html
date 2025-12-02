@@ -1,1 +1,67 @@
-<img src="{{ img_url }}" alt="" />
+<div>
+    <h2 style="color: #2E86C1; border-bottom: 2px solid #2E86C1; padding-bottom: 10px;">
+        Birthday Celebrations Today!
+    </h2>
+    
+    <p>Hello Team,</p>
+    
+    <p>We have some wonderful colleagues celebrating their birthdays today! Let's wish them a very happy birthday and make their day special! 🎂🎈</p>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+        <h3 style="color: #2E86C1; margin-top: 0;">🎂 Birthday Stars of the Day:</h3>
+        
+        {% for company, employees in employees.items() %}
+            {% if employees %}
+                <div style="margin-bottom: 25px;">
+                    <h4 style="color: #5D6D7E; margin-bottom: 15px;">{{ company }}</h4>
+                    
+                    <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                        {% for employee in employees %}
+                        <div style="
+                            background: white;
+                            border-radius: 10px;
+                            margin: 10px;
+                            padding: 15px;
+                            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                            flex: 1;
+                            min-width: 250px;
+                            margin-bottom: 15px;
+                        ">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                {% if employee.image %}
+                                    <img src="{{ employee.image }}" 
+                                         alt="{{ employee.name }}"
+                                         style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-right: 15px;">
+                                {% else %}
+                                    <div style="
+                                        width: 60px;
+                                        height: 60px;
+                                        border-radius: 50%;
+                                        background: linear-gradient(135deg, #2E86C1, #5DADE2);
+                                        color: white;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        font-size: 24px;
+                                        font-weight: bold;
+                                        margin-right: 15px;
+                                    ">
+                                        {{ employee.name.split()[-1][0] if employee.name else '?' }}
+                                    </div>
+                                {% endif %}
+                                
+                                <div>
+                                    <h4 style="margin: 0; color: #2C3E50;">{{ employee.name }}</h4>
+                                    <p style="margin: 5px 0 0 0; color: #7F8C8D; font-size: 14px;">
+                                        🎂 Birthday Today! 🎂
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>

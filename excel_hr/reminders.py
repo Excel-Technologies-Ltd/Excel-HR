@@ -130,27 +130,65 @@ def send_absent_alert_for_missing_attendance():
         frappe.log_error(f"Failed to send absent alerts: {str(e)}", "Absent Alert Error")
         frappe.throw("Failed to process absent alerts. Please check error logs.")
 
+def warm_message():
+    """A simple function to test scheduled tasks."""
+    message = "Warm message from scheduled task executed successfully."
+    print(message)
 
 def send_birthday_reminders():
     """Send Employee birthday reminders if no 'Stop Birthday Reminders' is not set."""
+    
     to_send = int(frappe.db.get_single_value("ArcHR Settings", "birthday_reminder"))
     if not to_send:
+        print("Birthday reminders disabled in ArcHR Settings")
+        frappe.logger().info("Birthday reminders disabled in ArcHR Settings")
         return
-    
-    sender = get_sender_email()
+
     employees_born_today = get_employees_who_are_born_today()
+
+    print(f"\n\nEmployees born today: {dict(employees_born_today)}\n\n")
+    send_all_birthday_mails(employees_born_today)
+
     
-    for company, birthday_persons in employees_born_today.items():
-        for person in birthday_persons:  
-            full_name = get_employee_full_name(person.user_id)
-            location,department= get_job_location_and_department(person.user_id)
-            if check_active_and_intern_employee(person.user_id):
-                company_email = get_company_email(person.user_id)
-                print("sending birthday wish to",company_email,full_name,department,location)
-                send_birthday_wish(company_email,full_name,department,location)
-            else:
-                print(f"Employee {full_name} is not active or an intern")
-            
+    
+    # for company, birthday_persons in employees_born_today.items():
+    #     for person in birthday_persons:  
+    #         full_name = get_employee_full_name(person.user_id)
+    #         location,department= get_job_location_and_department(person.user_id)
+    #         if check_active_and_intern_employee(person.user_id):
+    #             company_email = get_company_email(person.user_id)
+    #             print("sending birthday wish to",company_email,full_name,department,location)
+    #             send_birthday_wish(company_email,full_name,department,location)
+    #         else:
+    #             print(f"Employee {full_name} is not active or an intern")
+
+
+def send_all_birthday_mails(employees):
+    arc_hr_settings = frappe.get_doc("ArcHR Settings")
+    email_id = frappe.db.get_value("Email Account", {"name": arc_hr_settings.birthday_sender_email}, "email_id")
+    cc_mail = frappe.db.get_single_value("ArcHR Settings", "cc_mail")
+
+    if cc_mail:
+        cc_mail = cc_mail.split(",")
+    else:
+        cc_mail = None
+
+    frappe.sendmail(
+        recipients="azmin@excelbd.com",
+        subject=f"Happy Birthday to all Employees having birthday today",
+        # cc=cc_mail,
+        sender=email_id,
+        template="birthday",
+        args={
+            "employees": employees,
+            "today": getdate()
+        },
+        expose_recipients='header',
+    )
+
+    print(f"Birthday email sent successfully to azmin@excelbd.com")
+    
+
 def send_work_anniversary_reminders():
     """Send Employee work anniversary reminders if no 'Stop Work Anniversary Reminders' is not set."""
     to_send = int(frappe.db.get_single_value("ArcHR Settings", "anniversary_reminder"))

@@ -2,12 +2,11 @@ from erpnext.setup.doctype.employee.employee import get_all_employee_emails, get
 import frappe
 from frappe import _
 from frappe.utils import add_days, add_months, comma_sep, getdate, today
-from hrms.controllers.employee_reminders import get_sender_email,get_employees_who_are_born_today,get_employees_having_an_event_today 
+from hrms.controllers.employee_reminders import get_employees_who_are_born_today,get_employees_having_an_event_today
 from frappe.utils import getdate, add_days, formatdate
 
 
-from frappe.core.doctype.sms_settings.sms_settings import send_sms 
-from excel_hr.api import send_anniversary_wish,send_birthday_wish
+from frappe.core.doctype.sms_settings.sms_settings import send_sms
 
 def send_absent_alert_for_missing_attendance():
     """Send email alerts to team leaders and employees who were absent yesterday."""
@@ -187,27 +186,70 @@ def send_all_birthday_mails(employees):
     )
 
     print(f"Birthday email sent successfully to azmin@excelbd.com")
-    
+
+
+def send_all_work_anniversary_mails(employees):
+    arc_hr_settings = frappe.get_doc("ArcHR Settings")
+    email_id = frappe.db.get_value("Email Account", {"name": arc_hr_settings.birthday_sender_email}, "email_id")
+    cc_mail = frappe.db.get_single_value("ArcHR Settings", "cc_mail")
+
+    if cc_mail:
+        cc_mail = cc_mail.split(",")
+    else:
+        cc_mail = None
+
+    # Enrich employee data with department, location, and years
+    enriched_employees = {}
+    for company, employee_list in employees.items():
+        enriched_list = []
+        for emp in employee_list:
+            # Get additional employee details
+            employee_doc = frappe.get_doc("Employee", {"user_id": emp.user_id})
+
+            # Calculate years of service
+            years = count_anniversary_year(emp.date_of_joining)
+
+            # Create enriched employee object
+            enriched_emp = {
+                "name": emp.name,
+                "image": emp.image,
+                "department": employee_doc.excel_parent_department or employee_doc.department,
+                "location": employee_doc.custom_job_location,
+                "years": years,
+                "user_id": emp.user_id
+            }
+            enriched_list.append(enriched_emp)
+
+        enriched_employees[company] = enriched_list
+
+    frappe.sendmail(
+        recipients="azmin@excelbd.com",
+        subject=f"Happy Work Anniversary to all Employees having anniversary today",
+        # cc=cc_mail,
+        sender=email_id,
+        template="work_anniversary",
+        args={
+            "employees": enriched_employees,
+            "today": getdate()
+        },
+        expose_recipients='header',
+    )
+
+    print(f"Work anniversary email sent successfully to azmin@excelbd.com")
+
 
 def send_work_anniversary_reminders():
     """Send Employee work anniversary reminders if no 'Stop Work Anniversary Reminders' is not set."""
     to_send = int(frappe.db.get_single_value("ArcHR Settings", "anniversary_reminder"))
     if not to_send:
+        print("Work anniversary reminders disabled in ArcHR Settings")
+        frappe.logger().info("Work anniversary reminders disabled in ArcHR Settings")
         return
-    sender = get_sender_email()
+
     employees_joined_today = get_employees_having_an_event_today("work_anniversary")
-    print(employees_joined_today.items())
-    for company, anniversary_persons in employees_joined_today.items():
-        for person in anniversary_persons:
-            full_name = get_employee_full_name(person.user_id)
-            year= count_anniversary_year(person.date_of_joining)
-            location,department= get_job_location_and_department(person.user_id)
-            if check_active_and_intern_employee(person.user_id):
-                company_email = get_company_email(person.user_id)
-                print("sending anniversary wish to",company_email,full_name,department,location,year)
-                send_anniversary_wish(company_email,full_name,department,location,year)
-            else:
-                print(f"Employee {full_name} is not active or an intern")
+
+    print(f"\n\nEmployees having work anniversary today: {dict(employees_joined_today)}\n\n")
+    send_all_work_anniversary_mails(employees_joined_today)
         
     
     

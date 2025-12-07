@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Work Anniversary</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Montserrat:wght@600;700;800&family=Playfair+Display:ital,wght@1,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Mobile responsive styles */
+      @media only screen and (max-width: 600px) {
+        .main-container {
+          width: 100% !important;
+          min-width: 100% !important;
+        }
+        
+        .card-row {
+          display: block !important;
+        }
+        
+        .card-cell {
+          display: block !important;
+          width: 100% !important;
+          padding: 10px 0 !important;
+        }
+        
+        .employee-card {
+          width: 100% !important;
+          max-width: 340px !important;
+          margin: 0 auto !important;
+        }
+        
+        .title-text {
+          font-size: 40px !important;
+        }
+        
+        .happy-text {
+          font-size: 2.5rem !important;
+        }
+      }
+    </style>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    "
+  >
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f0f0f0"
+    >
+      <tr>
+        <td align="center" style="padding: 0 0">
+          <!-- Main Container -->
+          <table
+            width="768"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            class="main-container"
+            style="
+              background: linear-gradient(
+                to bottom,
+                #d4f1f4 0%,
+                #e8f9fa 50%,
+                #ffffff 100%
+              );
+              box-shadow: 0 4px 6px 0;
+            "
+          >
+            <!-- Header with Flowers -->
+            <tr>
+              <td align="center" style="padding: 0px 20px 10px 20px">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center">
+                      <img
+                        src="https://raw.githubusercontent.com/amirhamja4bd/excel_images/refs/heads/main/A.png"
+                        alt="Decorative Flowers"
+                        style="
+                          display: block;
+                          margin: 0 auto;
+                          max-width: 100%;
+                          height: auto;
+                        "
+                        width="400"
+                      />
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Title Section -->
+            <tr>
+              <td align="center" style="padding: 20px">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td
+                      align="center"
+                      class="happy-text"
+                      style="
+                        font-family: 'Dancing Script', cursive;
+                        font-size: 3rem;
+                        color: #5a4a3a;
+                        margin-bottom: -15px;
+                        position: relative;
+                        z-index: 1;
+                      "
+                    >
+                      happy
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      align="center"
+                      class="title-text"
+                      style="
+                        font-family: Arial, sans-serif;
+                        font-size: 52px;
+                        font-weight: bold;
+                        color: #c17817;
+                        letter-spacing: 2px;
+                        padding-bottom: 0px;
+                      "
+                    >
+                      WORK
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      align="center"
+                      class="title-text"
+                      style="
+                        font-family: Arial, sans-serif;
+                        font-size: 52px;
+                        font-weight: bold;
+                        color: #c17817;
+                        letter-spacing: 2px;
+                      "
+                    >
+                      ANNIVERSARY
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Logo Section -->
+            <tr>
+              <td align="center" style="padding: 10px 20px">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center">
+                      <img
+                        src="https://raw.githubusercontent.com/amirhamja4bd/excel_images/refs/heads/main/D.png"
+                        alt="Decorative Flowers"
+                        style="
+                          display: block;
+                          margin: 0 auto;
+                          max-width: 100%;
+                          height: auto;
+                        "
+                        width="200"
+                      />
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Bottom Flowers -->
+            <tr>
+              <td align="center" style="padding: 10px 20px 10px 20px">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center">
+                      <img
+                        src="https://raw.githubusercontent.com/amirhamja4bd/excel_images/refs/heads/main/B.png"
+                        alt="Decorative Flowers"
+                        style="
+                          display: block;
+                          margin: 0 auto;
+                          max-width: 100%;
+                          height: auto;
+                        "
+                        width="430"
+                      />
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Employee Cards Section -->
+            <tr>
+              <td align="center" style="padding: 0px 20px 10px 20px">
+                <table width="700" cellpadding="15" cellspacing="0" border="0" class="main-container">
+                  {% set ns = namespace(count=0, row_started=false) %}
+                  {% for company, employee_list in employees.items() %}
+                    {% for employee in employee_list %}
+                      {% if ns.count % 2 == 0 %}
+                        {% if ns.row_started %}</tr>{% endif %}
+                        <tr class="card-row">
+                        {% set ns.row_started = true %}
+                      {% endif %}
+
+                      <!-- Employee Card -->
+                      <td width="50%" align="center" class="card-cell">
+                        <table
+                          width="340"
+                          cellpadding="0"
+                          cellspacing="0"
+                          border="0"
+                          class="employee-card"
+                          style="
+                            background: linear-gradient(
+                              135deg,
+                              #fdfbfd 0%,
+                              #fdfbfd 40%,
+                              #f4eefc 100%
+                            );
+                            border-radius: 100px;
+                            padding: 13px 20px;
+                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                          "
+                        >
+                          <tr>
+                            <td align="center">
+                              <!-- Anniversary Badge -->
+                              <table
+                                cellpadding="0"
+                                cellspacing="0"
+                                border="0"
+                                style="margin-bottom: 15px"
+                              >
+                                <tr>
+                                  <td
+                                    align="center"
+                                    style="
+                                      background-color: #9000ff;
+                                      padding: 8px 15px;
+                                      border-radius: 5px;
+                                      color: white;
+                                      text-align: center;
+                                      box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+                                    "
+                                  >
+                                    <table
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      border="0"
+                                      width="100%"
+                                    >
+                                      <tr>
+                                        <td
+                                          align="center"
+                                          style="
+                                            font-family: Arial, sans-serif;
+                                            font-size: 9px;
+                                            letter-spacing: 1px;
+                                            padding-bottom: 2px;
+                                            color: #ffffff;
+                                          "
+                                        >
+                                          HAPPY <strong>{{ employee.years }}</strong>
+                                        </td>
+                                        <td
+                                          rowspan="2"
+                                          valign="top"
+                                          style="
+                                            font-family: Arial, sans-serif;
+                                            font-size: 10px;
+                                            font-weight: bold;
+                                            padding-left: 3px;
+                                            color: #ffffff;
+                                          "
+                                        >
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td
+                                          align="center"
+                                          style="
+                                            border: 1px solid
+                                              rgba(255, 255, 255, 0.623);
+                                            padding: 2px 5px;
+                                            font-family: Arial, sans-serif;
+                                            font-size: 10px;
+                                            color: #ffffff;
+                                          "
+                                        >
+                                          ANNIVERSARY
+                                        </td>
+                                      </tr>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </table>
+
+                              <!-- Name -->
+                              <table cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                  <td
+                                    align="center"
+                                    style="
+                                      font-family: Arial, sans-serif;
+                                      font-size: 20px;
+                                      font-weight: bold;
+                                      color: #9000ff;
+                                      padding-bottom: 5px;
+                                    "
+                                  >
+                                    {{ employee.name }}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td
+                                    align="center"
+                                    style="
+                                      font-family: Arial, sans-serif;
+                                      font-size: 14px;
+                                      color: #000000;
+                                      padding-bottom: 3px;
+                                    "
+                                  >
+                                    {{ employee.department or '' }}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td
+                                    align="center"
+                                    style="
+                                      font-family: Arial, sans-serif;
+                                      font-size: 14px;
+                                      color: #303030;
+                                    "
+                                  >
+                                    {{ employee.location or '' }}
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+
+                      {% set ns.count = ns.count + 1 %}
+                    {% endfor %}
+                  {% endfor %}
+
+                  {% if ns.row_started %}
+                    {% if ns.count % 2 == 1 %}
+                      <!-- Empty cell to complete the row if odd number of employees -->
+                      <td width="50%" align="center" class="card-cell"></td>
+                    {% endif %}
+                  </tr>
+                  {% endif %}
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer Message -->
+            <tr>
+              <td align="center" style="padding: 30px 20px 40px 20px">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td
+                      align="center"
+                      style="
+                        font-family: Georgia, serif;
+                        font-size: 24px;
+                        font-style: italic;
+                        color: #5a8f50;
+                        line-height: 1.4;
+                      "
+                    >
+                      Thank you for being an amazing part of our journey.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

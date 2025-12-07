@@ -172,6 +172,35 @@ def send_all_birthday_mails(employees):
     else:
         cc_mail = None
 
+    # Enrich employee data with department and location
+    enriched_employees = {}
+    for company, employee_list in employees.items():
+        enriched_list = []
+        for emp in employee_list:
+            # Get additional employee details
+            employee_doc = frappe.get_doc("Employee", {"user_id": emp.user_id})
+
+            # Calculate age (optional - can be used for milestone birthdays)
+            from datetime import datetime
+            if hasattr(emp, 'date_of_birth') and emp.date_of_birth:
+                age = datetime.today().year - emp.date_of_birth.year
+            else:
+                age = None
+
+            # Create enriched employee object
+            enriched_emp = {
+                "name": emp.name,
+                "image": emp.image,
+                "department": employee_doc.excel_parent_department or employee_doc.department,
+                "location": employee_doc.custom_job_location,
+                "age": age,
+                "user_id": emp.user_id,
+                "years": ""  # Empty for birthday, used in template
+            }
+            enriched_list.append(enriched_emp)
+
+        enriched_employees[company] = enriched_list
+
     frappe.sendmail(
         recipients="azmin@excelbd.com",
         subject=f"Happy Birthday to all Employees having birthday today",
@@ -179,7 +208,7 @@ def send_all_birthday_mails(employees):
         sender=email_id,
         template="birthday",
         args={
-            "employees": employees,
+            "employees": enriched_employees,
             "today": getdate()
         },
         expose_recipients='header',
@@ -190,7 +219,7 @@ def send_all_birthday_mails(employees):
 
 def send_all_work_anniversary_mails(employees):
     arc_hr_settings = frappe.get_doc("ArcHR Settings")
-    email_id = frappe.db.get_value("Email Account", {"name": arc_hr_settings.birthday_sender_email}, "email_id")
+    email_id = frappe.db.get_value("Email Account", {"name": arc_hr_settings.anniversary_sender_email}, "email_id")
     cc_mail = frappe.db.get_single_value("ArcHR Settings", "cc_mail")
 
     if cc_mail:

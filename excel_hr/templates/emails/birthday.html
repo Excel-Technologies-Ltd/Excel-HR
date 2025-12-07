@@ -1,67 +1,370 @@
-<div>
-    <h2 style="color: #2E86C1; border-bottom: 2px solid #2E86C1; padding-bottom: 10px;">
-        Birthday Celebrations Today!
-    </h2>
-    
-    <p>Hello Team,</p>
-    
-    <p>We have some wonderful colleagues celebrating their birthdays today! Let's wish them a very happy birthday and make their day special! 🎂🎈</p>
-    
-    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
-        <h3 style="color: #2E86C1; margin-top: 0;">🎂 Birthday Stars of the Day:</h3>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Work Anniversary</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Montserrat:wght@600;700;800&family=Playfair+Display:ital,wght@1,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Mobile responsive styles */
+      @media only screen and (max-width: 600px) {
+        .main-container {
+          width: 100% !important;
+          min-width: 100% !important;
+        }
         
-        {% for company, employees in employees.items() %}
-            {% if employees %}
-                <div style="margin-bottom: 25px;">
-                    <h4 style="color: #5D6D7E; margin-bottom: 15px;">{{ company }}</h4>
-                    
-                    <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-                        {% for employee in employees %}
-                        <div style="
-                            background: white;
-                            border-radius: 10px;
-                            margin: 10px;
-                            padding: 15px;
-                            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                            flex: 1;
-                            min-width: 250px;
-                            margin-bottom: 15px;
-                        ">
-                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                                {% if employee.image %}
-                                    <img src="{{ employee.image }}" 
-                                         alt="{{ employee.name }}"
-                                         style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-right: 15px;">
-                                {% else %}
-                                    <div style="
-                                        width: 60px;
-                                        height: 60px;
-                                        border-radius: 50%;
-                                        background: linear-gradient(135deg, #2E86C1, #5DADE2);
-                                        color: white;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        font-size: 24px;
-                                        font-weight: bold;
-                                        margin-right: 15px;
-                                    ">
-                                        {{ employee.name.split()[-1][0] if employee.name else '?' }}
-                                    </div>
-                                {% endif %}
-                                
-                                <div>
-                                    <h4 style="margin: 0; color: #2C3E50;">{{ employee.name }}</h4>
-                                    <p style="margin: 5px 0 0 0; color: #7F8C8D; font-size: 14px;">
-                                        🎂 Birthday Today! 🎂
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-        {% endfor %}
+        .card-row {
+          display: block !important;
+        }
+        
+        .card-cell {
+          display: block !important;
+          width: 100% !important;
+          padding: 10px 0 !important;
+        }
+        
+        .employee-card {
+          width: 100% !important;
+          max-width: 340px !important;
+          margin: 0 auto !important;
+        }
+        
+        .title-text {
+          font-size: 20px !important;
+        }
+        
+        .happy-text {
+          font-size: 2.5rem !important;
+        }
+      }
+    </style>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: rgba(240, 240, 240, 1);
+    "
+  >
+    <!-- Dark Mode Prevention Styles -->
+    <style type="text/css">
+      /* Prevent dark mode color inversion */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: rgba(240, 240, 240, 1) !important;
+          color: rgba(31, 39, 46, 1) !important;
+        }
+
+        .main-container {
+          background: linear-gradient(to bottom, rgba(212, 241, 244, 1) 0%, rgba(232, 249, 250, 1) 50%, rgba(255, 255, 255, 1) 100%) !important;
+        }
+
+        .employee-card {
+          background: linear-gradient(135deg, rgba(253, 251, 253, 1) 0%, rgba(253, 251, 253, 1) 40%, rgba(244, 238, 252, 1) 100%) !important;
+        }
+
+        .birthday-badge {
+          background-color: rgba(227, 0, 125, 1) !important;
+          color: rgba(255, 255, 255, 1) !important;
+        }
+
+        .employee-name {
+          color: rgba(227, 0, 125, 1) !important;
+        }
+
+        .employee-department {
+          color: rgba(0, 0, 0, 1) !important;
+        }
+
+        .employee-location {
+          color: rgba(48, 48, 48, 1) !important;
+        }
+
+        .footer-message {
+          color: rgba(90, 143, 80, 1) !important;
+        }
+
+        .title-message {
+          color: rgba(227, 0, 125, 1) !important;
+        }
+      }
+
+      /* Force light mode colors in dark mode email clients */
+      [data-ogsc] body,
+      [data-ogsc] .main-container,
+      [data-ogsc] .employee-card {
+        background-color: transparent !important;
+      }
+
+      /* Gmail dark mode specific */
+      u + .body {
+        background-color: rgba(240, 240, 240, 1) !important;
+      }
+
+      /* Outlook dark mode */
+      @media screen and (prefers-color-scheme: dark) {
+        div, p, span, td {
+          color: inherit !important;
+        }
+      }
+    </style>
+
+    <div style="display:none;max-height:0px;overflow:hidden;">
+      <!-- Preheader text for better email preview -->
+      Happy Birthday to our amazing team members!
     </div>
-</div>
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: rgba(240, 240, 240, 1) !important;"
+      bgcolor="rgba(240, 240, 240, 1)"
+    >
+      <tr>
+        <td align="center" style="padding: 0 0">
+          <!-- Main Container -->
+          <table
+            width="768"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            class="main-container"
+            style="
+              background: linear-gradient(
+                to bottom,
+                rgba(212, 241, 244, 1) 0%,
+                rgba(232, 249, 250, 1) 50%,
+                rgba(255, 255, 255, 1) 100%
+              ) !important;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            "
+            bgcolor="rgba(232, 249, 250, 1)"
+          >
+            <!-- Header with Flowers -->
+            <tr>
+              <td align="center" style="">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center">
+                      <img
+                        src="https://raw.githubusercontent.com/Excel-Technologies-Ltd/Public-Images/refs/heads/main/happy-birthaday.png"
+                        alt="Decorative Flowers"
+                        style="
+                          display: block;
+                          margin: 0 auto;
+                          max-width: 100%;
+                          height: auto;
+                        "
+                        width="100%"
+                      />
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding: 30px 20px 10px 20px">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td
+                      align="center"
+                      class="title-text title-message"
+                      style="
+                        font-size: 20px;
+                        font-weight: bold;
+                        color: rgba(227, 0, 125, 1) !important;
+                        padding-bottom: 10px;
+                      "
+                    >
+                      <span style="color: rgba(227, 0, 125, 1) !important;">Wishing you a lovely birthday and a great life ahead. Keep smiling!</span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            
+
+            <!-- Employee Cards Section -->
+            <tr>
+              <td align="center" style="padding: 0px 20px 10px 20px">
+                <table width="700" cellpadding="15" cellspacing="0" border="0" class="">
+                  {% set ns = namespace(count=0, row_started=false) %}
+                  {% for company, employee_list in employees.items() %}
+                    {% for employee in employee_list %}
+                      {% if ns.count % 2 == 0 %}
+                        {% if ns.row_started %}</tr>{% endif %}
+                        <tr class="card-row">
+                        {% set ns.row_started = true %}
+                      {% endif %}
+                      <!-- Employee Card -->
+                      <td width="50%" align="center" class="card-cell">
+                        <table
+                          width="340"
+                          cellpadding="0"
+                          cellspacing="0"
+                          border="0"
+                          class="employee-card"
+                          style="
+                            background: linear-gradient(
+                              135deg,
+                              rgba(253, 251, 253, 1) 0%,
+                              rgba(253, 251, 253, 1) 40%,
+                              rgba(244, 238, 252, 1) 100%
+                            ) !important;
+                            border-radius: 100px;
+                            padding: 13px 20px;
+                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                          "
+                          bgcolor="rgba(244, 238, 252, 1)"
+                        >
+                          <tr>
+                            <td align="center">
+                              <!-- Anniversary Badge -->
+                              <table
+                                cellpadding="0"
+                                cellspacing="0"
+                                border="0"
+                                style="margin-bottom: 15px"
+                              >
+                                <tr>
+                                  <td
+                                    align="center"
+                                    class="birthday-badge"
+                                    style="
+                                      background-color: rgba(227, 0, 125, 1) !important;
+                                      padding: 8px 15px;
+                                      border-radius: 5px;
+                                      color: white !important;
+                                      text-align: center;
+                                      box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+                                    "
+                                    bgcolor="rgba(227, 0, 125, 1)"
+                                  >
+                                    <table
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      border="0"
+                                      width="100%"
+                                    >
+                                      <tr>
+                                        <td
+                                          align="center"
+                                          colspan="2"
+                                          style="
+                                            font-family: Arial, sans-serif;
+                                            font-size: 12px;
+                                            letter-spacing: 1px;
+                                            padding: 5px;
+                                            color: #ffffff;
+                                            border: 1px solid rgba(255, 255, 255, 0.623);
+                                          "
+                                        >
+                                          HAPPY BIRTHDAY
+                                        </td>
+                                      </tr>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </table>
+                              <!-- Name -->
+                              <table cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                  <td
+                                    align="center"
+                                    class="employee-name"
+                                    style="
+                                      font-family: Arial, sans-serif;
+                                      font-size: 20px;
+                                      font-weight: bold;
+                                      color: rgba(227, 0, 125, 1) !important;
+                                      padding-bottom: 5px;
+                                    "
+                                  >
+                                    <span style="color: rgba(227, 0, 125, 1) !important;">{{ employee.name }}</span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td
+                                    align="center"
+                                    class="employee-department"
+                                    style="
+                                      font-family: Arial, sans-serif;
+                                      font-size: 14px;
+                                      color: rgba(0, 0, 0, 1) !important;
+                                      padding-bottom: 3px;
+                                    "
+                                  >
+                                    <span style="color: rgba(0, 0, 0, 1) !important;">{{ employee.department or '' }}</span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td
+                                    align="center"
+                                    class="employee-location"
+                                    style="
+                                      font-family: Arial, sans-serif;
+                                      font-size: 14px;
+                                      color: rgba(48, 48, 48, 1) !important;
+                                    "
+                                  >
+                                    <span style="color: rgba(48, 48, 48, 1) !important;">{{ employee.location or '' }}</span>
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+
+                      {% set ns.count = ns.count + 1 %}
+                    {% endfor %}
+                  {% endfor %}
+
+                  {% if ns.row_started %}
+                    {% if ns.count % 2 == 1 %}
+                      <!-- Empty cell to complete the row if odd number of employees -->
+                      <td width="50%" align="center" class="card-cell"></td>
+                    {% endif %}
+                  </tr>
+                  {% endif %}
+                </table>
+              </td>
+            </tr>
+          
+
+            <!-- Footer Message -->
+            <tr>
+              <td align="center" style="padding: 30px 20px 40px 20px">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td
+                      align="center"
+                      class="footer-message"
+                      style="
+                        font-family: Georgia, serif;
+                        font-size: 24px;
+                        font-style: italic;
+                        color: #4f9142 !important;
+                        line-height: 1.4;
+                      "
+                    >
+                      <span style="color: #4f9142 !important;">Thank you for being an amazing part of our journey.</span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

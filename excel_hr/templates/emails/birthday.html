@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Work Anniversary</title>
+    <title>Happy Birthday</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -11,6 +11,44 @@
       rel="stylesheet"
     />
     <style>
+      /* Dark mode overrides for email clients that support it */
+      @media (prefers-color-scheme: dark) {
+        /* Main background for dark mode */
+        .darkmode-bg {
+          background-color: #1a1a1a !important;
+        }
+        
+        /* Card background for dark mode */
+        .darkmode-card {
+          background-color: #2d2d2d !important;
+          border: 1px solid #404040 !important;
+        }
+        
+        /* Text colors for dark mode */
+        .darkmode-text {
+          color: #ffffff !important;
+        }
+        
+        .darkmode-text-secondary {
+          color: #cccccc !important;
+        }
+        
+        /* Badge color for dark mode */
+        .darkmode-badge {
+          background-color: #3a36a5 !important;
+        }
+        
+        /* Footer text for dark mode */
+        .darkmode-footer {
+          color: #7bb972 !important;
+        }
+        
+        /* Title text for dark mode */
+        .darkmode-title {
+          color: #ffffff !important;
+        }
+      }
+      
       /* Mobile responsive styles */
       @media only screen and (max-width: 600px) {
         .main-container {
@@ -43,77 +81,6 @@
         }
       }
     </style>
-  </head>
-  <body
-    style="
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background-color: rgba(240, 240, 240, 1);
-    "
-  >
-    <!-- Dark Mode Prevention Styles -->
-    <style type="text/css">
-      /* Prevent dark mode color inversion */
-      @media (prefers-color-scheme: dark) {
-        body {
-          background-color: rgba(240, 240, 240, 1) !important;
-          color: rgba(31, 39, 46, 1) !important;
-        }
-
-        .main-container {
-          background: linear-gradient(to bottom, rgba(212, 241, 244, 1) 0%, rgba(232, 249, 250, 1) 50%, rgba(255, 255, 255, 1) 100%) !important;
-        }
-
-        .employee-card {
-          background: linear-gradient(135deg, rgba(253, 251, 253, 1) 0%, rgba(253, 251, 253, 1) 40%, rgba(244, 238, 252, 1) 100%) !important;
-        }
-
-        .birthday-badge {
-          background-color: rgba(227, 0, 125, 1) !important;
-          color: rgba(255, 255, 255, 1) !important;
-        }
-
-        .employee-name {
-          color: rgba(227, 0, 125, 1) !important;
-        }
-
-        .employee-department {
-          color: rgba(0, 0, 0, 1) !important;
-        }
-
-        .employee-location {
-          color: rgba(48, 48, 48, 1) !important;
-        }
-
-        .footer-message {
-          color: rgba(90, 143, 80, 1) !important;
-        }
-
-        .title-message {
-          color: rgba(227, 0, 125, 1) !important;
-        }
-      }
-
-      /* Force light mode colors in dark mode email clients */
-      [data-ogsc] body,
-      [data-ogsc] .main-container,
-      [data-ogsc] .employee-card {
-        background-color: transparent !important;
-      }
-
-      /* Gmail dark mode specific */
-      u + .body {
-        background-color: rgba(240, 240, 240, 1) !important;
-      }
-
-      /* Outlook dark mode */
-      @media screen and (prefers-color-scheme: dark) {
-        div, p, span, td {
-          color: inherit !important;
-        }
-      }
-    </style>
 
     <div style="display:none;max-height:0px;overflow:hidden;">
       <!-- Preheader text for better email preview -->
@@ -124,45 +91,43 @@
       cellpadding="0"
       cellspacing="0"
       border="0"
-      style="background-color: rgba(240, 240, 240, 1) !important;"
-      bgcolor="rgba(240, 240, 240, 1)"
+      style="background-color: #f5f5f5;"
+      role="presentation"
     >
       <tr>
-        <td align="center" style="padding: 0 0">
+        <td align="center" style="padding: 0 0;">
           <!-- Main Container -->
           <table
             width="768"
             cellpadding="0"
             cellspacing="0"
             border="0"
-            class="main-container"
+            class="main-container darkmode-bg"
             style="
-              background: linear-gradient(
-                to bottom,
-                rgba(212, 241, 244, 1) 0%,
-                rgba(232, 249, 250, 1) 50%,
-                rgba(255, 255, 255, 1) 100%
-              ) !important;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              background-color: #ffffff;
+              max-width: 768px;
+              width: 100%;
+              border-collapse: collapse;
             "
-            bgcolor="rgba(232, 249, 250, 1)"
+            role="presentation"
           >
             <!-- Header with Flowers -->
             <tr>
-              <td align="center" style="">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <td align="center" style="background-color: #ffffff;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
                   <tr>
                     <td align="center">
                       <img
                         src="https://raw.githubusercontent.com/Excel-Technologies-Ltd/Public-Images/refs/heads/main/happy-birthaday.png"
-                        alt="Decorative Flowers"
+                        alt="Happy Birthday"
                         style="
                           display: block;
                           margin: 0 auto;
                           max-width: 100%;
                           height: auto;
+                          width: 100%;
                         "
-                        width="100%"
+                        width="768"
                       />
                     </td>
                   </tr>
@@ -171,20 +136,22 @@
             </tr>
 
             <tr>
-              <td align="center" style="padding: 30px 20px 10px 20px">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <td align="center" style="padding: 30px 20px 10px 20px; background-color: #ffffff;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
                   <tr>
                     <td
                       align="center"
-                      class="title-text title-message"
+                      class="title-text darkmode-title"
                       style="
-                        font-size: 20px;
+                        font-size: 24px;
                         font-weight: bold;
-                        color: rgba(227, 0, 125, 1) !important;
+                        color: #834e09;
                         padding-bottom: 10px;
+                        line-height: 1.4;
+                        font-family: Arial, sans-serif;
                       "
                     >
-                      <span style="color: rgba(227, 0, 125, 1) !important;">Wishing you a lovely birthday and a great life ahead. Keep smiling!</span>
+                      Wishing you a lovely birthday and a great life ahead. Keep smiling!
                     </td>
                   </tr>
                 </table>
@@ -194,8 +161,8 @@
 
             <!-- Employee Cards Section -->
             <tr>
-              <td align="center" style="padding: 0px 20px 10px 20px">
-                <table width="700" cellpadding="15" cellspacing="0" border="0" class="">
+              <td align="center" style="padding: 0px 20px 10px 20px; background-color: #ffffff;">
+                <table width="700" cellpadding="15" cellspacing="0" border="0" class="" role="presentation" style="max-width: 700px; width: 100%;">
                   {% set ns = namespace(count=0, row_started=false) %}
                   {% for company, employee_list in employees.items() %}
                     {% for employee in employee_list %}
@@ -205,66 +172,61 @@
                         {% set ns.row_started = true %}
                       {% endif %}
                       <!-- Employee Card -->
-                      <td width="50%" align="center" class="card-cell">
+                      <td width="50%" align="center" class="card-cell" style="padding: 10px; vertical-align: top;">
                         <table
                           width="340"
                           cellpadding="0"
                           cellspacing="0"
                           border="0"
-                          class="employee-card"
+                          class="employee-card darkmode-card"
                           style="
-                            background: linear-gradient(
-                              135deg,
-                              rgba(253, 251, 253, 1) 0%,
-                              rgba(253, 251, 253, 1) 40%,
-                              rgba(244, 238, 252, 1) 100%
-                            ) !important;
-                            border-radius: 100px;
-                            padding: 13px 20px;
-                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                            background-color: #f8f5ff;
+                            border-radius: 20px;
+                            padding: 20px;
+                            width: 100%;
+                            max-width: 340px;
+                            border: 1px solid #e6e0f8;
                           "
-                          bgcolor="rgba(244, 238, 252, 1)"
+                          role="presentation"
                         >
                           <tr>
                             <td align="center">
-                              <!-- Anniversary Badge -->
+                              <!-- Birthday Badge -->
                               <table
+                                width="100%"
                                 cellpadding="0"
                                 cellspacing="0"
                                 border="0"
-                                style="margin-bottom: 15px"
+                                style="margin-bottom: 15px;"
+                                role="presentation"
                               >
                                 <tr>
-                                  <td
-                                    align="center"
-                                    class="birthday-badge"
-                                    style="
-                                      background-color: rgba(227, 0, 125, 1) !important;
-                                      padding: 8px 15px;
-                                      border-radius: 5px;
-                                      color: white !important;
-                                      text-align: center;
-                                      box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
-                                    "
-                                    bgcolor="rgba(227, 0, 125, 1)"
-                                  >
+                                  <td align="center">
                                     <table
-                                      cellpadding="0"
+                                      class="darkmode-badge"
+                                      cellpadding="12"
                                       cellspacing="0"
                                       border="0"
-                                      width="100%"
+                                      style="
+                                        background-color: #834e09;
+                                        border-radius: 8px;
+                                        color: white;
+                                        width: 160px;
+                                        margin: 0 auto;
+                                      "
+                                      role="presentation"
                                     >
                                       <tr>
                                         <td
                                           align="center"
-                                          colspan="2"
                                           style="
                                             font-family: Arial, sans-serif;
                                             font-size: 12px;
                                             letter-spacing: 1px;
-                                            padding: 5px;
                                             color: #ffffff;
-                                            border: 1px solid rgba(255, 255, 255, 0.623);
+                                            font-weight: bold;
+                                            padding: 10px 15px;
+                                            border-radius: 4px;
                                           "
                                         >
                                           HAPPY BIRTHDAY
@@ -275,47 +237,52 @@
                                 </tr>
                               </table>
                               <!-- Name -->
-                              <table cellpadding="0" cellspacing="0" border="0">
+                              <table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
                                 <tr>
                                   <td
                                     align="center"
-                                    class="employee-name"
+                                    class="darkmode-text"
                                     style="
                                       font-family: Arial, sans-serif;
                                       font-size: 20px;
                                       font-weight: bold;
-                                      color: rgba(227, 0, 125, 1) !important;
+                                      color: #834e09;
+                                      padding-bottom: 8px;
+                                      line-height: 1.3;
+                                    "
+                                  >
+                                    {{ employee.name }}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td
+                                    align="center"
+                                    class="darkmode-text-secondary"
+                                    style="
+                                      font-family: Arial, sans-serif;
+                                      font-size: 15px;
+                                      font-weight: bold;
+                                      color: #444444;
                                       padding-bottom: 5px;
+                                      line-height: 1.3;
                                     "
                                   >
-                                    <span style="color: rgba(227, 0, 125, 1) !important;">{{ employee.name }}</span>
+                                    {{ employee.department or '' }}
                                   </td>
                                 </tr>
                                 <tr>
                                   <td
                                     align="center"
-                                    class="employee-department"
+                                    class="darkmode-text"
                                     style="
                                       font-family: Arial, sans-serif;
-                                      font-size: 14px;
-                                      color: rgba(0, 0, 0, 1) !important;
-                                      padding-bottom: 3px;
+                                      font-size: 15px;
+                                      font-weight: bold;
+                                      color: #834e09;
+                                      line-height: 1.3;
                                     "
                                   >
-                                    <span style="color: rgba(0, 0, 0, 1) !important;">{{ employee.department or '' }}</span>
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td
-                                    align="center"
-                                    class="employee-location"
-                                    style="
-                                      font-family: Arial, sans-serif;
-                                      font-size: 14px;
-                                      color: rgba(48, 48, 48, 1) !important;
-                                    "
-                                  >
-                                    <span style="color: rgba(48, 48, 48, 1) !important;">{{ employee.location or '' }}</span>
+                                    {{ employee.location or '' }}
                                   </td>
                                 </tr>
                               </table>
@@ -331,7 +298,7 @@
                   {% if ns.row_started %}
                     {% if ns.count % 2 == 1 %}
                       <!-- Empty cell to complete the row if odd number of employees -->
-                      <td width="50%" align="center" class="card-cell"></td>
+                      <td width="50%" align="center" class="card-cell" style="padding: 10px;"></td>
                     {% endif %}
                   </tr>
                   {% endif %}
@@ -342,21 +309,22 @@
 
             <!-- Footer Message -->
             <tr>
-              <td align="center" style="padding: 30px 20px 40px 20px">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <td align="center" style="padding: 30px 20px 40px 20px; background-color: #ffffff;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
                   <tr>
                     <td
                       align="center"
-                      class="footer-message"
+                      class="darkmode-footer"
                       style="
                         font-family: Georgia, serif;
                         font-size: 24px;
                         font-style: italic;
-                        color: #4f9142 !important;
+                        color: #5a8f50;
                         line-height: 1.4;
+                        padding: 0 10px;
                       "
                     >
-                      <span style="color: #4f9142 !important;">Thank you for being an amazing part of our journey.</span>
+                      Thank you for being an amazing part of our journey.
                     </td>
                   </tr>
                 </table>

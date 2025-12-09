@@ -202,9 +202,8 @@ def send_all_birthday_mails(employees):
         enriched_employees[company] = enriched_list
 
     frappe.sendmail(
-        recipients="amir.dev@excelbd.com",
+        recipients=cc_mail,
         subject=f"Happy Birthday to all Employees having birthday today",
-        # cc=cc_mail,
         sender=email_id,
         template="birthday",
         args={
@@ -252,9 +251,8 @@ def send_all_work_anniversary_mails(employees):
         enriched_employees[company] = enriched_list
 
     frappe.sendmail(
-        recipients="amir.dev@excelbd.com",
+        recipients=cc_mail,
         subject=f"Happy Work Anniversary to all Employees having anniversary today",
-        # cc=cc_mail,
         sender=email_id,
         template="work_anniversary",
         args={

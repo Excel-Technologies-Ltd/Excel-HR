@@ -175,6 +175,11 @@ def send_all_birthday_mails(employees):
     for company, employee_list in employees.items():
         enriched_list = []
         for emp in employee_list:
+            # Validate if employee is active and not an intern
+            if not check_active_and_intern_employee(emp.user_id):
+                print(f"Skipping birthday mail for {emp.name} - not active or is an intern")
+                continue
+
             # Get additional employee details
             employee_doc = frappe.get_doc("Employee", {"user_id": emp.user_id})
 
@@ -198,6 +203,11 @@ def send_all_birthday_mails(employees):
             enriched_list.append(enriched_emp)
 
         enriched_employees[company] = enriched_list
+
+    # Check if there are any valid employees to send birthday emails
+    if not any(enriched_employees.values()):
+        print("No valid employees found for birthday reminders after filtering")
+        return
 
     frappe.sendmail(
         recipients=cc_mail,
@@ -229,6 +239,11 @@ def send_all_work_anniversary_mails(employees):
     for company, employee_list in employees.items():
         enriched_list = []
         for emp in employee_list:
+            # Validate if employee is active and not an intern
+            if not check_active_and_intern_employee(emp.user_id):
+                print(f"Skipping work anniversary mail for {emp.name} - not active or is an intern")
+                continue
+
             # Get additional employee details
             employee_doc = frappe.get_doc("Employee", {"user_id": emp.user_id})
 
@@ -247,6 +262,11 @@ def send_all_work_anniversary_mails(employees):
             enriched_list.append(enriched_emp)
 
         enriched_employees[company] = enriched_list
+
+    # Check if there are any valid employees to send work anniversary emails
+    if not any(enriched_employees.values()):
+        print("No valid employees found for work anniversary reminders after filtering")
+        return
 
     frappe.sendmail(
         recipients=cc_mail,

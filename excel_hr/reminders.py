@@ -144,8 +144,6 @@ def send_birthday_reminders():
         return
 
     employees_born_today = get_employees_who_are_born_today()
-
-    print(f"\n\nEmployees born today: {dict(employees_born_today)}\n\n")
     send_all_birthday_mails(employees_born_today)
 
     
@@ -213,7 +211,7 @@ def send_all_birthday_mails(employees):
         expose_recipients='header',
     )
 
-    print(f"Birthday email sent successfully to azmin@excelbd.com")
+    print(f"Birthday email sent successfully to {cc_mail}")
 
 
 def send_all_work_anniversary_mails(employees):
@@ -274,8 +272,6 @@ def send_work_anniversary_reminders():
         return
 
     employees_joined_today = get_employees_having_an_event_today("work_anniversary")
-
-    print(f"\n\nEmployees having work anniversary today: {dict(employees_joined_today)}\n\n")
     send_all_work_anniversary_mails(employees_joined_today)
         
     

@@ -169,10 +169,163 @@
             <!-- Employee Cards Section -->
             <tr>
               <td align="center" style="padding: 0px 20px 10px 20px; background-color: #ffffff;">
-                <table width="700" cellpadding="15" cellspacing="0" border="0" class="main-container" role="presentation" style="max-width: 700px; width: 100%;">
-                  {% set ns = namespace(count=0, row_started=false) %}
-                  {% for company, employee_list in employees.items() %}
-                    {% for employee in employee_list %}
+                {% set all_employees = [] %}
+                {% for company, employee_list in employees.items() %}
+                  {% for employee in employee_list %}
+                    {% set _ = all_employees.append(employee) %}
+                  {% endfor %}
+                {% endfor %}
+                
+                {% set total_employees = all_employees|length %}
+                
+                {% if total_employees == 1 %}
+                  <!-- Single Card - Centered Layout -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+                    <tr>
+                      <td align="center" style="padding: 10px;">
+                        <table
+                          width="340"
+                          cellpadding="0"
+                          cellspacing="0"
+                          border="0"
+                          class="employee-card darkmode-card"
+                          style="
+                            background-color: #f8f5ff;
+                            border-radius: 20px;
+                            padding: 20px;
+                            width: 100%;
+                            max-width: 340px;
+                            border: 1px solid #e6e0f8;
+                          "
+                          role="presentation"
+                        >
+                          <tr>
+                            <td align="center">
+                              <!-- Anniversary Badge -->
+                              <table
+                                width="100%"
+                                cellpadding="0"
+                                cellspacing="0"
+                                border="0"
+                                style="margin-bottom: 15px;"
+                                role="presentation"
+                              >
+                                <tr>
+                                  <td align="center">
+                                    <table
+                                      class="darkmode-badge"
+                                      cellpadding="12"
+                                      cellspacing="0"
+                                      border="0"
+                                      style="
+                                        background-color: #2C269B;
+                                        border-radius: 8px;
+                                        padding: 0 10px 10px 10px;
+                                        color: white;
+                                        width: 100%;
+                                        max-width: 200px;
+                                        margin: 0 auto;
+                                      "
+                                      role="presentation"
+                                    >
+                                      <tr>
+                                        <td
+                                          align="center"
+                                          style="
+                                            font-family: Arial, sans-serif;
+                                            font-size: 11px;
+                                            letter-spacing: 1px;
+                                            color: #ffffff;
+                                            font-weight: bold;
+                                            padding: 6px 6px 3px 0px;
+                                            border-bottom: none;
+                                          "
+                                        >
+                                          HAPPY <strong style="font-size: 12px;">{{ all_employees[0].years }}</strong>
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td
+                                          align="center"
+                                          style="
+                                            border: 1px solid rgba(255, 255, 255, 0.7);
+                                            padding: 6px 10px;
+                                            font-family: Arial, sans-serif;
+                                            font-size: 12px;
+                                            color: #ffffff;
+                                            border-radius: 4px;
+                                            margin-top: 4px;
+                                          "
+                                        >
+                                          ANNIVERSARY
+                                        </td>
+                                      </tr>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </table>
+
+                              <!-- Name -->
+                              <table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+                                <tr>
+                                  <td
+                                    align="center"
+                                    class="darkmode-text"
+                                    style="
+                                      font-family: Arial, sans-serif;
+                                      font-size: 20px;
+                                      font-weight: bold;
+                                      color: #2C269B;
+                                      padding-bottom: 8px;
+                                      line-height: 1.3;
+                                    "
+                                  >
+                                    {{ all_employees[0].name }}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td
+                                    align="center"
+                                    class="darkmode-text-secondary"
+                                    style="
+                                      font-family: Arial, sans-serif;
+                                      font-size: 15px;
+                                      font-weight: bold;
+                                      color: #444444;
+                                      padding-bottom: 5px;
+                                      line-height: 1.3;
+                                    "
+                                  >
+                                    {{ all_employees[0].department or '' }}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td
+                                    align="center"
+                                    class="darkmode-text"
+                                    style="
+                                      font-family: Arial, sans-serif;
+                                      font-size: 15px;
+                                      font-weight: bold;
+                                      color: #2C269B;
+                                      line-height: 1.3;
+                                    "
+                                  >
+                                    {{ all_employees[0].location or '' }}
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                {% else %}
+                  <!-- Multiple Cards - 2 per row Layout -->
+                  <table width="700" cellpadding="15" cellspacing="0" border="0" class="main-container" role="presentation" style="max-width: 700px; width: 100%;">
+                    {% set ns = namespace(count=0, row_started=false) %}
+                    {% for employee in all_employees %}
                       {% if ns.count % 2 == 0 %}
                         {% if ns.row_started %}</tr>{% endif %}
                         <tr class="card-row">
@@ -320,16 +473,16 @@
 
                       {% set ns.count = ns.count + 1 %}
                     {% endfor %}
-                  {% endfor %}
 
-                  {% if ns.row_started %}
-                    {% if ns.count % 2 == 1 %}
-                      <!-- Empty cell to complete the row if odd number of employees -->
-                      <td width="50%" align="center" class="card-cell" style="padding: 10px;"></td>
+                    {% if ns.row_started %}
+                      {% if ns.count % 2 == 1 %}
+                        <!-- Empty cell to complete the row if odd number of employees -->
+                        <td width="50%" align="center" class="card-cell" style="padding: 10px;"></td>
+                      {% endif %}
+                    </tr>
                     {% endif %}
-                  </tr>
-                  {% endif %}
-                </table>
+                  </table>
+                {% endif %}
               </td>
             </tr>
           

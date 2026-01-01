@@ -187,10 +187,12 @@ scheduler_events = {
         "0 7 * * *": [
             "excel_hr.reminders.send_absent_alert_for_missing_attendance",
         ],
+        "5 0 * * *":[
+            "excel_hr.reminders.send_work_anniversary_reminders",
+        ]
     },
     "daily": [
 		"excel_hr.reminders.send_birthday_reminders",
-		"excel_hr.reminders.send_work_anniversary_reminders",
         "excel_hr.api.delete_banner_images"
 	],
     # "all": [

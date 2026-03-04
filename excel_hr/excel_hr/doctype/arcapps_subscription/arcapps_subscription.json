@@ -1,0 +1,44 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-04 11:35:26.105098",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "arc__subscriptions"
+ ],
+ "fields": [
+  {
+   "fieldname": "arc__subscriptions",
+   "fieldtype": "Table",
+   "label": "Arc  Subscriptions",
+   "options": "ArcApps Subscription Sites"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-03-04 11:35:26.105098",
+ "modified_by": "Administrator",
+ "module": "Excel Hr",
+ "name": "ArcApps Subscription",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

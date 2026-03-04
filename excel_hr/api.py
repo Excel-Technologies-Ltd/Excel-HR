@@ -16,6 +16,35 @@ import re
 from frappe.utils import (
 	format_datetime,formatdate)
 
+@frappe.whitelist(allow_guest=True)
+def verify_arc_subscriptions(url=None):
+    if not url:
+        frappe.throw(_("URL is required"))
+
+    # 1. Check exact match on client_url
+    match = frappe.db.get_value(
+        "ArcApps Subscription Sites",
+        {"client_url": url},
+        ["name", "business_name", "client_url", "base_url",
+         "subscription_start_date", "subscription_end_date", "grant_base_url_access"],
+        as_dict=True
+    )
+    if match:
+        return match
+
+    # 2. Check base_url match where grant_base_url_access is enabled
+    base_match = frappe.db.get_value(
+        "ArcApps Subscription Sites",
+        {"base_url": url, "grant_base_url_access": 1},
+        ["name", "business_name", "client_url", "base_url",
+         "subscription_start_date", "subscription_end_date", "grant_base_url_access"],
+        as_dict=True
+    )
+    if base_match:
+        return base_match
+
+    return None
+
 @frappe.whitelist()
 def get_departments_for_company(company):
     departments = frappe.db.sql_list("""

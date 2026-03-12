@@ -26,7 +26,7 @@ def verify_arc_subscriptions(url=None):
         "ArcApps Subscription Sites",
         {"client_url": url},
         ["name", "business_name", "client_url", "base_url",
-         "subscription_start_date", "subscription_end_date", "grant_base_url_access"],
+         "subscription_start_date", "subscription_end_date", "grant_base_url_access", "is_disabled"],
         as_dict=True
     )
     if match:
@@ -37,7 +37,7 @@ def verify_arc_subscriptions(url=None):
         "ArcApps Subscription Sites",
         {"base_url": url, "grant_base_url_access": 1},
         ["name", "business_name", "client_url", "base_url",
-         "subscription_start_date", "subscription_end_date", "grant_base_url_access"],
+         "subscription_start_date", "subscription_end_date", "grant_base_url_access", "is_disabled"],
         as_dict=True
     )
     if base_match:

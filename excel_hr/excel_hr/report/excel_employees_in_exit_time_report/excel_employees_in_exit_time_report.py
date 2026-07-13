@@ -2,6 +2,7 @@ import frappe
 from datetime import datetime, timedelta
 from frappe.query_builder.functions import Count, Extract, Sum
 from typing import Dict, List, Optional, Tuple
+from excel_hr.excel_hr.report.attendance_checkin_utils import get_local_checkin_tags, local_tag
 Filters = frappe._dict
 
 def execute(filters=None):
@@ -133,7 +134,9 @@ def get_data(filters):
     checkin_data = {}
     if start_date.date() <= today <= end_date.date():
         checkin_data = get_todays_checkins(employee_ids)
-    
+
+    checkin_tags = get_local_checkin_tags(employee_ids, start_date.date(), end_date.date())
+
     attendance_records = frappe.get_all('Attendance', filters={
         'attendance_date': ['between', [start_date_str, end_date_str]],
         'employee': ['in', employee_ids],
@@ -189,12 +192,14 @@ def get_data(filters):
                 out_times = ''
                 
                 if in_times or out_times:
-                    row[f'in_{current_date.day}'] = format_with_color(
-                        convert_to_am_pm(in_times[0]) if in_times else '-', 
-                        'green'
-                    )
+                    in_val = convert_to_am_pm(in_times[0]) if in_times else '-'
+                    if in_times:
+                        in_tag = local_tag(checkin_tags, employee, current_date.date(), "IN")
+                        if in_tag:
+                            in_val = f"{in_val} ({in_tag})"
+                    row[f'in_{current_date.day}'] = format_with_color(in_val, 'green')
                     row[f'out_{current_date.day}'] = format_with_color(
-                        convert_to_am_pm(out_times[-1]) if out_times else '-', 
+                        convert_to_am_pm(out_times[-1]) if out_times else '-',
                         'green'
                     )
                     current_date += timedelta(days=1)
@@ -205,14 +210,20 @@ def get_data(filters):
             draft_request = get_draft_requests(filters, employee)
             
             if attendance and attendance['status'] == 'Present':
-                row[f'in_{current_date.day}'] = format_with_color(
-                    convert_to_am_pm(attendance['in_time']) if attendance['in_time'] else 'P', 
-                    'green'
-                )
-                row[f'out_{current_date.day}'] = format_with_color(
-                    convert_to_am_pm(attendance['out_time']) if attendance['out_time'] else 'P', 
-                    'green'
-                )
+                in_val = convert_to_am_pm(attendance['in_time']) if attendance['in_time'] else 'P'
+                if attendance['in_time']:
+                    in_tag = local_tag(checkin_tags, employee, current_date.date(), "IN")
+                    if in_tag:
+                        in_val = f"{in_val} ({in_tag})"
+
+                out_val = convert_to_am_pm(attendance['out_time']) if attendance['out_time'] else 'P'
+                if attendance['out_time']:
+                    out_tag = local_tag(checkin_tags, employee, current_date.date(), "OUT")
+                    if out_tag:
+                        out_val = f"{out_val} ({out_tag})"
+
+                row[f'in_{current_date.day}'] = format_with_color(in_val, 'green')
+                row[f'out_{current_date.day}'] = format_with_color(out_val, 'green')
             elif attendance and attendance['status'] == 'Work From Home':
                 row[f'in_{current_date.day}'] = format_with_color('WFH', 'blue')
                 row[f'out_{current_date.day}'] = format_with_color('WFH', 'blue')

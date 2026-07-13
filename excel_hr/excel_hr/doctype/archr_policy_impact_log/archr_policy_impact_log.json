@@ -1,0 +1,194 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-07-13 12:55:55.485497",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "created_on",
+  "criteria",
+  "status",
+  "column_break_vb8ik",
+  "naming_series",
+  "type",
+  "adjustment",
+  "employee_information_section",
+  "employee",
+  "employee_name",
+  "job_location",
+  "column_break_ylans",
+  "parent_department",
+  "section",
+  "sub_section"
+ ],
+ "fields": [
+  {
+   "default": "Now",
+   "fieldname": "created_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Created On",
+   "reqd": 1
+  },
+  {
+   "fieldname": "criteria",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Criteria",
+   "options": "\nDeduction\nReward",
+   "reqd": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nApplied\nRejected"
+  },
+  {
+   "fieldname": "column_break_vb8ik",
+   "fieldtype": "Column Break"
+  },
+  {
+   "bold": 1,
+   "default": "PIL-.YY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "no_copy": 1,
+   "options": "PIL-.YY.-\nPEN-.YY.-\nREW-.YY.-",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Type",
+   "options": "\nLeaves\nSalary",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "adjustment",
+   "fieldtype": "Float",
+   "label": "Adjustment",
+   "non_negative": 1,
+   "precision": "0",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee_information_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Information"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.custom_job_location",
+   "fieldname": "job_location",
+   "fieldtype": "Data",
+   "label": "Job Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ylans",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.excel_parent_department",
+   "fieldname": "parent_department",
+   "fieldtype": "Data",
+   "label": "Parent Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.excel_hr_section",
+   "fieldname": "section",
+   "fieldtype": "Data",
+   "label": "Section",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.excel_hr_sub_section",
+   "fieldname": "sub_section",
+   "fieldtype": "Data",
+   "label": "Sub Section",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-13 13:03:15.742863",
+ "modified_by": "Administrator",
+ "module": "Excel Hr",
+ "name": "ArcHR Policy Impact Log",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "select": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Blue",
+   "custom": 1,
+   "title": "Pending"
+  },
+  {
+   "color": "Green",
+   "custom": 1,
+   "title": "Applied"
+  },
+  {
+   "color": "Red",
+   "custom": 1,
+   "title": "Rejected"
+  }
+ ],
+ "track_changes": 1
+}

@@ -3,6 +3,7 @@
 
 
 from calendar import monthrange
+from datetime import date
 from itertools import groupby
 from typing import Dict, List, Optional, Tuple
 
@@ -10,6 +11,7 @@ import frappe
 from frappe import _
 from frappe.query_builder.functions import Count, Extract, Sum
 from frappe.utils import cint, cstr, getdate
+from excel_hr.excel_hr.report.attendance_checkin_utils import get_local_checkin_tags, local_tag
 Filters = frappe._dict
 
 
@@ -37,13 +39,14 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 		frappe.throw(_("Please select month and year."))
 
 	attendance_map = get_attendance_map(filters)
-	
+	present_day_tags = get_present_day_tags(filters)
+
 	# Modified: Removed the check that prevents empty data from showing
 	# if not attendance_map:
 	# 	return [], [], None, None
 
 	columns = get_columns(filters)
-	data = get_data(filters, attendance_map)
+	data = get_data(filters, attendance_map, present_day_tags)
 
 	if not data:
 		frappe.msgprint(
@@ -190,7 +193,7 @@ def get_total_days_in_month(filters: Filters) -> int:
 	return monthrange(cint(filters.year), cint(filters.month))[1]
 
 # MODIFIED: Added include_all=True parameter to get_rows call to include all employees
-def get_data(filters: Filters, attendance_map: Dict) -> List[Dict]:
+def get_data(filters: Filters, attendance_map: Dict, present_day_tags: Dict) -> List[Dict]:
 	employee_details, group_by_param_values = get_employee_related_details(filters)
 	holiday_map = get_holiday_map(filters)
 	data = []
@@ -203,16 +206,86 @@ def get_data(filters: Filters, attendance_map: Dict) -> List[Dict]:
 				continue
 
 			# Modified: Added include_all=True parameter to get_rows call
-			records = get_rows(employee_details[value], filters, holiday_map, attendance_map, include_all=True)
+			records = get_rows(employee_details[value], filters, holiday_map, attendance_map, present_day_tags, include_all=True)
 
 			if records:
 				data.append({group_by_column: value})
 				data.extend(records)
 	else:
 		# Modified: Added include_all=True parameter to get_rows call
-		data = get_rows(employee_details, filters, holiday_map, attendance_map, include_all=True)
+		data = get_rows(employee_details, filters, holiday_map, attendance_map, present_day_tags, include_all=True)
 
-	return data	
+	return data
+
+
+def get_present_day_tags(filters: Filters) -> Dict[str, Dict[int, str]]:
+	"""For each employee/day marked Present, work out the extra tag to append
+	to the "P" abbreviation: "AR" if the Attendance's own attendance_request
+	field is set (takes priority, since it means HR filed a request to explain
+	that day), else "IO"/"OO" if the employee's IN and/or OUT checkin that day
+	was made on the office/local device. Returns {employee: {day_of_month: tag}}.
+	"""
+	Attendance = frappe.qb.DocType("Attendance")
+	Employee = frappe.qb.DocType("Employee")
+
+	employee_subquery = (
+		frappe.qb.from_(Employee)
+		.select(Employee.name)
+		.where(Employee.company == filters.company)
+	)
+	if filters.department:
+		employee_subquery = employee_subquery.where(Employee.department == filters.department)
+	if filters.get("is_active"):
+		employee_subquery = employee_subquery.where(Employee.status == "Active")
+	else:
+		employee_subquery = employee_subquery.where(Employee.status != "Active")
+
+	query = (
+		frappe.qb.from_(Attendance)
+		.select(
+			Attendance.employee,
+			Extract("day", Attendance.attendance_date).as_("day_of_month"),
+			Attendance.attendance_date,
+			Attendance.attendance_request,
+		)
+		.where(
+			(Attendance.docstatus == 1)
+			& (Attendance.status == "Present")
+			& (Attendance.company == filters.company)
+			& (Extract("month", Attendance.attendance_date) == filters.month)
+			& (Extract("year", Attendance.attendance_date) == filters.year)
+			& Attendance.employee.isin(employee_subquery)
+		)
+	)
+	if filters.employee:
+		employees = filters.employee if isinstance(filters.employee, list) else [filters.employee]
+		query = query.where(Attendance.employee.isin(employees))
+
+	rows = query.run(as_dict=True)
+	if not rows:
+		return {}
+
+	total_days = get_total_days_in_month(filters)
+	checkin_tags = get_local_checkin_tags(
+		list({row.employee for row in rows}),
+		date(cint(filters.year), cint(filters.month), 1),
+		date(cint(filters.year), cint(filters.month), total_days),
+	)
+
+	tags = {}
+	for row in rows:
+		if row.attendance_request:
+			tag = "AR"
+		else:
+			attendance_date = getdate(row.attendance_date)
+			tag = (
+				local_tag(checkin_tags, row.employee, attendance_date, "IN")
+				or local_tag(checkin_tags, row.employee, attendance_date, "OUT")
+			)
+		if tag:
+			tags.setdefault(row.employee, {})[row.day_of_month] = tag
+
+	return tags
 
 def get_attendance_map(filters: Filters) -> Dict:
     """Returns a dictionary of employee-wise attendance map as per shifts for all the days of the month."""
@@ -518,7 +591,7 @@ def get_holiday_map(filters: Filters) -> Dict[str, List[Dict]]:
 
 # MODIFIED: Added include_all parameter with default value of False
 def get_rows(
-	employee_details: Dict, filters: Filters, holiday_map: Dict, attendance_map: Dict, include_all: bool = False
+	employee_details: Dict, filters: Filters, holiday_map: Dict, attendance_map: Dict, present_day_tags: Dict, include_all: bool = False
 ) -> List[Dict]:
 	records = []
 	default_holiday_list = frappe.get_cached_value("Company", filters.company, "default_holiday_list")
@@ -601,7 +674,7 @@ def get_rows(
 
 			# MODIFIED: Handle case where employee_attendance might be None
 			attendance_for_employee = get_attendance_status_for_detailed_view(
-				employee, filters, employee_attendance or {}, holidays
+				employee, filters, employee_attendance or {}, holidays, present_day_tags.get(employee, {})
 			)
 			
 			# set employee details in the first row
@@ -705,7 +778,7 @@ def get_attendance_summary_and_days(employee: str, filters: Filters) -> Tuple[Di
 
 # MODIFIED: Updated function to handle empty employee_attendance
 def get_attendance_status_for_detailed_view(
-	employee: str, filters: Filters, employee_attendance: Dict, holidays: List
+	employee: str, filters: Filters, employee_attendance: Dict, holidays: List, day_tags: Optional[Dict] = None
 ) -> List[Dict]:
 	"""Returns list of shift-wise attendance status for employee
 	[
@@ -715,16 +788,17 @@ def get_attendance_status_for_detailed_view(
 	"""
 	total_days = get_total_days_in_month(filters)
 	attendance_values = []
+	day_tags = day_tags or {}
 
 	# MODIFIED: Handle case where no attendance records exist
 	if not employee_attendance:
 		row = {"shift": ""}
-		
+
 		for day in range(1, total_days + 1):
 			status = get_holiday_status(day, holidays)
 			abbr = status_map.get(status, "A")  # Default to Absent if not a holiday
 			row[cstr(day)] = abbr
-		
+
 		attendance_values.append(row)
 		return attendance_values
 
@@ -740,6 +814,8 @@ def get_attendance_status_for_detailed_view(
 				status = "Absent"
 
 			abbr = status_map.get(status, "")
+			if status == "Present" and day_tags.get(day):
+				abbr = f"{abbr} ({day_tags[day]})"
 			row[cstr(day)] = abbr
 
 		attendance_values.append(row)

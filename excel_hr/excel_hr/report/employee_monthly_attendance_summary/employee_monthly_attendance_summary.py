@@ -3,6 +3,7 @@ import frappe
 from datetime import datetime, date, timedelta
 import calendar
 from frappe.query_builder.functions import Count, Extract, Sum
+from excel_hr.excel_hr.report.attendance_checkin_utils import get_local_checkin_tags, local_tag
 
 def execute(filters=None):
     columns = get_columns()
@@ -128,6 +129,10 @@ def get_data(filters):
 
     draft_data = get_draft_requests(filters)
 
+    checkin_tags = get_local_checkin_tags(
+        [employee_id], all_dates[0], all_dates[-1]
+    )
+
     today_date = datetime.today().date()
     if today_date.year == year and today_date.month == month:
         first_checkin, last_checkout = get_today_checkin_checkout(employee_id)
@@ -196,6 +201,14 @@ def get_data(filters):
                 out_time_str = out_time.strftime('%I:%M %p')
             else:
                 out_time_str = out_time
+
+            in_tag = local_tag(checkin_tags, employee_id, current_date, "IN")
+            if in_time_str and in_tag:
+                in_time_str = f"{in_time_str} ({in_tag})"
+
+            out_tag = local_tag(checkin_tags, employee_id, current_date, "OUT")
+            if out_time_str and out_tag:
+                out_time_str = f"{out_time_str} ({out_tag})"
 
             worked_hours = "" if attendance.get('status') in ["Work From Home", "On Leave"] else f"{attendance.get('working_hours', ''):.1f} h" if attendance.get('working_hours') else ""
 

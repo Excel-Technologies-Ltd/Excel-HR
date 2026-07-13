@@ -469,17 +469,19 @@ def get_draft_requests(filters):
 
 def get_today_checkin_checkout(employee_id):
     today = datetime.today().date()
-    print("Today's date:", today)
 
+    # Filtered on `time` directly rather than the custom `date` field --
+    # that field is populated by the checkin-creation pipeline and isn't
+    # reliably set on every record, so relying on it can silently miss
+    # today's live checkins.
     checkins = frappe.get_all("Employee Checkin",
         filters={
             "employee": employee_id,
-            "date": ["=", today],
+            "time": ["between", [f"{today} 00:00:00", f"{today} 23:59:59"]],
         },
         fields=["name", "time", "log_type"],
         order_by="time ASC"
     )
-    print("Check-ins for today:", checkins)
     if not checkins:
         return None, None
 

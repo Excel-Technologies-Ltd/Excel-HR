@@ -92,9 +92,15 @@ def get_checkins_for_date(employee_ids: List[str], date) -> Dict[str, List[Dict]
 	if not employee_ids:
 		return {}
 
+	# Filtered on `time` directly rather than the custom `date` field -- that
+	# field is populated by the checkin-creation pipeline and isn't reliably
+	# set on every record, so relying on it can silently miss real checkins.
 	rows = frappe.get_all(
 		"Employee Checkin",
-		filters={"employee": ["in", employee_ids], "date": date},
+		filters={
+			"employee": ["in", employee_ids],
+			"time": ["between", [f"{date} 00:00:00", f"{date} 23:59:59"]],
+		},
 		fields=["employee", "time", "shift", "shift_start", "shift_end"],
 		order_by="time asc",
 	)

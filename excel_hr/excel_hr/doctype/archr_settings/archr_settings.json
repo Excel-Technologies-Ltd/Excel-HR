@@ -23,13 +23,17 @@
   "column_break_wbfsh",
   "enabled_date_validation_att_req",
   "column_break_blree",
+  "disabled_policy_impact",
   "leave_application_tab",
   "enabled_day_validation_annual_leave",
   "auto_l_app_for_new_employee",
   "column_break_2jvum",
   "enabled_date_validation",
+  "lock_date_to_apply_mpl",
   "column_break_haypv",
-  "zero_days_validation"
+  "zero_days_validation",
+  "validate_apply_weeks_mpl",
+  "allowed_teams_mpl"
  ],
  "fields": [
   {
@@ -63,7 +67,7 @@
    "default": "0",
    "fieldname": "validate_future_date_in_attendance_request",
    "fieldtype": "Check",
-   "label": "Restrict Future Date (Attendance Request)"
+   "label": "Restrict Future Date (Att. Req)"
   },
   {
    "fieldname": "leave_application_tab",
@@ -150,13 +154,42 @@
    "default": "0",
    "fieldname": "auto_l_app_for_new_employee",
    "fieldtype": "Check",
-   "label": "Auto L. App. for new employee"
+   "label": "Auto LWP for new employee"
+  },
+  {
+   "default": "0",
+   "description": "Disables employee actions after the 28th of the month if checked.",
+   "fieldname": "lock_date_to_apply_mpl",
+   "fieldtype": "Check",
+   "label": "Lock Date to Apply (MPL)"
+  },
+  {
+   "default": "0",
+   "description": "Enables specified team members to apply during the 2nd and 3rd weeks of the month.",
+   "fieldname": "validate_apply_weeks_mpl",
+   "fieldtype": "Check",
+   "label": "Validate Apply Weeks (MPL)"
+  },
+  {
+   "depends_on": "eval:doc.validate_apply_weeks_mpl",
+   "description": "Selected team members will be allowed to apply for MPL in any week.",
+   "fieldname": "allowed_teams_mpl",
+   "fieldtype": "Table MultiSelect",
+   "label": "Allowed Teams (MPL)",
+   "options": "MPL Departments"
+  },
+  {
+   "default": "0",
+   "description": "Disables attendance-based penalties and rewards.",
+   "fieldname": "disabled_policy_impact",
+   "fieldtype": "Check",
+   "label": "Disabled Policy Impact"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-10-29 15:30:06.286733",
+ "modified": "2026-07-13 11:51:58.547882",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

@@ -20,8 +20,79 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         if self.leave_type == "Monthly Paid Leave":
             if self.to_date != self.from_date:
                 frappe.throw(_("To Date must be the same as From Date for Monthly Paid Leave"))
+            self.validate_mpl_allowed_day()
+            self.validate_mpl_lock_date()
+            self.validate_mpl_apply_weeks()
             self.check_existing_monthly_paid_leave()
-    
+
+    def validate_mpl_lock_date(self):
+        settings = frappe.get_doc("ArcHR Settings")
+        if not settings.lock_date_to_apply_mpl:
+            return
+
+        if "System Manager" in frappe.get_roles():
+            return
+
+        current_date = getdate(nowdate())
+        if current_date.day > 28:
+            frappe.throw(
+                _("Monthly Paid Leave cannot be applied after the 28th of {0}.").format(
+                    current_date.strftime("%B")
+                )
+            )
+
+    def validate_mpl_apply_weeks(self):
+        settings = frappe.get_doc("ArcHR Settings")
+        if not settings.validate_apply_weeks_mpl:
+            return
+
+        if not self.employee or not self.from_date:
+            return
+
+        allowed_departments = {row.departments for row in settings.allowed_teams_mpl if row.departments}
+
+        employee_departments = frappe.db.get_value(
+            "Employee",
+            self.employee,
+            ["excel_parent_department", "excel_hr_section", "excel_hr_sub_section"],
+            as_dict=True,
+        )
+        employee_departments = {value for value in employee_departments.values() if value}
+
+        if employee_departments & allowed_departments:
+            return
+
+        from_date = getdate(self.from_date)
+        if not (8 <= from_date.day <= 21):
+            frappe.throw(
+                _("From Date must fall in the 2nd or 3rd week (8th - 21st) of the month for Monthly Paid Leave.")
+            )
+
+    def validate_mpl_allowed_day(self):
+        if not self.employee or not self.from_date:
+            return
+
+        allowed_day = frappe.db.get_value(
+            "Leave Allocation",
+            {
+                "employee": self.employee,
+                "leave_type": "Monthly Paid Leave",
+                "docstatus": 1,
+                "from_date": ["<=", self.from_date],
+                "to_date": [">=", self.from_date],
+            },
+            "custom_mpl_allowed_day",
+        )
+
+        if allowed_day:
+            from_day = getdate(self.from_date).strftime("%A")
+            if from_day != allowed_day:
+                frappe.throw(
+                    _("From Date must fall on {0} as set in the employee's Monthly Paid Leave allocation.").format(
+                        frappe.bold(allowed_day)
+                    )
+                )
+
     def check_existing_monthly_paid_leave(self):
         if not self.from_date:
             return
@@ -113,7 +184,7 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         if aleart_doc.enabled_day_validation_annual_leave == 1:
             self.validate_annual_leave_balance()
 
-        if aleart_doc.enabled_date_validation == 1:
+        if aleart_doc.enabled_date_validation == 1 and self.leave_type != "Monthly Paid Leave":
             self.validate_posting_date_range()
             
         # Ensure total_leave_days is calculated properly

@@ -27,7 +27,7 @@ def get_columns():
             "fieldname": "employee_name",
             "label": _("Employee Name"),
             "fieldtype": "Data",
-            "width": 170,
+            "width": 100,
             "align": "left"
         },
         {
@@ -41,14 +41,14 @@ def get_columns():
             "fieldname": "in_time",
             "label": _("In Time"),
             "fieldtype": "Data",
-            "width": 80,
+            "width": 130,
             "align": "left"
         },
         {
             "fieldname": "out_time",
             "label": _("Out Time"),
             "fieldtype": "Data",
-            "width": 80,
+            "width": 130,
             "align": "left"
         },
         {
@@ -98,34 +98,11 @@ def get_data(filters):
 
     employee_name = frappe.db.get_value("Employee", employee_id, "employee_name")
 
-    start_date = f"{year}-{month}-01"
-    end_date_str = f"{year}-{month}-15"
-    get_holiday = frappe.db.get_value("Attendance", {
-        "attendance_date": ["between", [start_date, end_date_str]],
-        "employee": employee_id,
-        "status": ["in", ["Present", "Work From Home"]],
-        "docstatus": 1
-    }, ['holiday_list'], order_by="attendance_date ASC")
-    holiday_name = get_holiday or frappe.db.get_value("Employee", employee_id, "holiday_list")
-    holidays_data = []
-    if holiday_name:
-        query = """
-            SELECT holiday_date, weekly_off, description
-            FROM tabHoliday
-            WHERE parent = %s
-              AND parentfield = 'holidays'
-              AND parenttype = 'Holiday List'
-        """
-        holidays_data = frappe.db.sql(query, (holiday_name,), as_dict=True)
-
+    employee_holiday_list = frappe.db.get_value("Employee", employee_id, "holiday_list")
     shift_name = frappe.db.get_value("Employee", employee_id, "default_shift")
-    shift_time_string = None
-    if shift_name:
-        shift_time = frappe.db.get_value("Shift Type", shift_name, ['start_time', 'end_time'])
-        if shift_time and len(shift_time) == 2:
-            shift_in_time = convert_single_time_format(shift_time[0])
-            shift_out_time = convert_single_time_format(shift_time[1])
-            shift_time_string = f"{shift_in_time} to {shift_out_time}"
+
+    holidays_cache = {}
+    shift_time_cache = {}
 
     draft_data = get_draft_requests(filters)
 
@@ -163,7 +140,8 @@ def get_data(filters):
                     'attendance_request': None,
                     'late_entry': 0,
                     'early_exit': 0,
-                    'shift': shift_name or None
+                    'shift': shift_name or None,
+                    'holiday_list': employee_holiday_list
                 })
 
     formatted_data = []
@@ -174,6 +152,7 @@ def get_data(filters):
         leave_application_remarks = ""
         is_draft_leave = any(lr["start_date"] <= current_date <= lr["to_date"] for lr in draft_data.get("leave_applications", []))
         is_draft_attendance = any(ar["start_date"] <= current_date <= ar["to_date"] for ar in draft_data.get("attendance_requests", []))
+        is_past = current_date < today_date
 
         if isinstance(current_date, (datetime, date)):
             date_str = current_date.strftime('%Y-%m-%d')
@@ -181,6 +160,11 @@ def get_data(filters):
             date_str = str(current_date)
 
         if attendance:
+            record_holiday_list = attendance.get('holiday_list') or employee_holiday_list
+            holidays_data = get_holidays_data(record_holiday_list, holidays_cache)
+            roster_time = get_shift_time_string(attendance.get('shift'), shift_time_cache) if attendance.get('shift') else (
+                get_shift_time_string(shift_name, shift_time_cache) if not is_past else None
+            )
             in_time = attendance.get('in_time')
             out_time = attendance.get('out_time')
             attendance_request = attendance.get('attendance_request')
@@ -220,7 +204,7 @@ def get_data(filters):
             formatted_data.append([
             current_date.strftime('%Y-%m-%d') if isinstance(current_date, date) else current_date,
             attendance.get('employee_name'),
-            shift_time_string,
+            roster_time,
             in_time_str,
             out_time_str,
             worked_hours,
@@ -236,10 +220,18 @@ def get_data(filters):
             elif is_draft_attendance:
                 draft_remarks = 'Attendance Request (Pending)'
 
+            if is_past:
+                record_holiday_list = get_next_attendance_holiday_list(current_date, attendance_list) or employee_holiday_list
+                roster_time = None
+            else:
+                record_holiday_list = employee_holiday_list
+                roster_time = get_shift_time_string(shift_name, shift_time_cache)
+            holidays_data = get_holidays_data(record_holiday_list, holidays_cache)
+
             formatted_data.append([
                 date_str,
                 employee_name,
-                shift_time_string,
+                roster_time,
                 None,
                 None,
                 None,
@@ -255,10 +247,10 @@ def get_attendance_by_employee_and_month(employee_id, month, year):
     current_year = year
     query = f"""
         SELECT working_hours, leave_application, early_exit,
-          shift, late_entry, attendance_request, status, 
-          employee_name, employee, attendance_date, in_time, out_time, 
-          (SELECT employee_name 
-            FROM `tabEmployee` 
+          shift, late_entry, attendance_request, status,
+          employee_name, employee, attendance_date, in_time, out_time, holiday_list,
+          (SELECT employee_name
+            FROM `tabEmployee`
             WHERE name = `tabAttendance`.employee ) AS employee_name
         FROM `tabAttendance`
         WHERE `employee` = '{employee_id}'
@@ -268,6 +260,45 @@ def get_attendance_by_employee_and_month(employee_id, month, year):
     """
     attendance_records = frappe.db.sql(query, as_dict=True)
     return attendance_records
+
+
+def get_holidays_data(holiday_list_name, cache):
+    if not holiday_list_name:
+        return []
+    if holiday_list_name not in cache:
+        query = """
+            SELECT holiday_date, weekly_off, description
+            FROM tabHoliday
+            WHERE parent = %s
+              AND parentfield = 'holidays'
+              AND parenttype = 'Holiday List'
+        """
+        cache[holiday_list_name] = frappe.db.sql(query, (holiday_list_name,), as_dict=True)
+    return cache[holiday_list_name]
+
+
+def get_shift_time_string(shift_name, cache):
+    if not shift_name:
+        return None
+    if shift_name not in cache:
+        shift_time = frappe.db.get_value("Shift Type", shift_name, ['start_time', 'end_time'])
+        if shift_time and len(shift_time) == 2:
+            cache[shift_name] = f"{convert_single_time_format(shift_time[0])} to {convert_single_time_format(shift_time[1])}"
+        else:
+            cache[shift_name] = None
+    return cache[shift_name]
+
+
+def get_next_attendance_holiday_list(current_date, attendance_list):
+    """Holiday List of the closest attendance record after this date --
+    used so a gap in attendance (previous days with no record) still
+    resolves Holiday/Weekend against the holiday list that was in effect
+    around that time, rather than the employee's current one."""
+    upcoming = sorted(
+        (a for a in attendance_list if a['attendance_date'] > current_date and a.get('holiday_list')),
+        key=lambda a: a['attendance_date']
+    )
+    return upcoming[0]['holiday_list'] if upcoming else None
 
 
 def get_employee_details(employee_id):

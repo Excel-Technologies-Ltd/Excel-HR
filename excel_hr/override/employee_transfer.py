@@ -81,6 +81,8 @@ def update_employee_work_history(employee, details, date=None, cancel=False):
 		"excel_hr_section": "custom_excel_hr_section",
 		"excel_hr_sub_section": "custom_excel_hr_sub_section",
 		"employment_sub_type": "custom_employment_sub_type",
+		"default_shift": "custom_default_shift",
+		"holiday_list": "custom_holiday_list",
 	}
 	
 	for item in details:

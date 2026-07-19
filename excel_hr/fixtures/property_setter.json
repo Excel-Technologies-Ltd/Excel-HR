@@ -1,6 +1,22 @@
 [
  {
   "default_value": null,
+  "doc_type": "Employee Checkin",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "device_id",
+  "is_system_generated": 0,
+  "modified": "2024-05-06 14:57:54.588748",
+  "module": null,
+  "name": "Employee Checkin-device_id-read_only",
+  "property": "read_only",
+  "property_type": "Check",
+  "row_name": null,
+  "value": "1"
+ },
+ {
+  "default_value": null,
   "doc_type": "Employee",
   "docstatus": 0,
   "doctype": "Property Setter",
@@ -4257,22 +4273,6 @@
  },
  {
   "default_value": null,
-  "doc_type": "Employee Internal Work History",
-  "docstatus": 0,
-  "doctype": "Property Setter",
-  "doctype_or_field": "DocType",
-  "field_name": null,
-  "is_system_generated": 0,
-  "modified": "2025-10-22 15:56:05.495249",
-  "module": null,
-  "name": "Employee Internal Work History-main-field_order",
-  "property": "field_order",
-  "property_type": "Data",
-  "row_name": null,
-  "value": "[\"branch\", \"department\", \"custom_parent_department\", \"custom_excel_hr_section\", \"custom_excel_hr_sub_section\", \"custom_employment_type\", \"custom_employment_sub_type\", \"designation\", \"from_date\", \"to_date\"]"
- },
- {
-  "default_value": null,
   "doc_type": "Leave Application",
   "docstatus": 0,
   "doctype": "Property Setter",
@@ -4510,5 +4510,21 @@
   "property_type": "Data",
   "row_name": null,
   "value": "[\"naming_series\", \"employee\", \"employee_name\", \"custom_gender\", \"department\", \"company\", \"eisl_company\", \"column_break1\", \"leave_type\", \"from_date\", \"to_date\", \"custom_mpl_allowed_day\", \"excel_job_location\", \"section_break_6\", \"new_leaves_allocated\", \"carry_forward\", \"unused_leaves\", \"total_leaves_allocated\", \"total_leaves_encashed\", \"column_break_10\", \"compensatory_request\", \"leave_period\", \"leave_policy\", \"leave_policy_assignment\", \"carry_forwarded_leaves_count\", \"expired\", \"amended_from\", \"notes\", \"description\"]"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Employee Internal Work History",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocType",
+  "field_name": null,
+  "is_system_generated": 0,
+  "modified": "2026-07-19 12:53:49.216938",
+  "module": null,
+  "name": "Employee Internal Work History-main-field_order",
+  "property": "field_order",
+  "property_type": "Data",
+  "row_name": null,
+  "value": "[\"branch\", \"department\", \"custom_parent_department\", \"custom_excel_hr_section\", \"custom_excel_hr_sub_section\", \"custom_employment_type\", \"custom_employment_sub_type\", null, null, \"designation\", \"from_date\", \"to_date\"]"
  }
 ]

@@ -145,6 +145,12 @@ frappe.query_reports["Excel Attendance Sheet"] = {
   });
 },
   formatter: function (value, row, column, data, default_formatter) {
+    // "Employee" column: show the raw ID only, not the Employee's title
+    // field (employee_name) that Frappe's Link formatter auto-resolves to.
+    if (column.fieldname === "employee") {
+      return data.employee;
+    }
+
     value = default_formatter(value, row, column, data);
     const summarized_view =
       frappe.query_report.get_filter_value("summarized_view");
@@ -159,17 +165,20 @@ frappe.query_reports["Excel Attendance Sheet"] = {
         (group_by && column.colIndex > 3) ||
         (!group_by && column.colIndex > 2)
       ) {
-        if (value == "P" || value == "WFH")
+        // Day cells can carry a " (AR)"/" (RC)" suffix tag, so compare
+        // against the base abbreviation rather than the full value.
+        const base = String(value).split(" ")[0];
+        if (base == "P" || base == "WFH")
           value = "<span style='color:green'>" + value + "</span>";
-        else if (value == "A")
+        else if (base == "A")
           value = "<span style='color:red'>" + value + "</span>";
-        else if (value == "HD")
+        else if (base == "HD")
           value = "<span style='color:orange'>" + value + "</span>";
-        else if (value == "L")
+        else if (base == "L")
           value = "<span style='color:#318AD8'>" + value + "</span>";
-        else if (value == "A.App")
+        else if (base == "A.App")
           value = "<span style='color:#FFA500'>" + value + "</span>";
-        else if (value == "L.App")
+        else if (base == "L.App")
           value = "<span style='color:#FFA500'>" + value + "</span>";
         else if (value == "Attendance Request - A.App")
           value = "<span style='color:#FFA500'>" + value + "</span>";

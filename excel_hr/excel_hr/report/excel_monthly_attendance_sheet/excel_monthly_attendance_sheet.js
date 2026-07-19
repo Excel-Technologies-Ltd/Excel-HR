@@ -158,6 +158,12 @@ frappe.query_reports["Excel Monthly Attendance Sheet"] = {
     });
   },
   formatter: function (value, row, column, data, default_formatter) {
+    // "Employee" column: show the raw ID only, not the Employee's title
+    // field (employee_name) that Frappe's Link formatter auto-resolves to.
+    if (column.fieldname === "employee") {
+      return data.employee;
+    }
+
     value = default_formatter(value, row, column, data);
     const summarized_view =
       frappe.query_report.get_filter_value("summarized_view");

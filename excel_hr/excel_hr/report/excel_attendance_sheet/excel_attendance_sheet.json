@@ -1,6 +1,5 @@
 {
  "add_total_row": 0,
- "allocated_companies": [],
  "columns": [],
  "creation": "2024-09-30 16:13:12.746655",
  "disable_prepared_report": 1,
@@ -10,7 +9,7 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2024-09-30 16:16:50.554505",
+ "modified": "2026-07-19 11:02:11.951792",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "Excel Attendance Sheet",
@@ -22,12 +21,10 @@
  "report_type": "Script Report",
  "roles": [
   {
-   "allocated_companies": [],
    "role": "System Manager"
   },
   {
-   "allocated_companies": [],
-   "role": "Employee"
+   "role": "HR Manager"
   }
  ]
 }

@@ -3,7 +3,7 @@
 
 
 from calendar import monthrange
-from datetime import date
+from datetime import date, datetime
 from itertools import groupby
 from typing import Dict, List, Optional, Tuple
 
@@ -21,10 +21,10 @@ status_map = {
 	"Half Day": "HD",
 	"Work From Home": "WFH",
 	"On Leave": "L",
-	"Holiday": "H",
-	"Weekly Off": "WO",
- 	"Attendance Request": "A.App", 
-    "Leave Application": "L.App",  
+	"Holiday": "H/WO",
+	"Weekly Off": "H/WO",
+ 	"Attendance Request": "A.App",
+    "Leave Application": "L.App",
 }
 
 day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -38,7 +38,7 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 	if not (filters.month and filters.year):
 		frappe.throw(_("Please select month and year."))
 
-	attendance_map = get_attendance_map(filters)
+	attendance_map, holiday_anchors = get_attendance_map(filters)
 	present_day_tags = get_present_day_tags(filters)
 
 	# Modified: Removed the check that prevents empty data from showing
@@ -46,7 +46,7 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 	# 	return [], [], None, None
 
 	columns = get_columns(filters)
-	data = get_data(filters, attendance_map, present_day_tags)
+	data = get_data(filters, attendance_map, holiday_anchors, present_day_tags)
 
 	if not data:
 		frappe.msgprint(
@@ -65,7 +65,12 @@ def get_message() -> str:
 	colors = ["green", "red", "orange", "green", "#318AD8", "purple", "brown", "orange", "orange"]
 
 	count = 0
+	seen_abbrs = set()
 	for status, abbr in status_map.items():
+		if abbr in seen_abbrs:
+			continue
+		seen_abbrs.add(abbr)
+
 		color = colors[count % len(colors)]
 		message += f"""
 			<span style='border-left: 2px solid {color}; padding-right: 12px; padding-left: 5px; margin-right: 3px;'>
@@ -155,7 +160,9 @@ def get_columns(filters: Filters) -> List[Dict]:
 			]
 		)
 	else:
-		columns.append({"label": _("Shift"), "fieldname": "shift", "fieldtype": "Data", "width": 120})
+		columns.append(
+			{"label": _("Current Shift"), "fieldname": "current_shift", "fieldtype": "Data", "width": 150}
+		)
 		columns.extend(get_columns_for_days(filters))
 
 	return columns
@@ -193,7 +200,7 @@ def get_total_days_in_month(filters: Filters) -> int:
 	return monthrange(cint(filters.year), cint(filters.month))[1]
 
 # MODIFIED: Added include_all=True parameter to get_rows call to include all employees
-def get_data(filters: Filters, attendance_map: Dict, present_day_tags: Dict) -> List[Dict]:
+def get_data(filters: Filters, attendance_map: Dict, holiday_anchors: Dict, present_day_tags: Dict) -> List[Dict]:
 	employee_details, group_by_param_values = get_employee_related_details(filters)
 	holiday_map = get_holiday_map(filters)
 	data = []
@@ -206,24 +213,48 @@ def get_data(filters: Filters, attendance_map: Dict, present_day_tags: Dict) -> 
 				continue
 
 			# Modified: Added include_all=True parameter to get_rows call
-			records = get_rows(employee_details[value], filters, holiday_map, attendance_map, present_day_tags, include_all=True)
+			records = get_rows(
+				employee_details[value], filters, holiday_map, attendance_map, holiday_anchors,
+				present_day_tags, include_all=True,
+			)
 
 			if records:
 				data.append({group_by_column: value})
 				data.extend(records)
 	else:
 		# Modified: Added include_all=True parameter to get_rows call
-		data = get_rows(employee_details, filters, holiday_map, attendance_map, present_day_tags, include_all=True)
+		data = get_rows(
+			employee_details, filters, holiday_map, attendance_map, holiday_anchors, present_day_tags,
+			include_all=True,
+		)
 
 	return data
+
+
+def get_active_or_recently_relieved_condition(Employee, filters: Filters):
+	"""Employees to include when the "Is Active Employees" filter is on:
+	currently Active employees, plus anyone relieved during the selected
+	month, so their attendance up to their last working day still shows
+	instead of disappearing from the Active view entirely."""
+	if not filters.get("is_active"):
+		return Employee.status != "Active"
+
+	total_days = get_total_days_in_month(filters)
+	month_start = "{}-{:02d}-01".format(cint(filters.year), cint(filters.month))
+	month_end = "{}-{:02d}-{:02d}".format(cint(filters.year), cint(filters.month), total_days)
+
+	return (Employee.status == "Active") | (
+		(Employee.relieving_date >= month_start) & (Employee.relieving_date <= month_end)
+	)
 
 
 def get_present_day_tags(filters: Filters) -> Dict[str, Dict[int, str]]:
 	"""For each employee/day marked Present, work out the extra tag to append
 	to the "P" abbreviation: "AR" if the Attendance's own attendance_request
 	field is set (takes priority, since it means HR filed a request to explain
-	that day), else "IO"/"OO" if the employee's IN and/or OUT checkin that day
-	was made on the office/local device. Returns {employee: {day_of_month: tag}}.
+	that day), else "RC" (Remote Checkin) if the employee's IN and/or OUT
+	checkin that day was made on the set_local device. Returns
+	{employee: {day_of_month: tag}}.
 	"""
 	Attendance = frappe.qb.DocType("Attendance")
 	Employee = frappe.qb.DocType("Employee")
@@ -235,10 +266,7 @@ def get_present_day_tags(filters: Filters) -> Dict[str, Dict[int, str]]:
 	)
 	if filters.department:
 		employee_subquery = employee_subquery.where(Employee.department == filters.department)
-	if filters.get("is_active"):
-		employee_subquery = employee_subquery.where(Employee.status == "Active")
-	else:
-		employee_subquery = employee_subquery.where(Employee.status != "Active")
+	employee_subquery = employee_subquery.where(get_active_or_recently_relieved_condition(Employee, filters))
 
 	query = (
 		frappe.qb.from_(Attendance)
@@ -278,85 +306,82 @@ def get_present_day_tags(filters: Filters) -> Dict[str, Dict[int, str]]:
 			tag = "AR"
 		else:
 			attendance_date = getdate(row.attendance_date)
-			tag = (
-				local_tag(checkin_tags, row.employee, attendance_date, "IN")
-				or local_tag(checkin_tags, row.employee, attendance_date, "OUT")
+			is_local_checkin = local_tag(checkin_tags, row.employee, attendance_date, "IN") or local_tag(
+				checkin_tags, row.employee, attendance_date, "OUT"
 			)
+			tag = "RC" if is_local_checkin else None
 		if tag:
 			tags.setdefault(row.employee, {})[row.day_of_month] = tag
 
 	return tags
 
-def get_attendance_map(filters: Filters) -> Dict:
-    """Returns a dictionary of employee-wise attendance map as per shifts for all the days of the month."""
+def get_attendance_map(filters: Filters) -> Tuple[Dict, Dict]:
+    """Returns
+    1. a dictionary of employee-wise, date-wise attendance status for the month
+       (one status per employee per day, regardless of how many shifts/records
+       exist for that day)
+    2. a dictionary of employee-wise list of (day_of_month, holiday_list) drawn
+       from their actual Attendance records, sorted ascending by day -- used to
+       resolve which Holiday List was in effect around a gap in attendance.
+    """
     attendance_list = get_attendance_records(filters)
     attendance_map = {}
     leave_map = {}
+    holiday_anchors = {}
 
     # Process attendance records
     for d in attendance_list:
+        if d.holiday_list:
+            holiday_anchors.setdefault(d.employee, []).append((d.day_of_month, d.holiday_list))
+
         if d.status == "On Leave":
             leave_map.setdefault(d.employee, []).append(d.day_of_month)
             continue
 
-        if d.shift is None:
-            d.shift = ""
+        attendance_map.setdefault(d.employee, {})[d.day_of_month] = d.status
 
-        attendance_map.setdefault(d.employee, {}).setdefault(d.shift, {})
-        attendance_map[d.employee][d.shift][d.day_of_month] = d.status
-
-    # leave is applicable for the entire day, so all shifts should show the leave entry
+    # leave is applicable for the entire day
     for employee, leave_days in leave_map.items():
-        if employee not in attendance_map:
-            attendance_map.setdefault(employee, {}).setdefault(None, {})
-
+        attendance_map.setdefault(employee, {})
         for day in leave_days:
-            for shift in attendance_map[employee].keys():
-                attendance_map[employee][shift][day] = "On Leave"
+            attendance_map[employee][day] = "On Leave"
 
     # Process draft data for leave and attendance requests
     draft_data = get_draft_requests(filters)
 
-    # Process draft leave applications and attendance requests together to prevent duplicates
     for lr in draft_data.get("leave_applications", []):
-        # Validate and handle leave application
         if lr.start_date is None or lr.to_date is None:
             continue
         if lr.start_month == lr.to_month:
             for day in range(lr.start_date, lr.to_date + 1):
-                attendance_map.setdefault(lr.employee, {}).setdefault(lr.shift, {})
-                attendance_map[lr.employee][lr.shift][day] = "Leave Application"
+                attendance_map.setdefault(lr.employee, {})[day] = "Leave Application"
         else:
             if int(filters.month) == int(lr.start_month):
                 for day in range(lr.start_date, get_total_days_in_month(filters) + 1):
-                    attendance_map.setdefault(lr.employee, {}).setdefault(lr.shift, {})
-                    attendance_map[lr.employee][lr.shift][day] = "Leave Application"
+                    attendance_map.setdefault(lr.employee, {})[day] = "Leave Application"
             elif int(filters.month) == int(lr.to_month):
                 for day in range(1, lr.to_date + 1):
-                    attendance_map.setdefault(lr.employee, {}).setdefault(lr.shift, {})
-                    attendance_map[lr.employee][lr.shift][day] = "Leave Application"
+                    attendance_map.setdefault(lr.employee, {})[day] = "Leave Application"
 
     # Process attendance requests
     for ar in draft_data.get("attendance_requests", []):
-        # Validate and handle attendance request
         if ar.start_date is None or ar.to_date is None:
             continue
         if ar.start_month == ar.to_month:
             for day in range(ar.start_date, ar.to_date + 1):
-                attendance_map.setdefault(ar.employee, {}).setdefault(ar.shift, {})
-                attendance_map[ar.employee][ar.shift][day] = "Attendance Request"
+                attendance_map.setdefault(ar.employee, {})[day] = "Attendance Request"
         else:
             if int(filters.month) == int(ar.start_month):
                 for day in range(ar.start_date, get_total_days_in_month(filters) + 1):
-                    attendance_map.setdefault(ar.employee, {}).setdefault(ar.shift, {})
-                    attendance_map[ar.employee][ar.shift][day] = "Attendance Request"
+                    attendance_map.setdefault(ar.employee, {})[day] = "Attendance Request"
             elif int(filters.month) == int(ar.to_month):
                 for day in range(1, ar.to_date + 1):
-                    attendance_map.setdefault(ar.employee, {}).setdefault(ar.shift, {})
-                    attendance_map[ar.employee][ar.shift][day] = "Attendance Request"
+                    attendance_map.setdefault(ar.employee, {})[day] = "Attendance Request"
 
-    # Return the merged attendance map
-    return attendance_map
+    for employee in holiday_anchors:
+        holiday_anchors[employee].sort(key=lambda entry: entry[0])
+
+    return attendance_map, holiday_anchors
 
 
 def get_draft_requests(filters: Filters) -> Dict:
@@ -366,11 +391,8 @@ def get_draft_requests(filters: Filters) -> Dict:
     AttendanceRequest = frappe.qb.DocType("Attendance Request")
     
     # Status condition
-    if filters.get("is_active"):
-        status_condition = (Employee.status == "Active")
-    else:
-        status_condition = (Employee.status != "Active")
-    
+    status_condition = get_active_or_recently_relieved_condition(Employee, filters)
+
     # Department condition
     department_condition = None
     if filters.get("department"):
@@ -382,7 +404,6 @@ def get_draft_requests(filters: Filters) -> Dict:
         .join(Employee).on(Employee.name == LeaveApp.employee)
         .select(
             LeaveApp.employee,
-            Employee.default_shift.as_("shift"),
             Extract("day", LeaveApp.from_date).as_("start_date"),
             Extract("day", LeaveApp.to_date).as_("to_date"),
             Extract("month", LeaveApp.from_date).as_("start_month"),
@@ -414,7 +435,6 @@ def get_draft_requests(filters: Filters) -> Dict:
         .join(Employee).on(Employee.name == AttendanceRequest.employee)
         .select(
             AttendanceRequest.employee,
-            AttendanceRequest.excel_shift.as_("shift"),
             Extract("day", AttendanceRequest.from_date).as_("start_date"),
             Extract("day", AttendanceRequest.to_date).as_("to_date"),
             Extract("month", AttendanceRequest.from_date).as_("start_month"),
@@ -457,10 +477,7 @@ def get_attendance_records(filters: Filters) -> List[Dict]:
     )
 	if filters.department:
 		employee_subquery = employee_subquery.where(Employee.department == filters.department)
-	if filters.get("is_active"):
-		employee_subquery = employee_subquery.where(Employee.status == "Active")
-	else:
-		employee_subquery = employee_subquery.where(Employee.status != "Active")
+	employee_subquery = employee_subquery.where(get_active_or_recently_relieved_condition(Employee, filters))
 
 	query = (
 		frappe.qb.from_(Attendance)
@@ -469,6 +486,7 @@ def get_attendance_records(filters: Filters) -> List[Dict]:
 			Extract("day", Attendance.attendance_date).as_("day_of_month"),
 			Attendance.status,
 			Attendance.shift,
+			Attendance.holiday_list,
 			Attendance.docstatus,
 		)
 		.where(
@@ -508,18 +526,18 @@ def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
             Employee.branch,
             Employee.company,
             Employee.holiday_list,
+            Employee.status,
+            Employee.relieving_date,
+            Employee.default_shift,
         )
         .where(Employee.company == filters.company)
     )
-	
-    
+
+
     # Use filters.get("is_active") for consistency
     if filters.get("department"):
         query = query.where(Employee.department == filters.department)
-    if filters.get("is_active"):
-        query = query.where(Employee.status == "Active")
-    else:
-        query = query.where(Employee.status != "Active")
+    query = query.where(get_active_or_recently_relieved_condition(Employee, filters))
     if filters.employee:
         if isinstance(filters.employee, str):
             filters.employee = [filters.employee]
@@ -591,24 +609,28 @@ def get_holiday_map(filters: Filters) -> Dict[str, List[Dict]]:
 
 # MODIFIED: Added include_all parameter with default value of False
 def get_rows(
-	employee_details: Dict, filters: Filters, holiday_map: Dict, attendance_map: Dict, present_day_tags: Dict, include_all: bool = False
+	employee_details: Dict,
+	filters: Filters,
+	holiday_map: Dict,
+	attendance_map: Dict,
+	holiday_anchors: Dict,
+	present_day_tags: Dict,
+	include_all: bool = False,
 ) -> List[Dict]:
 	records = []
 	default_holiday_list = frappe.get_cached_value("Company", filters.company, "default_holiday_list")
+	shift_time_cache = {}
 
 	for employee, details in employee_details.items():
+		current_holiday_list = details.holiday_list or default_holiday_list
+		holidays = holiday_map.get(current_holiday_list)
 
-		start_date= f"{filters.year}-{filters.month}-01"
-		end_date= f"{filters.year}-{filters.month}-15"
-		get_holiday= frappe.db.get_value("Attendance", {
-			"attendance_date":["between",[start_date, end_date]],
-			"employee":employee,
-			"status": ["in", ["Present", "Work From Home", "On Leave"]],
-			 "docstatus":1
-   
-		}, ['holiday_list'],order_by="attendance_date ASC")
-		emp_holiday_list = get_holiday or details.holiday_list or default_holiday_list
-		holidays =  holiday_map.get(emp_holiday_list)
+		is_inactive = details.get("status") and details.status != "Active"
+		employee_display_name = (
+			"{} ({})".format(details.employee_name, _("Inactive"))
+			if filters.get("is_active") and is_inactive
+			else details.employee_name
+		)
 
 		if filters.summarized_view:
 			# MODIFIED: Added handling for employees with no attendance
@@ -616,14 +638,14 @@ def get_rows(
 				# Create default row for employee with all absences
 				total_days = get_total_days_in_month(filters)
 				holiday_count = 0
-				
+
 				# Count holidays for this employee
 				if holidays:
 					holiday_count = len(holidays)
-				
+
 				row = {
-					"employee": employee, 
-					"employee_name": details.employee_name,
+					"employee": employee,
+					"employee_name": employee_display_name,
 					"total_present": 0.0,
 					"total_leaves": 0.0,
 					"total_absent": total_days - holiday_count,  # All days marked as absent except holidays
@@ -632,11 +654,11 @@ def get_rows(
 					"total_late_entries": 0.0,
 					"total_early_exits": 0.0
 				}
-				
+
 				set_defaults_for_summarized_view(filters, row)
 				records.append(row)
 				continue
-				
+
 			attendance = get_attendance_status_for_summarized_view(employee, filters, holidays)
 			# MODIFIED: Only skip if attendance is empty and include_all is False
 			if not attendance and not include_all:
@@ -645,7 +667,7 @@ def get_rows(
 			leave_summary = get_leave_summary(employee, filters)
 			entry_exits_summary = get_entry_exits_summary(employee, filters)
 
-			row = {"employee": employee, "employee_name": details.employee_name}
+			row = {"employee": employee, "employee_name": employee_display_name}
 			set_defaults_for_summarized_view(filters, row)
 			row.update(attendance)
 			row.update(leave_summary)
@@ -653,36 +675,25 @@ def get_rows(
 
 			records.append(row)
 		else:
-			# MODIFIED: Added handling for employees with no attendance in detailed view
-			if employee not in attendance_map and include_all:
-				# Create default row with all days marked as absent except holidays
-				total_days = get_total_days_in_month(filters)
-				row = {"employee": employee, "employee_name": details.employee_name, "shift": ""}
-				
-				for day in range(1, total_days + 1):
-					status = get_holiday_status(day, holidays)
-					abbr = status_map.get(status, "A")  # Default to Absent
-					row[cstr(day)] = abbr
-				
-				records.append(row)
-				continue
-				
-			employee_attendance = attendance_map.get(employee)
-			# MODIFIED: Only skip if employee_attendance is empty and include_all is False
+			employee_attendance = attendance_map.get(employee) or {}
 			if not employee_attendance and not include_all:
 				continue
 
-			# MODIFIED: Handle case where employee_attendance might be None
-			attendance_for_employee = get_attendance_status_for_detailed_view(
-				employee, filters, employee_attendance or {}, holidays, present_day_tags.get(employee, {})
+			# One row per employee: each date's cell reflects that date's own
+			# attendance status even if the employee had different shifts on
+			# different days during the month.
+			row = get_attendance_status_for_detailed_view(
+				filters,
+				employee_attendance,
+				holiday_map,
+				current_holiday_list,
+				holiday_anchors.get(employee, []),
+				present_day_tags.get(employee, {}),
+				details.get("default_shift"),
+				shift_time_cache,
 			)
-			
-			# set employee details in the first row
-			if attendance_for_employee:
-				attendance_for_employee[0].update(
-					{"employee": employee, "employee_name": details.employee_name}
-				)
-				records.extend(attendance_for_employee)
+			row.update({"employee": employee, "employee_name": employee_display_name})
+			records.append(row)
 
 	return records
 
@@ -778,49 +789,71 @@ def get_attendance_summary_and_days(employee: str, filters: Filters) -> Tuple[Di
 
 # MODIFIED: Updated function to handle empty employee_attendance
 def get_attendance_status_for_detailed_view(
-	employee: str, filters: Filters, employee_attendance: Dict, holidays: List, day_tags: Optional[Dict] = None
-) -> List[Dict]:
-	"""Returns list of shift-wise attendance status for employee
-	[
-	        {'shift': 'Morning Shift', 1: 'A', 2: 'P', 3: 'A'....},
-	        {'shift': 'Evening Shift', 1: 'P', 2: 'A', 3: 'P'....}
-	]
+	filters: Filters,
+	employee_attendance: Dict,
+	holiday_map: Dict,
+	current_holiday_list: Optional[str],
+	holiday_anchors: List[Tuple[int, str]],
+	day_tags: Optional[Dict],
+	current_shift: Optional[str],
+	shift_time_cache: Dict,
+) -> Dict:
+	"""Returns a single date-wise attendance status row for the employee --
+	one status per day regardless of how many shifts appear in their
+	Attendance records that month. Days with no Attendance record fall back
+	to Holiday/Weekly Off ("H/WO"): for days before today, resolved against
+	the Holiday List of the closest later Attendance record (a gap right
+	before a Holiday List change should still read as a day off); for
+	today/future days, resolved against the employee's current Holiday List.
 	"""
 	total_days = get_total_days_in_month(filters)
-	attendance_values = []
 	day_tags = day_tags or {}
+	year = cint(filters.year)
+	month = cint(filters.month)
+	today = date.today()
 
-	# MODIFIED: Handle case where no attendance records exist
-	if not employee_attendance:
-		row = {"shift": ""}
+	row = {"current_shift": get_shift_time_string(current_shift, shift_time_cache)}
 
-		for day in range(1, total_days + 1):
-			status = get_holiday_status(day, holidays)
-			abbr = status_map.get(status, "A")  # Default to Absent if not a holiday
-			row[cstr(day)] = abbr
+	for day in range(1, total_days + 1):
+		status = employee_attendance.get(day)
 
-		attendance_values.append(row)
-		return attendance_values
+		if status is None:
+			holiday_list_name = current_holiday_list
+			if date(year, month, day) < today:
+				for anchor_day, anchor_holiday_list in holiday_anchors:
+					if anchor_day > day:
+						holiday_list_name = anchor_holiday_list
+						break
+			status = get_holiday_status(day, holiday_map.get(holiday_list_name))
 
-	for shift, status_dict in employee_attendance.items():
-		row = {"shift": shift}
+		if status is None:
+			status = "Absent"
 
-		for day in range(1, total_days + 1):
-			status = status_dict.get(day)
-			if status is None and holidays:
-				status = get_holiday_status(day, holidays)
-			# MODIFIED: Set default status to Absent for days with no status
-			if status is None:
-				status = "Absent"
+		abbr = status_map.get(status, "")
+		if status == "Present" and day_tags.get(day):
+			abbr = f"{abbr} ({day_tags[day]})"
+		row[cstr(day)] = abbr
 
-			abbr = status_map.get(status, "")
-			if status == "Present" and day_tags.get(day):
-				abbr = f"{abbr} ({day_tags[day]})"
-			row[cstr(day)] = abbr
+	return row
 
-		attendance_values.append(row)
 
-	return attendance_values
+def get_shift_time_string(shift_name: Optional[str], cache: Dict) -> Optional[str]:
+	if not shift_name:
+		return None
+	if shift_name not in cache:
+		shift_time = frappe.db.get_value("Shift Type", shift_name, ["start_time", "end_time"])
+		if shift_time and len(shift_time) == 2 and shift_time[0] and shift_time[1]:
+			cache[shift_name] = "{} to {}".format(
+				format_shift_time(shift_time[0]), format_shift_time(shift_time[1])
+			)
+		else:
+			cache[shift_name] = None
+	return cache[shift_name]
+
+
+def format_shift_time(time_value) -> str:
+	time_obj = datetime.strptime(str(time_value), "%H:%M:%S")
+	return time_obj.strftime("%I:%M %p").lstrip("0").replace(" 0", " ")
 
 
 def get_holiday_status(day: int, holidays: List) -> str:

@@ -27,12 +27,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Login to GitLab Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.gitlab.com
-          username: ${{ secrets.GITLAB_USERNAME }}
-          password: ${{ secrets.GITLAB_PASSWORD }}
+      # - name: Login to GitLab Container Registry
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: registry.gitlab.com
+      #     username: ${{ secrets.GITLAB_USERNAME }}
+      #     password: ${{ secrets.GITLAB_PASSWORD }}
 
       - name: Build and Push Frappe Docker Image
         run: |
@@ -76,8 +76,8 @@ jobs:
           export APPS_JSON_BASE64=$(echo ${APPS_JSON} | base64 -w 0)
 
           # Define all tags
-          DOCKER_HUB_TAG="arcapps/hr:1.0.12"
-          GITLAB_TAG="registry.gitlab.com/arcapps/arc-container-registry/hr-erp:1.0.11"
+          DOCKER_HUB_TAG="arcapps/hr:latest"
+          # GITLAB_TAG="registry.gitlab.com/arcapps/arc-container-registry/hr-erp:1.0.11"
           
           # Build once with multiple tags and push to all registries
           docker buildx build \
@@ -89,6 +89,5 @@ jobs:
             --build-arg NODE_VERSION=20.19.2 \
             --build-arg APPS_JSON_BASE64="$APPS_JSON_BASE64" \
             --tag "$DOCKER_HUB_TAG" \
-            --tag "$GITLAB_TAG" \
             --file images/custom/Containerfile \
             --push .

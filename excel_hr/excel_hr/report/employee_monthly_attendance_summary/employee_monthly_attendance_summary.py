@@ -3,6 +3,7 @@ import frappe
 from datetime import datetime, date, timedelta
 import calendar
 from frappe.query_builder.functions import Count, Extract, Sum
+from frappe.utils import getdate
 from excel_hr.excel_hr.report.attendance_checkin_utils import get_local_checkin_tags, local_tag
 
 def execute(filters=None):
@@ -100,6 +101,8 @@ def get_data(filters):
 
     employee_holiday_list = frappe.db.get_value("Employee", employee_id, "holiday_list")
     shift_name = frappe.db.get_value("Employee", employee_id, "default_shift")
+    date_of_joining = frappe.db.get_value("Employee", employee_id, "date_of_joining")
+    work_history_rows = get_internal_work_history_rows(employee_id)
 
     holidays_cache = {}
     shift_time_cache = {}
@@ -199,8 +202,11 @@ def get_data(filters):
             if current_date == datetime.today().date() and attendance.get('in_time'):
                 payroll_status = "<span style='color:#1d88e5; text-style=bold'>Pending</span>"
             else:
-                payroll_status = ("Present" if attendance.get('status') in ["On Leave", "Work From Home", "Weekend"] 
+                payroll_status = ("Present" if attendance.get('status') in ["On Leave", "Work From Home", "Weekend"]
                                 else attendance.get('status'))
+            initial_status = get_status(attendance, holidays_data, current_date)
+            if initial_status in ("Weekend", "Holiday"):
+                roster_time = None
             formatted_data.append([
             current_date.strftime('%Y-%m-%d') if isinstance(current_date, date) else current_date,
             attendance.get('employee_name'),
@@ -208,7 +214,7 @@ def get_data(filters):
             in_time_str,
             out_time_str,
             worked_hours,
-            get_status(attendance, holidays_data, current_date),
+            initial_status,
             payroll_status,
             attendance_request_remarks or leave_application_remarks,
             ])
@@ -221,12 +227,31 @@ def get_data(filters):
                 draft_remarks = 'Attendance Request (Pending)'
 
             if is_past:
-                record_holiday_list = get_next_attendance_holiday_list(current_date, attendance_list) or employee_holiday_list
-                roster_time = None
+                # 1st priority: the employee's own Internal Work History for
+                # that date -- e.g. an Employee Transfer changed their shift
+                # or Holiday List, and this gap day falls in that period.
+                # 2nd priority (no matching history row): the previous
+                # fallbacks -- empty Roster Time, and the Holiday List of the
+                # closest later attendance record.
+                wh_shift = find_work_history_match(
+                    current_date, work_history_rows, date_of_joining, "custom_default_shift"
+                )
+                roster_time = get_shift_time_string(wh_shift, shift_time_cache) if wh_shift else None
+
+                wh_holiday_list = find_work_history_match(
+                    current_date, work_history_rows, date_of_joining, "custom_holiday_list"
+                )
+                record_holiday_list = wh_holiday_list or get_next_attendance_holiday_list(
+                    current_date, attendance_list
+                ) or employee_holiday_list
             else:
                 record_holiday_list = employee_holiday_list
                 roster_time = get_shift_time_string(shift_name, shift_time_cache)
             holidays_data = get_holidays_data(record_holiday_list, holidays_cache)
+
+            initial_status = get_holiday_status(holidays_data, current_date)
+            if initial_status in ("Weekend", "Holiday"):
+                roster_time = None
 
             formatted_data.append([
                 date_str,
@@ -235,7 +260,7 @@ def get_data(filters):
                 None,
                 None,
                 None,
-                get_holiday_status(holidays_data, current_date),
+                initial_status,
                 get_holiday_payroll_status(holidays_data, current_date) if get_holiday_payroll_status(holidays_data, current_date) else "<span style='color:red;'>Absent</span>" if status == 'Absent' else status,
                 get_holiday_status_remarks(holidays_data, current_date, draft_remarks)
             ])
@@ -287,6 +312,41 @@ def get_shift_time_string(shift_name, cache):
         else:
             cache[shift_name] = None
     return cache[shift_name]
+
+
+def get_internal_work_history_rows(employee_id):
+    return frappe.get_all(
+        "Employee Internal Work History",
+        filters={"parent": employee_id, "parenttype": "Employee"},
+        fields=["from_date", "to_date", "custom_default_shift", "custom_holiday_list"],
+        order_by="from_date asc",
+    )
+
+
+def find_work_history_match(current_date, work_history_rows, date_of_joining, field_name):
+    """Returns the value of `field_name` (custom_default_shift / custom_holiday_list)
+    from the Internal Work History row whose [from_date, to_date] period covers
+    current_date, if any. A row with no from_date is treated as starting on the
+    employee's date_of_joining; a row with no to_date is treated as still open."""
+    for row in work_history_rows:
+        value = row.get(field_name)
+        if not value:
+            continue
+
+        from_date = row.get("from_date") or date_of_joining
+        if not from_date:
+            continue
+        from_date = getdate(from_date)
+
+        to_date = row.get("to_date")
+        if to_date and current_date > getdate(to_date):
+            continue
+        if current_date < from_date:
+            continue
+
+        return value
+
+    return None
 
 
 def get_next_attendance_holiday_list(current_date, attendance_list):

@@ -21,8 +21,8 @@ status_map = {
 	"Half Day": "HD",
 	"Work From Home": "WFH",
 	"On Leave": "L",
-	"Holiday": "H/WO",
-	"Weekly Off": "H/WO",
+	"Holiday": "H",
+	"Weekly Off": "WO",
  	"Attendance Request": "A.App",
     "Leave Application": "L.App",
 }
@@ -529,6 +529,7 @@ def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
             Employee.status,
             Employee.relieving_date,
             Employee.default_shift,
+            Employee.date_of_joining,
         )
         .where(Employee.company == filters.company)
     )
@@ -607,6 +608,50 @@ def get_holiday_map(filters: Filters) -> Dict[str, List[Dict]]:
 
 	return holiday_map
 
+
+def get_work_history_map(employee_names: List[str]) -> Dict[str, List[Dict]]:
+	"""Returns {employee: [Internal Work History rows]} for the given employees."""
+	if not employee_names:
+		return {}
+
+	rows = frappe.get_all(
+		"Employee Internal Work History",
+		filters={"parent": ["in", employee_names], "parenttype": "Employee"},
+		fields=["parent", "from_date", "to_date", "custom_holiday_list"],
+		order_by="parent asc, from_date asc",
+	)
+
+	work_history_map = {}
+	for row in rows:
+		work_history_map.setdefault(row.parent, []).append(row)
+	return work_history_map
+
+
+def find_work_history_holiday_list(current_date, work_history_rows, date_of_joining):
+	"""Returns the custom_holiday_list from the Internal Work History row whose
+	[from_date, to_date] period covers current_date, if any. A row with no
+	from_date is treated as starting on the employee's date_of_joining; a row
+	with no to_date is treated as still open."""
+	for row in work_history_rows or []:
+		value = row.get("custom_holiday_list")
+		if not value:
+			continue
+
+		from_date = row.get("from_date") or date_of_joining
+		if not from_date:
+			continue
+		from_date = getdate(from_date)
+
+		to_date = row.get("to_date")
+		if to_date and current_date > getdate(to_date):
+			continue
+		if current_date < from_date:
+			continue
+
+		return value
+
+	return None
+
 # MODIFIED: Added include_all parameter with default value of False
 def get_rows(
 	employee_details: Dict,
@@ -620,6 +665,7 @@ def get_rows(
 	records = []
 	default_holiday_list = frappe.get_cached_value("Company", filters.company, "default_holiday_list")
 	shift_time_cache = {}
+	work_history_map = get_work_history_map(list(employee_details.keys()))
 
 	for employee, details in employee_details.items():
 		current_holiday_list = details.holiday_list or default_holiday_list
@@ -691,6 +737,8 @@ def get_rows(
 				present_day_tags.get(employee, {}),
 				details.get("default_shift"),
 				shift_time_cache,
+				work_history_map.get(employee, []),
+				details.get("date_of_joining"),
 			)
 			row.update({"employee": employee, "employee_name": employee_display_name})
 			records.append(row)
@@ -797,14 +845,19 @@ def get_attendance_status_for_detailed_view(
 	day_tags: Optional[Dict],
 	current_shift: Optional[str],
 	shift_time_cache: Dict,
+	work_history_rows: Optional[List[Dict]] = None,
+	date_of_joining=None,
 ) -> Dict:
 	"""Returns a single date-wise attendance status row for the employee --
 	one status per day regardless of how many shifts appear in their
 	Attendance records that month. Days with no Attendance record fall back
-	to Holiday/Weekly Off ("H/WO"): for days before today, resolved against
-	the Holiday List of the closest later Attendance record (a gap right
-	before a Holiday List change should still read as a day off); for
-	today/future days, resolved against the employee's current Holiday List.
+	to Holiday ("H") or Weekly Off ("WO"), resolved for days before today in this
+	order: 1st, the employee's own Internal Work History for that date (e.g.
+	an Employee Transfer changed their Holiday List and this gap day falls in
+	that period); 2nd, the Holiday List of the closest later Attendance
+	record (a gap right before a Holiday List change should still read as a
+	day off). Today/future days are resolved against the employee's current
+	Holiday List.
 	"""
 	total_days = get_total_days_in_month(filters)
 	day_tags = day_tags or {}
@@ -820,10 +873,16 @@ def get_attendance_status_for_detailed_view(
 		if status is None:
 			holiday_list_name = current_holiday_list
 			if date(year, month, day) < today:
-				for anchor_day, anchor_holiday_list in holiday_anchors:
-					if anchor_day > day:
-						holiday_list_name = anchor_holiday_list
-						break
+				wh_holiday_list = find_work_history_holiday_list(
+					date(year, month, day), work_history_rows, date_of_joining
+				)
+				if wh_holiday_list:
+					holiday_list_name = wh_holiday_list
+				else:
+					for anchor_day, anchor_holiday_list in holiday_anchors:
+						if anchor_day > day:
+							holiday_list_name = anchor_holiday_list
+							break
 			status = get_holiday_status(day, holiday_map.get(holiday_list_name))
 
 		if status is None:

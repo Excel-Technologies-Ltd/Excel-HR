@@ -1,11 +1,15 @@
 import frappe
 from datetime import datetime, timedelta
-from frappe.query_builder.functions import Count, Extract, Sum
+from frappe.query_builder.functions import Extract
+from frappe.utils import getdate
 from typing import Dict, List, Optional, Tuple
 from excel_hr.excel_hr.report.attendance_checkin_utils import get_local_checkin_tags, local_tag
 Filters = frappe._dict
 
 def execute(filters=None):
+    filters = frappe._dict(filters or {})
+    if filters.get('employee') == []:
+        filters.pop('employee')
     if filters:
         validate_filters(filters)
     columns = get_columns(filters)
@@ -15,19 +19,19 @@ def execute(filters=None):
 def validate_filters(filters):
     """Validate that the date range falls within the selected month."""
     date_range = filters.get('date_range')
-    
+
     if not date_range or len(date_range) != 2:
         frappe.throw("Please select a valid date range.")
-    
+
     start_date_str, end_date_str = date_range[0], date_range[1]
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
     month = int(filters.get('month'))
     year = int(filters.get('year'))
-    
+
     if start_date.year != year or end_date.year != year:
         frappe.throw("The date range must be within the selected year.")
-    
+
     if start_date > end_date:
         frappe.throw("The start date cannot be later than the end date.")
 
@@ -50,12 +54,12 @@ def get_columns(filters):
     date_range = filters.get("date_range")
     if not date_range or len(date_range) != 2:
         return columns
-    
+
     start_date_str = date_range[0]
     end_date_str = date_range[1]
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-    
+
     current_date = start_date
     while current_date <= end_date:
         date_str = current_date.strftime("%d-%b-%Y")
@@ -88,7 +92,7 @@ def get_todays_checkins(employee_ids):
         fields=['employee','employee_name', 'time', 'log_type'],
         order_by='employee,time'
     )
-    
+
     checkin_dict = {}
     for checkin in checkins:
         employee = checkin['employee']
@@ -100,36 +104,193 @@ def get_todays_checkins(employee_ids):
         })
     return checkin_dict
 
+
+def get_active_or_recently_relieved_condition(Employee, filters: Filters, start_date_str: str, end_date_str: str):
+    """Employees to include when the "Is Active Employees" filter is on:
+    currently Active employees, plus anyone whose Relieving Date falls
+    within the selected date range, so their attendance up to their last
+    working day still shows instead of disappearing from the Active view."""
+    if not filters.get('is_active'):
+        return Employee.status != 'Active'
+
+    return (Employee.status == 'Active') | (
+        (Employee.relieving_date >= start_date_str) & (Employee.relieving_date <= end_date_str)
+    )
+
+
+def get_employee_details(filters: Filters) -> Dict:
+    """Returns {employee: employee_detail_dict} for employees matching the
+    report's Employee filters (department/location/employee list/active-or-
+    recently-relieved)."""
+    Employee = frappe.qb.DocType('Employee')
+    date_range = filters.get('date_range')
+    start_date_str, end_date_str = date_range[0], date_range[1]
+
+    query = (
+        frappe.qb.from_(Employee)
+        .select(
+            Employee.name,
+            Employee.employee_name,
+            Employee.status,
+            Employee.relieving_date,
+            Employee.holiday_list,
+            Employee.date_of_joining,
+        )
+        .where(get_active_or_recently_relieved_condition(Employee, filters, start_date_str, end_date_str))
+    )
+
+    if filters.get('department'):
+        query = query.where(Employee.department == filters.department)
+    if filters.get('custom_job_location'):
+        query = query.where(Employee.custom_job_location == filters.custom_job_location)
+    if filters.get('custom_reporting_location'):
+        query = query.where(Employee.custom_reporting_location == filters.custom_reporting_location)
+    if filters.get('employee'):
+        employees = filters.employee if isinstance(filters.employee, list) else [filters.employee]
+        query = query.where(Employee.name.isin(employees))
+
+    rows = query.run(as_dict=True)
+    return {row.name: row for row in rows}
+
+
+def get_work_history_map(employee_names: List[str]) -> Dict[str, List[Dict]]:
+    """Returns {employee: [Internal Work History rows]} for the given employees."""
+    if not employee_names:
+        return {}
+
+    rows = frappe.get_all(
+        "Employee Internal Work History",
+        filters={"parent": ["in", employee_names], "parenttype": "Employee"},
+        fields=["parent", "from_date", "to_date", "custom_holiday_list"],
+        order_by="parent asc, from_date asc",
+    )
+
+    work_history_map = {}
+    for row in rows:
+        work_history_map.setdefault(row.parent, []).append(row)
+    return work_history_map
+
+
+def find_work_history_holiday_list(current_date, work_history_rows, date_of_joining):
+    """Returns the custom_holiday_list from the Internal Work History row whose
+    [from_date, to_date] period covers current_date, if any. A row with no
+    from_date is treated as starting on the employee's date_of_joining; a row
+    with no to_date is treated as still open."""
+    for row in work_history_rows or []:
+        value = row.get("custom_holiday_list")
+        if not value:
+            continue
+
+        from_date = row.get("from_date") or date_of_joining
+        if not from_date:
+            continue
+        from_date = getdate(from_date)
+
+        to_date = row.get("to_date")
+        if to_date and current_date > getdate(to_date):
+            continue
+        if current_date < from_date:
+            continue
+
+        return value
+
+    return None
+
+
+def get_holiday_anchors(filters: Filters, employee_ids: List[str]) -> Dict[str, List[Tuple]]:
+    """Returns {employee: [(date, holiday_list), ...]} sorted ascending by
+    date, drawn from the employee's actual Attendance records for the
+    selected month -- used to resolve which Holiday List was in effect
+    around a gap in attendance."""
+    if not employee_ids:
+        return {}
+
+    Attendance = frappe.qb.DocType('Attendance')
+    rows = (
+        frappe.qb.from_(Attendance)
+        .select(Attendance.employee, Attendance.attendance_date, Attendance.holiday_list)
+        .where(
+            (Attendance.docstatus == 1)
+            & (Attendance.employee.isin(employee_ids))
+            & (Extract('month', Attendance.attendance_date) == filters.month)
+            & (Extract('year', Attendance.attendance_date) == filters.year)
+            & (Attendance.holiday_list.isnotnull())
+        )
+    ).run(as_dict=True)
+
+    anchors = {}
+    for r in rows:
+        if not r.holiday_list:
+            continue
+        anchors.setdefault(r.employee, []).append((getdate(r.attendance_date), r.holiday_list))
+    for employee in anchors:
+        anchors[employee].sort(key=lambda entry: entry[0])
+    return anchors
+
+
+def get_holiday_map(start_date, end_date) -> Dict[str, Dict]:
+    """Returns {holiday_list_name: {date: True}} for every Holiday List's
+    entries (holiday or weekly off) falling within the given date range."""
+    rows = frappe.db.sql(
+        """
+        SELECT parent, holiday_date
+        FROM `tabHoliday`
+        WHERE parentfield = 'holidays'
+        AND parenttype = 'Holiday List'
+        AND holiday_date BETWEEN %(start)s AND %(end)s
+        """,
+        {"start": start_date, "end": end_date},
+        as_dict=True,
+    )
+
+    holiday_map = {}
+    for r in rows:
+        holiday_map.setdefault(r.parent, {})[getdate(r.holiday_date)] = True
+    return holiday_map
+
+
+def resolve_holiday_list_for_date(current_date, current_holiday_list, work_history_rows, date_of_joining, anchors, today):
+    """Resolves which Holiday List applies to a date with no Attendance
+    record. Past dates, in priority order: 1st, the employee's Internal Work
+    History period covering that date (a row with no from_date is treated as
+    starting on the employee's date_of_joining); 2nd, the Holiday List of the
+    closest later Attendance record. Today/future dates use the employee's
+    current Holiday List."""
+    if current_date >= today:
+        return current_holiday_list
+
+    wh_holiday_list = find_work_history_holiday_list(current_date, work_history_rows, date_of_joining)
+    if wh_holiday_list:
+        return wh_holiday_list
+
+    for anchor_date, anchor_holiday_list in anchors:
+        if anchor_date > current_date:
+            return anchor_holiday_list
+
+    return current_holiday_list
+
+
+def is_holiday_or_weekend(current_date, holiday_list_name, holiday_map) -> bool:
+    if not holiday_list_name:
+        return False
+    return current_date in holiday_map.get(holiday_list_name, {})
+
+
 def get_data(filters):
     data = []
-    employee_ids = []
-    
-    if not employee_ids or len(employee_ids) == 0:
-        conditions = {}
-        if filters.get('is_active'):
-            conditions['status'] = 'Active'
-        else:
-            conditions['status'] = ['!=', 'Active']
-        if filters.get('department'):
-            conditions['department'] = filters.get('department')
-        if filters.get('custom_job_location'):
-            conditions['custom_job_location'] = filters.get('custom_job_location')
-        if filters.get('custom_reporting_location'):
-            conditions['custom_reporting_location'] = filters.get('custom_reporting_location')
-        # if employee need in operator
-        if filters.get('employee'):
-            conditions['name'] = ['in', filters.get('employee')]
-        employee_ids = frappe.get_all('Employee', filters=conditions, pluck='name')
+
+    employee_details = get_employee_details(filters)
+    employee_ids = list(employee_details.keys())
 
     if not employee_ids:
         return data
-    
+
     start_date_str = filters.get("date_range")[0]
     end_date_str = filters.get("date_range")[1]
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
     today = datetime.now().date()
-    
+
     # Get today's check-in data if today is in the report range
     checkin_data = {}
     if start_date.date() <= today <= end_date.date():
@@ -141,7 +302,7 @@ def get_data(filters):
         'attendance_date': ['between', [start_date_str, end_date_str]],
         'employee': ['in', employee_ids],
         'docstatus': 1
-    }, fields=['employee', 'employee_name', 'attendance_date', 'in_time', 'out_time', 'status'])
+    }, fields=['employee', 'employee_name', 'attendance_date', 'in_time', 'out_time', 'status', 'attendance_request'])
 
     attendance_dict = {}
     for record in attendance_records:
@@ -150,47 +311,46 @@ def get_data(filters):
         attendance_dict.setdefault(record['employee'], {})[record['attendance_date']] = {
             'in_time': in_time,
             'out_time': out_time,
-            'status': record['status']
+            'status': record['status'],
+            'attendance_request': record.get('attendance_request'),
         }
+
+    work_history_map = get_work_history_map(employee_ids)
+    holiday_anchors = get_holiday_anchors(filters, employee_ids)
+    holiday_map = get_holiday_map(start_date.date(), end_date.date())
 
     serial_number = 1
     for employee in employee_ids:
+        details = employee_details[employee]
+        is_inactive = details.status and details.status != 'Active'
+        employee_display_name = (
+            f"{details.employee_name} (Inactive)"
+            if filters.get('is_active') and is_inactive
+            else details.employee_name
+        )
+
         row = {
             'serial_number': serial_number,
             'employee_id': employee,
-            'employee_name': frappe.db.get_value("Employee", employee, "employee_name")
+            'employee_name': employee_display_name
         }
-        
-        get_holiday = frappe.db.get_value("Attendance", {
-            "attendance_date": ["between", [start_date, end_date]],
-            "employee": employee,
-            "status": ["in", ["Present", "Work From Home"]],
-            "docstatus": 1
-        }, ['holiday_list'], order_by="attendance_date ASC")
-        holiday_name = get_holiday or frappe.db.get_value("Employee", employee, "holiday_list")
-        
-        holiday_list = []
-        if holiday_name:
-            query = """
-                SELECT holiday_date, weekly_off, description
-                FROM tabHoliday 
-                WHERE parent = %s 
-                AND parentfield = 'holidays' 
-                AND parenttype = 'Holiday List';
-            """
-            holiday_list = frappe.db.sql(query, (holiday_name,), as_dict=True)
+
+        current_holiday_list = details.holiday_list
+        work_history_rows = work_history_map.get(employee, [])
+        date_of_joining = details.date_of_joining
+        anchors = holiday_anchors.get(employee, [])
+        draft_request = get_draft_requests(filters, employee)
 
         current_date = start_date
         while current_date <= end_date:
-            date_str = current_date.strftime('%Y-%m-%d')
             is_today = current_date.date() == today
-            
+
             # Check for live check-in data first for today
             if is_today and employee in checkin_data:
                 checkins = checkin_data[employee]
                 in_times = [c['time'] for c in checkins if c['type'] == 'IN' and c['time'] is not None]
                 out_times = ''
-                
+
                 if in_times or out_times:
                     in_val = convert_to_am_pm(in_times[0]) if in_times else '-'
                     if in_times:
@@ -204,23 +364,28 @@ def get_data(filters):
                     )
                     current_date += timedelta(days=1)
                     continue
-            
+
             # Existing attendance processing
             attendance = attendance_dict.get(employee, {}).get(current_date.date(), None)
-            draft_request = get_draft_requests(filters, employee)
-            
+
             if attendance and attendance['status'] == 'Present':
+                # A submitted Attendance Request on the record takes
+                # priority over the local-checkin (IN/OUT office) tag.
+                ar_tag = 'AR' if attendance.get('attendance_request') else None
+
                 in_val = convert_to_am_pm(attendance['in_time']) if attendance['in_time'] else 'P'
-                if attendance['in_time']:
-                    in_tag = local_tag(checkin_tags, employee, current_date.date(), "IN")
-                    if in_tag:
-                        in_val = f"{in_val} ({in_tag})"
+                in_tag = ar_tag or (
+                    local_tag(checkin_tags, employee, current_date.date(), "IN") if attendance['in_time'] else None
+                )
+                if in_tag:
+                    in_val = f"{in_val} ({in_tag})"
 
                 out_val = convert_to_am_pm(attendance['out_time']) if attendance['out_time'] else 'P'
-                if attendance['out_time']:
-                    out_tag = local_tag(checkin_tags, employee, current_date.date(), "OUT")
-                    if out_tag:
-                        out_val = f"{out_val} ({out_tag})"
+                out_tag = ar_tag or (
+                    local_tag(checkin_tags, employee, current_date.date(), "OUT") if attendance['out_time'] else None
+                )
+                if out_tag:
+                    out_val = f"{out_val} ({out_tag})"
 
                 row[f'in_{current_date.day}'] = format_with_color(in_val, 'green')
                 row[f'out_{current_date.day}'] = format_with_color(out_val, 'green')
@@ -231,19 +396,14 @@ def get_data(filters):
                 row[f'in_{current_date.day}'] = format_with_color('L', 'orange')
                 row[f'out_{current_date.day}'] = format_with_color('L', 'orange')
             else:
-                is_holiday_or_weekly_off = False
-                for holiday in holiday_list:
-                    if holiday["holiday_date"] == current_date.date():
-                        is_holiday_or_weekly_off = True
-                        if holiday['weekly_off'] == 1:
-                            row[f'in_{current_date.day}'] = format_with_color('W', 'purple')
-                            row[f'out_{current_date.day}'] = format_with_color('W', 'purple')
-                        elif holiday['weekly_off'] == 0:
-                            row[f'in_{current_date.day}'] = format_with_color('H', 'brown')
-                            row[f'out_{current_date.day}'] = format_with_color('H', 'brown')
-                        break
-
-                if not is_holiday_or_weekly_off:
+                holiday_list_name = resolve_holiday_list_for_date(
+                    current_date.date(), current_holiday_list, work_history_rows,
+                    date_of_joining, anchors, today
+                )
+                if is_holiday_or_weekend(current_date.date(), holiday_list_name, holiday_map):
+                    row[f'in_{current_date.day}'] = format_with_color('H/W', 'brown')
+                    row[f'out_{current_date.day}'] = format_with_color('H/W', 'brown')
+                else:
                     row[f'in_{current_date.day}'] = format_with_color('A', 'red')
                     row[f'out_{current_date.day}'] = format_with_color('A', 'red')
 
@@ -258,22 +418,22 @@ def get_data(filters):
                     row[f'out_{current_date.day}'] = format_with_color('A.App', 'hotpink')
 
             current_date += timedelta(days=1)
-        
+
         data.append(row)
         serial_number += 1
 
     return data
 
 def get_draft_requests(filters: Filters, employee: str) -> Dict:
-    """Fetches draft leave applications and attendance requests."""
+    """Fetches draft leave applications and attendance requests for a single
+    employee. The employee is already vetted against the active/relieved-in-
+    range condition at the employee-list level, so no further status check
+    is needed here."""
     LeaveApp = frappe.qb.DocType("Leave Application")
     AttendanceRequest = frappe.qb.DocType("Attendance Request")
-    Employee = frappe.qb.DocType("Employee")
-    status_condition = (Employee.status == "Active") if filters.get("is_active") else (Employee.status != "Active")
-    
+
     leave_apps = (
         frappe.qb.from_(LeaveApp)
-        .join(Employee).on(Employee.name == LeaveApp.employee)
         .select(
             LeaveApp.employee,
             Extract("day", LeaveApp.from_date).as_("start_date"),
@@ -294,13 +454,11 @@ def get_draft_requests(filters: Filters, employee: str) -> Dict:
                 (Extract("year", LeaveApp.from_date) == filters.year) |
                 (Extract("year", LeaveApp.to_date) == filters.year)
             )
-            & (status_condition)
         )
     ).run(as_dict=True)
-    
+
     att_requests = (
         frappe.qb.from_(AttendanceRequest)
-        .join(Employee).on(Employee.name == AttendanceRequest.employee)
         .select(
             AttendanceRequest.employee,
             Extract("day", AttendanceRequest.from_date).as_("start_date"),
@@ -314,10 +472,9 @@ def get_draft_requests(filters: Filters, employee: str) -> Dict:
             & (AttendanceRequest.employee == employee)
             & (Extract("month", AttendanceRequest.from_date) == filters.month)
             & (Extract("year", AttendanceRequest.from_date) == filters.year)
-            & (status_condition)
         )
     ).run(as_dict=True)
-    
+
     return {
         "leave_applications": leave_apps,
         "attendance_requests": att_requests,
@@ -327,7 +484,7 @@ def convert_to_am_pm(time_str):
     """Convert time from 24-hour format (HH:MM) to 12-hour format with AM/PM."""
     if not time_str:
         return None
-        
+
     try:
         if isinstance(time_str, str):
             # Handle time strings with or without seconds

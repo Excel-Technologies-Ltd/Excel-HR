@@ -142,7 +142,7 @@ frappe.query_reports["Excel Employee Leave Analysis"] = {
     value = default_formatter(value, row, column, data);
     const summarized_view = frappe.query_report.get_filter_value("summarized_view");
 
-    if (!summarized_view && column.colIndex > 2 && value) {
+    if (!summarized_view && column.colIndex > 1 && value) {
       value = "<span style='color:#318AD8'>" + value + "</span>";
     }
 

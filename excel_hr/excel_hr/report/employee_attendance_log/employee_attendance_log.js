@@ -5,11 +5,11 @@
 frappe.query_reports["Employee Attendance Log"] = {
   filters: [
     {
-      fieldname: "date_range",
-      label: __("Date Range"),
-      fieldtype: "Date Range",
+      fieldname: "date",
+      label: __("Date"),
+      fieldtype: "Date",
       reqd: 1,
-      default: [frappe.datetime.get_today(), frappe.datetime.get_today()],
+      default: frappe.datetime.get_today(),
     },
     {
       fieldname: "employee",

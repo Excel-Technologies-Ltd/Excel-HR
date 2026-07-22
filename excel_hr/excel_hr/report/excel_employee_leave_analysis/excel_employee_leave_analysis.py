@@ -23,6 +23,7 @@ LEAVE_TYPE_ABBR = {
 	"Maternity Leave": "MTL",
 	"Monthly Paid Leave": "MPL",
 	"Special Leave": "SPL",
+	"Reward Leave": "RL",
 }
 
 day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -108,7 +109,6 @@ def get_columns(filters: Filters) -> List[Dict]:
 			{"label": _("Total Leave Days"), "fieldname": "total_leave_days", "fieldtype": "Float", "width": 130}
 		)
 	else:
-		columns.append({"label": _("Shift"), "fieldname": "shift", "fieldtype": "Data", "width": 120})
 		columns.extend(get_columns_for_days(filters))
 
 	return columns
@@ -132,20 +132,45 @@ def get_total_days_in_month(filters: Filters) -> int:
 	return monthrange(cint(filters.year), cint(filters.month))[1]
 
 
+def get_relieved_in_range_dates(filters: Filters) -> Tuple[str, str]:
+	total_days = get_total_days_in_month(filters)
+	month_start = "{}-{:02d}-01".format(cint(filters.year), cint(filters.month))
+	month_end = "{}-{:02d}-{:02d}".format(cint(filters.year), cint(filters.month), total_days)
+	return month_start, month_end
+
+
+def get_active_or_recently_relieved_condition(Employee, filters: Filters):
+	"""Employees to include when the "Is Active Employees" filter is on:
+	currently Active employees, plus anyone relieved during the selected
+	month, so their leave data up to their last working day still shows
+	instead of disappearing from the Active view entirely."""
+	if not filters.get("is_active"):
+		return Employee.status != "Active"
+
+	month_start, month_end = get_relieved_in_range_dates(filters)
+	return (Employee.status == "Active") | (
+		(Employee.relieving_date >= month_start) & (Employee.relieving_date <= month_end)
+	)
+
+
 def get_employee_related_details(filters: Filters) -> Dict:
 	Employee = frappe.qb.DocType("Employee")
 
 	query = (
 		frappe.qb.from_(Employee)
-		.select(Employee.name, Employee.employee_name, Employee.department, Employee.default_shift)
+		.select(
+			Employee.name,
+			Employee.employee_name,
+			Employee.department,
+			Employee.default_shift,
+			Employee.status,
+			Employee.relieving_date,
+		)
 		.where(Employee.company == filters.company)
+		.where(get_active_or_recently_relieved_condition(Employee, filters))
 	)
 	if filters.get("department"):
 		query = query.where(Employee.department == filters.department)
-	if filters.get("is_active"):
-		query = query.where(Employee.status == "Active")
-	else:
-		query = query.where(Employee.status != "Active")
 	if filters.employee:
 		employees = filters.employee if isinstance(filters.employee, list) else [filters.employee]
 		query = query.where(Employee.name.isin(employees))
@@ -158,7 +183,7 @@ def get_employee_related_details(filters: Filters) -> Dict:
 
 
 def get_leave_map(filters: Filters) -> Dict:
-	"""Returns {employee: {shift: {day_of_month: leave_type}}} built from both
+	"""Returns {employee: {day_of_month: leave_type}} built from both
 	submitted (On Leave) Attendance records and pending Leave Application
 	drafts, so the report shows leave data as soon as it's requested, not just
 	once payroll has processed it."""
@@ -172,16 +197,12 @@ def get_leave_map(filters: Filters) -> Dict:
 	)
 	if filters.department:
 		employee_subquery = employee_subquery.where(Employee.department == filters.department)
-	if filters.get("is_active"):
-		employee_subquery = employee_subquery.where(Employee.status == "Active")
-	else:
-		employee_subquery = employee_subquery.where(Employee.status != "Active")
+	employee_subquery = employee_subquery.where(get_active_or_recently_relieved_condition(Employee, filters))
 
 	query = (
 		frappe.qb.from_(Attendance)
 		.select(
 			Attendance.employee,
-			Attendance.shift,
 			Extract("day", Attendance.attendance_date).as_("day_of_month"),
 			Attendance.leave_type,
 		)
@@ -199,8 +220,7 @@ def get_leave_map(filters: Filters) -> Dict:
 		query = query.where(Attendance.employee.isin(employees))
 
 	for d in query.run(as_dict=True):
-		shift = d.shift or ""
-		leave_map.setdefault(d.employee, {}).setdefault(shift, {})[d.day_of_month] = d.leave_type
+		leave_map.setdefault(d.employee, {})[d.day_of_month] = d.leave_type
 
 	for lr in get_draft_leave_applications(filters):
 		if lr.start_date is None or lr.to_date is None:
@@ -215,9 +235,8 @@ def get_leave_map(filters: Filters) -> Dict:
 		else:
 			continue
 
-		default_shift = frappe.db.get_value("Employee", lr.employee, "default_shift") or ""
 		for day in day_range:
-			leave_map.setdefault(lr.employee, {}).setdefault(default_shift, {}).setdefault(day, lr.leave_type)
+			leave_map.setdefault(lr.employee, {}).setdefault(day, lr.leave_type)
 
 	return leave_map
 
@@ -225,9 +244,7 @@ def get_leave_map(filters: Filters) -> Dict:
 def get_draft_leave_applications(filters: Filters) -> List[Dict]:
 	LeaveApp = frappe.qb.DocType("Leave Application")
 	Employee = frappe.qb.DocType("Employee")
-	status_condition = (
-		(Employee.status == "Active") if filters.get("is_active") else (Employee.status != "Active")
-	)
+	status_condition = get_active_or_recently_relieved_condition(Employee, filters)
 
 	query = (
 		frappe.qb.from_(LeaveApp)
@@ -265,6 +282,13 @@ def get_draft_leave_applications(filters: Filters) -> List[Dict]:
 	return query.run(as_dict=True)
 
 
+def get_employee_display_name(filters: Filters, details) -> str:
+	is_inactive = details.get("status") and details.status != "Active"
+	if filters.get("is_active") and is_inactive:
+		return "{} ({})".format(details.employee_name, _("Inactive"))
+	return details.employee_name
+
+
 def get_data(filters: Filters, leave_map: Dict) -> List[Dict]:
 	employee_details = get_employee_related_details(filters)
 	data = []
@@ -272,7 +296,7 @@ def get_data(filters: Filters, leave_map: Dict) -> List[Dict]:
 	if filters.summarized_view:
 		leave_types = get_all_leave_types()
 		for employee, details in employee_details.items():
-			row = {"employee": employee, "employee_name": details.employee_name}
+			row = {"employee": employee, "employee_name": get_employee_display_name(filters, details)}
 			summary = get_leave_summary(employee, filters)
 			total = 0.0
 			for leave_type in leave_types:
@@ -283,35 +307,26 @@ def get_data(filters: Filters, leave_map: Dict) -> List[Dict]:
 			data.append(row)
 	else:
 		for employee, details in employee_details.items():
-			rows = get_leave_status_for_detailed_view(filters, leave_map.get(employee))
-			if rows:
-				rows[0].update({"employee": employee, "employee_name": details.employee_name})
-				data.extend(rows)
+			row = get_leave_status_for_detailed_view(filters, leave_map.get(employee))
+			row.update({"employee": employee, "employee_name": get_employee_display_name(filters, details)})
+			data.append(row)
 
 	return data
 
 
-def get_leave_status_for_detailed_view(filters: Filters, employee_shifts: Optional[Dict]) -> List[Dict]:
-	"""Returns list of shift-wise rows for the employee with the Leave Type
+def get_leave_status_for_detailed_view(filters: Filters, day_map: Optional[Dict]) -> Dict:
+	"""Returns a single date-wise row for the employee with the Leave Type
 	abbreviation on leave days and a blank cell on every other day (present,
 	absent, holiday, weekend -- all of it)."""
 	total_days = get_total_days_in_month(filters)
+	day_map = day_map or {}
 
-	if not employee_shifts:
-		row = {"shift": ""}
-		for day in range(1, total_days + 1):
-			row[cstr(day)] = ""
-		return [row]
+	row = {}
+	for day in range(1, total_days + 1):
+		leave_type = day_map.get(day)
+		row[cstr(day)] = get_leave_abbr(leave_type) if leave_type else ""
 
-	rows = []
-	for shift, day_map in employee_shifts.items():
-		row = {"shift": shift}
-		for day in range(1, total_days + 1):
-			leave_type = day_map.get(day)
-			row[cstr(day)] = get_leave_abbr(leave_type) if leave_type else ""
-		rows.append(row)
-
-	return rows
+	return row
 
 
 def get_leave_summary(employee: str, filters: Filters) -> Dict[str, float]:

@@ -21,9 +21,6 @@
  "roles": [
   {
    "role": "System Manager"
-  },
-  {
-   "role": "Employee"
   }
  ]
 }

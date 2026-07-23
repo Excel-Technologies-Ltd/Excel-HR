@@ -24,6 +24,12 @@
   "enabled_date_validation_att_req",
   "column_break_blree",
   "disabled_policy_impact",
+  "section_break_policy_impact",
+  "late_entry_cycle_days",
+  "column_break_pi1",
+  "max_annual_leave_deductions_per_year",
+  "column_break_pi2",
+  "max_reward_leaves_per_year",
   "leave_application_tab",
   "enabled_day_validation_annual_leave",
   "auto_l_app_for_new_employee",
@@ -184,6 +190,47 @@
    "fieldname": "disabled_policy_impact",
    "fieldtype": "Check",
    "label": "Disabled Policy Impact"
+  },
+  {
+   "depends_on": "eval:doc.disabled_policy_impact==0",
+   "fieldname": "section_break_policy_impact",
+   "fieldtype": "Section Break",
+   "label": "Policy Impact Thresholds"
+  },
+  {
+   "default": "5",
+   "description": "Every this many Late Entry attendance days in a month deducts one Annual Leave day.",
+   "fieldname": "late_entry_cycle_days",
+   "fieldtype": "Int",
+   "label": "Late Entry Cycle (Days)",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_pi1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "5",
+   "description": "Maximum Annual Leave days that can be deducted for an employee in a year.",
+   "fieldname": "max_annual_leave_deductions_per_year",
+   "fieldtype": "Int",
+   "label": "Max Annual Leave Deductions (Per Year)",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_pi2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "5",
+   "description": "Maximum Reward Leave days that can be granted to an employee in a year.",
+   "fieldname": "max_reward_leaves_per_year",
+   "fieldtype": "Int",
+   "label": "Max Reward Leaves (Per Year)",
+   "non_negative": 1,
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,

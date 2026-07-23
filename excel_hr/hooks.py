@@ -201,6 +201,10 @@ scheduler_events = {
         ],
         "5 0 * * *":[
             "excel_hr.reminders.send_work_anniversary_reminders",
+        ],
+        "0 1 * * *": [
+            "excel_hr.policy_impact.process_late_entry_policy_impact",
+            "excel_hr.policy_impact.process_ontime_reward_policy_impact"
         ]
     },
     "daily": [

@@ -211,7 +211,7 @@ def send_all_birthday_mails(employees):
 
     frappe.sendmail(
         recipients=cc_mail,
-        subject=f"Celebrating Our Colleagues on Their Birthday 🎉",
+        subject=f"Celebrating the Birthday of our colleague(s)🎉",
         sender=email_id,
         template="birthday",
         args={
@@ -270,7 +270,7 @@ def send_all_work_anniversary_mails(employees):
 
     frappe.sendmail(
         recipients=cc_mail,
-        subject=f"Celebrating Our Colleagues on Their Work Anniversary 🎊",
+        subject=f"Celebrating the Work Anniversary of our colleague(s)🎊",
         sender=email_id,
         template="work_anniversary",
         args={

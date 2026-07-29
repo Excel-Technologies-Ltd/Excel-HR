@@ -94,6 +94,11 @@ frappe.query_reports["Employee Attendance Log"] = {
   formatter: function (value, row, column, data, default_formatter) {
     value = default_formatter(value, row, column, data);
 
+    if (column.fieldname === "employee_name") {
+      // Employee Name can carry a trailing " (Inactive)"/status tag; highlight it in red.
+      value = String(value).replace(/(\s\(.+\))$/, "<span style='color:red'>$1</span>");
+    }
+
     if (column.fieldname === "in_status") {
       if (value == "LATE") value = "<span style='color:red'>" + value + "</span>";
       else if (value == "INTIME") value = "<span style='color:green'>" + value + "</span>";

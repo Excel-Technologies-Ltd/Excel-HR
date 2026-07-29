@@ -2,6 +2,7 @@
 # License: GNU General Public License v3. See license.txt
 
 
+import math
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
@@ -31,7 +32,6 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 
 def get_columns() -> List[Dict]:
 	return [
-		{"label": _("SL"), "fieldname": "sl", "fieldtype": "Int", "width": 50},
 		{"label": _("Date"), "fieldname": "date", "fieldtype": "Date", "width": 100},
 		{"label": _("Employee ID"), "fieldname": "employee", "fieldtype": "Data", "width": 120},
 		{"label": _("Employee Name"), "fieldname": "employee_name", "fieldtype": "Data", "width": 160},
@@ -55,15 +55,15 @@ def get_columns() -> List[Dict]:
 
 def get_active_or_recently_relieved_condition(Employee, filters: Filters, start_date, end_date):
 	"""Employees to include when the "Is Active Employees" filter is on:
-	currently Active employees, plus anyone whose Relieving Date falls
-	within the selected date, so their attendance up to their last working
-	day still shows instead of disappearing from the Active view entirely."""
+	currently Active employees, plus anyone whose Relieving Date falls on or
+	after the selected date, so their attendance still shows for the date
+	they were relieved on AND for any earlier historical date where they
+	were still employed, instead of disappearing from the Active view
+	entirely."""
 	if not filters.get("is_active"):
 		return Employee.status != "Active"
 
-	return (Employee.status == "Active") | (
-		(Employee.relieving_date >= start_date) & (Employee.relieving_date <= end_date)
-	)
+	return (Employee.status == "Active") | (Employee.relieving_date >= start_date)
 
 
 def get_employees(filters: Filters, start_date, end_date) -> List[Dict]:
@@ -142,7 +142,7 @@ def get_holiday_status(holiday_list: Optional[str], date) -> Optional[str]:
 def format_time(value) -> str:
 	if not value:
 		return ""
-	return value.strftime("%I:%M %p")
+	return value.strftime("%I:%M:%S %p")
 
 
 def get_shift_grace_periods(shift_name: Optional[str]) -> Tuple[int, int]:
@@ -196,7 +196,6 @@ def get_data(filters: Filters, start_date, end_date) -> List[Dict]:
 	today = getdate()
 
 	data = []
-	sl = 1
 	date = start_date
 	while date <= end_date:
 		checkins_map = get_checkins_for_date(employee_ids, date)
@@ -204,8 +203,6 @@ def get_data(filters: Filters, start_date, end_date) -> List[Dict]:
 
 		for emp in employees:
 			row = get_row_for_employee_date(filters, emp, date, is_today, checkins_map.get(emp.name, []))
-			row["sl"] = sl
-			sl += 1
 			data.append(row)
 
 		date += timedelta(days=1)
@@ -245,9 +242,12 @@ def get_row_for_employee_date(filters: Filters, emp: Dict, date, is_today: bool,
 	if first_checkin:
 		row["in_time"] = format_time(first_checkin.time)
 		if roster_start:
-			late_minutes = round(max((first_checkin.time - roster_start).total_seconds() / 60, 0))
-			row["minute_late"] = late_minutes
-			row["in_status"] = "LATE" if late_minutes > 0 else "INTIME"
+			late_seconds = (first_checkin.time - roster_start).total_seconds()
+			# Any positive difference -- even a single second past the grace
+			# window -- counts as LATE; round the displayed minute count up
+			# so a partial minute late (e.g. 16:01) isn't shown/truncated as 0.
+			row["minute_late"] = math.ceil(late_seconds / 60) if late_seconds > 0 else 0
+			row["in_status"] = "LATE" if late_seconds > 0 else "INTIME"
 
 	# Out Time / Minute(s) Early / Status only apply to a day that's already
 	# finished -- for the current date the employee may still be at work,
@@ -255,8 +255,8 @@ def get_row_for_employee_date(filters: Filters, emp: Dict, date, is_today: bool,
 	if not is_today and last_checkin:
 		row["out_time"] = format_time(last_checkin.time)
 		if roster_end:
-			early_minutes = round(max((roster_end - last_checkin.time).total_seconds() / 60, 0))
-			row["minute_early"] = early_minutes
-			row["out_status"] = "Early" if early_minutes > 0 else "INTIME"
+			early_seconds = (roster_end - last_checkin.time).total_seconds()
+			row["minute_early"] = math.ceil(early_seconds / 60) if early_seconds > 0 else 0
+			row["out_status"] = "Early" if early_seconds > 0 else "INTIME"
 
 	return row

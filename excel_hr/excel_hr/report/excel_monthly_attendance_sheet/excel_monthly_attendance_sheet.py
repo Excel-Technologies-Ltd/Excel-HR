@@ -161,10 +161,15 @@ def get_message() -> str:
             <span style='font-size:10px; color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
             </span>
-            
+
         """
         count += 1
-    message += "</div>"    
+    message += """
+        <span style='font-size:10px; color:black; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+            &#8718; Remote Checkin - RC
+        </span>
+    """
+    message += "</div>"
     # Fifth column
     # message += "<div style='flex: 1;'>"
     # count = 0
@@ -305,16 +310,16 @@ def get_relieved_in_range_dates(filters: Filters) -> Tuple[str, str]:
 
 
 def get_active_or_recently_relieved_condition(Employee, filters: Filters):
-	"""Query-builder version: Active employees, plus anyone relieved during
-	the selected month, so their attendance still shows in the Active view
-	instead of disappearing entirely."""
+	"""Query-builder version: Active employees, plus anyone whose Relieving
+	Date falls on or after the start of the selected month, so their
+	attendance still shows for the month they were relieved in AND for any
+	earlier historical month where they were still employed, instead of
+	disappearing from the Active view entirely."""
 	if not filters.get("is_active"):
 		return Employee.status != "Active"
 
-	month_start, month_end = get_relieved_in_range_dates(filters)
-	return (Employee.status == "Active") | (
-		(Employee.relieving_date >= month_start) & (Employee.relieving_date <= month_end)
-	)
+	month_start, _ = get_relieved_in_range_dates(filters)
+	return (Employee.status == "Active") | (Employee.relieving_date >= month_start)
 
 
 def get_active_or_recently_relieved_sql(filters: Filters, alias: str = "") -> Tuple[str, Dict]:
@@ -323,10 +328,10 @@ def get_active_or_recently_relieved_sql(filters: Filters, alias: str = "") -> Tu
 	if not filters.get("is_active"):
 		return f"AND {prefix}status != 'Active'", {}
 
-	month_start, month_end = get_relieved_in_range_dates(filters)
+	month_start, _ = get_relieved_in_range_dates(filters)
 	return (
-		f"AND ({prefix}status = 'Active' OR ({prefix}relieving_date BETWEEN %(rel_start)s AND %(rel_end)s))",
-		{"rel_start": month_start, "rel_end": month_end},
+		f"AND ({prefix}status = 'Active' OR {prefix}relieving_date >= %(rel_start)s)",
+		{"rel_start": month_start},
 	)
 
 

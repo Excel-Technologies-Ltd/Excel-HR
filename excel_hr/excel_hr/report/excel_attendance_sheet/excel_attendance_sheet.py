@@ -233,19 +233,17 @@ def get_data(filters: Filters, attendance_map: Dict, holiday_anchors: Dict, pres
 
 def get_active_or_recently_relieved_condition(Employee, filters: Filters):
 	"""Employees to include when the "Is Active Employees" filter is on:
-	currently Active employees, plus anyone relieved during the selected
-	month, so their attendance up to their last working day still shows
-	instead of disappearing from the Active view entirely."""
+	currently Active employees, plus anyone whose Relieving Date falls on or
+	after the start of the selected month, so their attendance still shows
+	for the month they were relieved in AND for any earlier historical month
+	where they were still employed, instead of disappearing from the Active
+	view entirely."""
 	if not filters.get("is_active"):
 		return Employee.status != "Active"
 
-	total_days = get_total_days_in_month(filters)
 	month_start = "{}-{:02d}-01".format(cint(filters.year), cint(filters.month))
-	month_end = "{}-{:02d}-{:02d}".format(cint(filters.year), cint(filters.month), total_days)
 
-	return (Employee.status == "Active") | (
-		(Employee.relieving_date >= month_start) & (Employee.relieving_date <= month_end)
-	)
+	return (Employee.status == "Active") | (Employee.relieving_date >= month_start)
 
 
 def get_present_day_tags(filters: Filters) -> Dict[str, Dict[int, str]]:

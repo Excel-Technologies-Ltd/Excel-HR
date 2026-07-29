@@ -180,5 +180,15 @@ frappe.query_reports["Excel Employees In-Exit Time Report"] = {
   onload: function () {
     report.get_filter_value("is_active")
   },
+  formatter: function (value, row, column, data, default_formatter) {
+    value = default_formatter(value, row, column, data);
+
+    if (column.fieldname === "employee_name") {
+      // Employee Name can carry a trailing " (Inactive)"/status tag; highlight it in red.
+      value = String(value).replace(/(\s\(.+\))$/, "<span style='color:red'>$1</span>");
+    }
+
+    return value;
+  },
 };
 

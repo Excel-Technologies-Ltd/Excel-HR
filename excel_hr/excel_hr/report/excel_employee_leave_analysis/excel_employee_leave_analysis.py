@@ -141,16 +141,16 @@ def get_relieved_in_range_dates(filters: Filters) -> Tuple[str, str]:
 
 def get_active_or_recently_relieved_condition(Employee, filters: Filters):
 	"""Employees to include when the "Is Active Employees" filter is on:
-	currently Active employees, plus anyone relieved during the selected
-	month, so their leave data up to their last working day still shows
-	instead of disappearing from the Active view entirely."""
+	currently Active employees, plus anyone whose Relieving Date falls on or
+	after the start of the selected month, so their leave data still shows
+	for the month they were relieved in AND for any earlier historical month
+	where they were still employed, instead of disappearing from the Active
+	view entirely."""
 	if not filters.get("is_active"):
 		return Employee.status != "Active"
 
-	month_start, month_end = get_relieved_in_range_dates(filters)
-	return (Employee.status == "Active") | (
-		(Employee.relieving_date >= month_start) & (Employee.relieving_date <= month_end)
-	)
+	month_start, _ = get_relieved_in_range_dates(filters)
+	return (Employee.status == "Active") | (Employee.relieving_date >= month_start)
 
 
 def get_employee_related_details(filters: Filters) -> Dict:

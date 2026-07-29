@@ -165,6 +165,12 @@ frappe.query_reports["Excel Monthly Attendance Sheet"] = {
     }
 
     value = default_formatter(value, row, column, data);
+
+    if (column.fieldname === "employee_name") {
+      // Employee Name can carry a trailing " (Inactive)"/status tag; highlight it in red.
+      value = String(value).replace(/(\s\(.+\))$/, "<span style='color:red'>$1</span>");
+    }
+
     const summarized_view =
       frappe.query_report.get_filter_value("summarized_view");
     const group_by = frappe.query_report.get_filter_value("group_by");

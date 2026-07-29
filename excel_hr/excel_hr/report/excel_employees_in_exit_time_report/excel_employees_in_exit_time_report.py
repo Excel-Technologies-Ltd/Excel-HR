@@ -107,15 +107,15 @@ def get_todays_checkins(employee_ids):
 
 def get_active_or_recently_relieved_condition(Employee, filters: Filters, start_date_str: str, end_date_str: str):
     """Employees to include when the "Is Active Employees" filter is on:
-    currently Active employees, plus anyone whose Relieving Date falls
-    within the selected date range, so their attendance up to their last
-    working day still shows instead of disappearing from the Active view."""
+    currently Active employees, plus anyone whose Relieving Date falls on or
+    after the start of the selected date range, so their attendance still
+    shows for the range they were relieved in AND for any earlier historical
+    range where they were still employed, instead of disappearing from the
+    Active view entirely."""
     if not filters.get('is_active'):
         return Employee.status != 'Active'
 
-    return (Employee.status == 'Active') | (
-        (Employee.relieving_date >= start_date_str) & (Employee.relieving_date <= end_date_str)
-    )
+    return (Employee.status == 'Active') | (Employee.relieving_date >= start_date_str)
 
 
 def get_employee_details(filters: Filters) -> Dict:
@@ -229,11 +229,13 @@ def get_holiday_anchors(filters: Filters, employee_ids: List[str]) -> Dict[str, 
 
 
 def get_holiday_map(start_date, end_date) -> Dict[str, Dict]:
-    """Returns {holiday_list_name: {date: True}} for every Holiday List's
-    entries (holiday or weekly off) falling within the given date range."""
+    """Returns {holiday_list_name: {date: is_weekly_off}} for every Holiday
+    List's entries (holiday or weekly off) falling within the given date
+    range. is_weekly_off distinguishes a Weekend ("W") from a named
+    Holiday ("H")."""
     rows = frappe.db.sql(
         """
-        SELECT parent, holiday_date
+        SELECT parent, holiday_date, weekly_off
         FROM `tabHoliday`
         WHERE parentfield = 'holidays'
         AND parenttype = 'Holiday List'
@@ -245,7 +247,7 @@ def get_holiday_map(start_date, end_date) -> Dict[str, Dict]:
 
     holiday_map = {}
     for r in rows:
-        holiday_map.setdefault(r.parent, {})[getdate(r.holiday_date)] = True
+        holiday_map.setdefault(r.parent, {})[getdate(r.holiday_date)] = bool(r.weekly_off)
     return holiday_map
 
 
@@ -270,10 +272,15 @@ def resolve_holiday_list_for_date(current_date, current_holiday_list, work_histo
     return current_holiday_list
 
 
-def is_holiday_or_weekend(current_date, holiday_list_name, holiday_map) -> bool:
+def get_holiday_or_weekend_abbr(current_date, holiday_list_name, holiday_map) -> Optional[str]:
+    """Returns "W" if current_date is a Weekend (weekly off), "H" if it's a
+    named Holiday, or None if it's neither."""
     if not holiday_list_name:
-        return False
-    return current_date in holiday_map.get(holiday_list_name, {})
+        return None
+    dates = holiday_map.get(holiday_list_name, {})
+    if current_date not in dates:
+        return None
+    return 'W' if dates[current_date] else 'H'
 
 
 def get_data(filters):
@@ -400,9 +407,10 @@ def get_data(filters):
                     current_date.date(), current_holiday_list, work_history_rows,
                     date_of_joining, anchors, today
                 )
-                if is_holiday_or_weekend(current_date.date(), holiday_list_name, holiday_map):
-                    row[f'in_{current_date.day}'] = format_with_color('H/W', 'brown')
-                    row[f'out_{current_date.day}'] = format_with_color('H/W', 'brown')
+                holiday_abbr = get_holiday_or_weekend_abbr(current_date.date(), holiday_list_name, holiday_map)
+                if holiday_abbr:
+                    row[f'in_{current_date.day}'] = format_with_color(holiday_abbr, 'brown')
+                    row[f'out_{current_date.day}'] = format_with_color(holiday_abbr, 'brown')
                 else:
                     row[f'in_{current_date.day}'] = format_with_color('A', 'red')
                     row[f'out_{current_date.day}'] = format_with_color('A', 'red')

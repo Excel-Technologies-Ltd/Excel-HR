@@ -139,7 +139,25 @@ frappe.query_reports["Excel Employee Leave Analysis"] = {
     });
   },
   formatter: function (value, row, column, data, default_formatter) {
+    // "Employee" column: show the raw ID only, not the Employee's title
+    // field (employee_name) that Frappe's Link formatter auto-resolves to.
+    if (column.fieldname === "employee") {
+      return data.employee;
+    }
+
     value = default_formatter(value, row, column, data);
+
+    if (column.fieldname === "employee_name") {
+      // Employee Name can carry a trailing " (Inactive)"/status tag; keep the
+      // name itself black and highlight only the status tag in red.
+      const match = String(value).match(/^(.*?)(\s\(.+\))$/);
+      if (match) {
+        value = "<span style='color:black'>" + match[1] + "</span><span style='color:red'>" + match[2] + "</span>";
+      } else {
+        value = "<span style='color:black'>" + value + "</span>";
+      }
+    }
+
     const summarized_view = frappe.query_report.get_filter_value("summarized_view");
 
     if (!summarized_view && column.colIndex > 1 && value) {

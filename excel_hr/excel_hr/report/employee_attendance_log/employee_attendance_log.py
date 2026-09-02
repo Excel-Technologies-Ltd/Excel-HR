@@ -44,12 +44,14 @@ def get_columns() -> List[Dict]:
 		},
 		{"label": _("Job Location"), "fieldname": "job_location", "fieldtype": "Data", "width": 130},
 		{"label": _("Roster Time"), "fieldname": "roster_time", "fieldtype": "Data", "width": 170},
+		{"label": _("Roster Hour(s)"), "fieldname": "roster_hours", "fieldtype": "Data", "width": 110},
 		{"label": _("In Time"), "fieldname": "in_time", "fieldtype": "Data", "width": 100},
 		{"label": _("Minute(s) Late"), "fieldname": "minute_late", "fieldtype": "Int", "width": 110},
 		{"label": _("Status"), "fieldname": "in_status", "fieldtype": "Data", "width": 90},
 		{"label": _("Out Time"), "fieldname": "out_time", "fieldtype": "Data", "width": 100},
 		{"label": _("Minute(s) Early"), "fieldname": "minute_early", "fieldtype": "Int", "width": 110},
 		{"label": _("Status"), "fieldname": "out_status", "fieldtype": "Data", "width": 90},
+		{"label": _("Working Hour(s)"), "fieldname": "working_hours", "fieldtype": "Data", "width": 120},
 	]
 
 
@@ -145,6 +147,10 @@ def format_time(value) -> str:
 	return value.strftime("%I:%M:%S %p")
 
 
+def format_hours(hours: float) -> str:
+	return f"{hours:.1f} h"
+
+
 def get_shift_grace_periods(shift_name: Optional[str]) -> Tuple[int, int]:
 	"""Returns (late_entry_grace_period, early_exit_grace_period) minutes
 	configured on the Shift Type, or (0, 0) if there's no shift / none set."""
@@ -224,6 +230,13 @@ def get_row_for_employee_date(filters: Filters, emp: Dict, date, is_today: bool,
 	roster_label, roster_start, roster_end = get_roster_bounds(shift_start, shift_end, shift_for_fallback, date)
 	roster_time = holiday_status if holiday_status else roster_label
 
+	roster_hours = ""
+	# Skip the calculation on a Holiday/Weekend -- roster_time shows the
+	# holiday label there instead of a start-to-end window, so there's no
+	# roster duration to report either.
+	if not holiday_status and roster_start and roster_end:
+		roster_hours = format_hours((roster_end - roster_start).total_seconds() / 3600)
+
 	row = {
 		"date": date,
 		"employee": emp.name,
@@ -231,12 +244,14 @@ def get_row_for_employee_date(filters: Filters, emp: Dict, date, is_today: bool,
 		"department": emp.department,
 		"job_location": emp.custom_job_location,
 		"roster_time": roster_time,
+		"roster_hours": roster_hours,
 		"in_time": "",
 		"minute_late": None,
 		"in_status": "",
 		"out_time": "",
 		"minute_early": None,
 		"out_status": "",
+		"working_hours": "",
 	}
 
 	if first_checkin:
@@ -249,14 +264,18 @@ def get_row_for_employee_date(filters: Filters, emp: Dict, date, is_today: bool,
 			row["minute_late"] = math.ceil(late_seconds / 60) if late_seconds > 0 else 0
 			row["in_status"] = "LATE" if late_seconds > 0 else "INTIME"
 
-	# Out Time / Minute(s) Early / Status only apply to a day that's already
-	# finished -- for the current date the employee may still be at work,
-	# so only the In Time (and its lateness) is meaningful.
+	# Out Time / Minute(s) Early / Status / Working Hour(s) only apply to a
+	# day that's already finished -- for the current date the employee may
+	# still be at work, so only the In Time (and its lateness) is meaningful.
 	if not is_today and last_checkin:
 		row["out_time"] = format_time(last_checkin.time)
 		if roster_end:
 			early_seconds = (roster_end - last_checkin.time).total_seconds()
 			row["minute_early"] = math.ceil(early_seconds / 60) if early_seconds > 0 else 0
 			row["out_status"] = "Early" if early_seconds > 0 else "INTIME"
+
+		worked_seconds = (last_checkin.time - first_checkin.time).total_seconds()
+		if worked_seconds > 0:
+			row["working_hours"] = format_hours(worked_seconds / 3600)
 
 	return row

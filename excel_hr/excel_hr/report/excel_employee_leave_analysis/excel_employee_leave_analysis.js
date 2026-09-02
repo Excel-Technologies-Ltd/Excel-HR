@@ -29,10 +29,11 @@ frappe.query_reports["Excel Employee Leave Analysis"] = {
     {
       fieldname: "year",
       label: __("Year"),
-      fieldtype: "Link",
-      options: "Fiscal Year",
+      fieldtype: "Select",
       reqd: 1,
-      default: erpnext.utils.get_fiscal_year(frappe.datetime.get_today()),
+      default: String(
+        frappe.datetime.str_to_obj(frappe.datetime.get_today()).getFullYear()
+      ),
     },
     {
       fieldname: "employee",
@@ -131,10 +132,22 @@ frappe.query_reports["Excel Employee Leave Analysis"] = {
         "hrms.hr.report.monthly_attendance_sheet.monthly_attendance_sheet.get_attendance_years",
       callback: function (r) {
         var year_filter = report.get_filter("year");
-        year_filter.df.options = r.message;
-        year_filter.df.default = r.message.split("\n")[0];
+        var current_year = String(
+          frappe.datetime.str_to_obj(frappe.datetime.get_today()).getFullYear()
+        );
+        var years = r.message ? r.message.split("\n") : [];
+        if (years.indexOf(current_year) === -1) {
+          years.unshift(current_year);
+        }
+        year_filter.df.options = years.join("\n");
+        // Always default to the current year -- get_attendance_years can
+        // return a later year first if attendance/leave records already
+        // exist ahead of today (e.g. pre-created for the rest of the
+        // fiscal year), which would otherwise default the filter past the
+        // current year.
+        year_filter.df.default = current_year;
         year_filter.refresh();
-        year_filter.set_input(year_filter.df.default);
+        year_filter.set_input(current_year);
       },
     });
   },

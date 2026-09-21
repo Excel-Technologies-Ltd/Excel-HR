@@ -6,8 +6,12 @@ impacts. Runs at 1 AM rather than right after midnight because Attendance
 for a day isn't created until 11:59 PM that same day -- by 1 AM the
 previous day's Attendance is reliably in place.
 
+Only Attendance on or after ArcHR Settings.start_date ("Start Date") is ever
+considered, and only for employees whose Status is "Active" and whose
+"Attendance Policy Applied?" flag is checked.
+
 Late Entry (Deduction)
------------------------
+----------------------
 For every ArcHR Settings.late_entry_cycle_days Attendance records in a
 calendar month submitted with Late Entry = 1 (excluding "On Leave" days),
 the employee's Annual Leave allocation is reduced by one day, capped at
@@ -16,14 +20,19 @@ year. Once that cap is hit, or once the employee's current Annual Leave
 allocation is already at zero, the same threshold instead logs a pending
 Salary deduction, since there's no more leave to take from.
 
+The cycle behaves as a batch threshold: with a cycle of 5, every complete
+block of 5 late entries within the month yields one deduction, while any
+leftover entries that don't complete a further block are exempted for that
+month. Each resulting "ArcHR Policy Impact Log" entry records the From Date
+and To Date spanning that specific block of late entries.
+
 The month-to-date window this job evaluates always ends yesterday, not
 today: since it runs at 1 AM, today's Attendance doesn't exist yet, so
 counting through "today" would be a no-op most of the time and would
-silently truncate the month on the 1st of a new month (today's month-start
-would be later than yesterday's date, the last day of the prior month).
+silently truncate the month on the 1st of a new month.
 
 On-Time (Reward)
------------------
+----------------
 Once a calendar month is complete, any employee whose Attendance records
 that month (excluding "On Leave") were all on time (no Late Entry) is
 granted one Reward Leave day, capped at
@@ -31,16 +40,19 @@ ArcHR Settings.max_reward_leaves_per_year reward days a year. Once that
 cap is hit, the same monthly 100%-on-time result instead logs a pending
 Salary incentive (one day's basic salary) rather than more leave.
 
+Each Reward entry records the judged month in "For Month". When that month
+is December -- the last month of the year -- the Reward entry is still
+created but no Reward Leave allocation is granted for it, since the yearly
+cycle resets at the start of the next year.
+
 Every threshold crossing creates exactly one "ArcHR Policy Impact Log"
 entry, backdated (via its Created On) to a date inside the period it was
 earned in -- not left at "now" -- so the dedup lookups these jobs run
 against their own log history stay correct regardless of what day the job
-actually executes on (a same-day rerun, a delayed run, or -- for the
-Reward job specifically, which always evaluates last month -- the
-built-in one-month lag between the period being judged and the day the
-resulting log entry is created).
+actually executes on.
 """
 
+import calendar
 from datetime import date, timedelta
 
 import frappe
@@ -49,6 +61,11 @@ from frappe.utils import cint, flt, getdate
 
 def get_policy_impact_settings():
 	return frappe.get_cached_doc("ArcHR Settings")
+
+
+def get_policy_start_date(settings):
+	"""Earliest Attendance date the policy considers, or None if unset."""
+	return getdate(settings.start_date) if settings.start_date else None
 
 
 # ---------------------------------------------------------------------------
@@ -71,39 +88,59 @@ def process_late_entry_policy_impact():
 	reference_date = getdate() - timedelta(days=1)
 	month_start = reference_date.replace(day=1)
 
-	late_counts = frappe.db.sql(
+	# Attendance before the configured Start Date is ignored entirely.
+	policy_start = get_policy_start_date(settings)
+	window_start = max(month_start, policy_start) if policy_start else month_start
+	if window_start > reference_date:
+		return
+
+	rows = frappe.db.sql(
 		"""
-		SELECT employee, COUNT(*) AS late_count
-		FROM `tabAttendance`
-		WHERE docstatus = 1
-		  AND late_entry = 1
-		  AND status != 'On Leave'
-		  AND attendance_date BETWEEN %(start)s AND %(end)s
-		GROUP BY employee
+		SELECT a.employee, a.attendance_date
+		FROM `tabAttendance` a
+		INNER JOIN `tabEmployee` e ON e.name = a.employee
+		WHERE a.docstatus = 1
+		  AND a.late_entry = 1
+		  AND a.status != 'On Leave'
+		  AND e.status = 'Active'
+		  AND e.custom_attendance_policy_applied = 1
+		  AND a.attendance_date BETWEEN %(start)s AND %(end)s
+		ORDER BY a.employee, a.attendance_date
 		""",
-		{"start": month_start, "end": reference_date},
+		{"start": window_start, "end": reference_date},
 		as_dict=True,
 	)
 
-	for row in late_counts:
-		due_cycles = row.late_count // cycle_days
+	late_dates_by_employee = {}
+	for row in rows:
+		late_dates_by_employee.setdefault(row.employee, []).append(row.attendance_date)
+
+	for employee, late_dates in late_dates_by_employee.items():
+		due_cycles = len(late_dates) // cycle_days
 		if due_cycles < 1:
 			continue
 
 		applied_cycles = frappe.db.count(
 			"ArcHR Policy Impact Log",
 			{
-				"employee": row.employee,
+				"employee": employee,
 				"criteria": "Deduction",
 				"created_on": ["between", [f"{month_start} 00:00:00", f"{reference_date} 23:59:59"]],
 			},
 		)
 
-		for _ in range(due_cycles - applied_cycles):
-			apply_late_entry_cycle(row.employee, settings, created_on=reference_date)
+		for cycle_index in range(applied_cycles, due_cycles):
+			block = late_dates[cycle_index * cycle_days : (cycle_index + 1) * cycle_days]
+			apply_late_entry_cycle(
+				employee,
+				settings,
+				created_on=reference_date,
+				from_date=block[0],
+				to_date=block[-1],
+			)
 
 
-def apply_late_entry_cycle(employee: str, settings=None, created_on=None):
+def apply_late_entry_cycle(employee: str, settings=None, created_on=None, from_date=None, to_date=None):
 	settings = settings or get_policy_impact_settings()
 	max_deductions = cint(settings.max_annual_leave_deductions_per_year)
 
@@ -127,13 +164,25 @@ def apply_late_entry_cycle(employee: str, settings=None, created_on=None):
 
 	if leave_deductions_this_year >= max_deductions or not remaining_days:
 		create_policy_impact_log(
-			employee, criteria="Deduction", impact_type="Salary", status="Pending", created_on=created_on
+			employee,
+			criteria="Deduction",
+			impact_type="Salary",
+			status="Pending",
+			created_on=created_on,
+			from_date=from_date,
+			to_date=to_date,
 		)
 		return
 
 	adjust_leave_allocation(allocation, -1)
 	create_policy_impact_log(
-		employee, criteria="Deduction", impact_type="Leaves", status="Applied", created_on=created_on
+		employee,
+		criteria="Deduction",
+		impact_type="Leaves",
+		status="Applied",
+		created_on=created_on,
+		from_date=from_date,
+		to_date=to_date,
 	)
 
 
@@ -154,20 +203,33 @@ def process_ontime_reward_policy_impact():
 	previous_month_end = today.replace(day=1) - timedelta(days=1)
 	previous_month_start = previous_month_end.replace(day=1)
 
+	# Months entirely before the configured Start Date aren't judged.
+	policy_start = get_policy_start_date(settings)
+	if policy_start and previous_month_end < policy_start:
+		return
+
 	attendance_summary = frappe.db.sql(
 		"""
-		SELECT employee,
+		SELECT a.employee,
 		       COUNT(*) AS total_count,
-		       SUM(CASE WHEN late_entry = 1 THEN 1 ELSE 0 END) AS late_count
-		FROM `tabAttendance`
-		WHERE docstatus = 1
-		  AND status != 'On Leave'
-		  AND attendance_date BETWEEN %(start)s AND %(end)s
-		GROUP BY employee
+		       SUM(CASE WHEN a.late_entry = 1 THEN 1 ELSE 0 END) AS late_count
+		FROM `tabAttendance` a
+		INNER JOIN `tabEmployee` e ON e.name = a.employee
+		WHERE a.docstatus = 1
+		  AND a.status != 'On Leave'
+		  AND e.status = 'Active'
+		  AND e.custom_attendance_policy_applied = 1
+		  AND a.attendance_date BETWEEN %(start)s AND %(end)s
+		GROUP BY a.employee
 		""",
 		{"start": previous_month_start, "end": previous_month_end},
 		as_dict=True,
 	)
+
+	for_month = calendar.month_name[previous_month_start.month]
+	# December is the last month of the year: the Reward entry is created,
+	# but no Reward Leave allocation is granted for it.
+	is_december = previous_month_start.month == 12
 
 	for row in attendance_summary:
 		if not row.total_count or row.late_count:
@@ -187,10 +249,18 @@ def process_ontime_reward_policy_impact():
 		if already_processed:
 			continue
 
-		apply_ontime_reward_cycle(row.employee, settings, created_on=previous_month_end)
+		apply_ontime_reward_cycle(
+			row.employee,
+			settings,
+			created_on=previous_month_end,
+			for_month=for_month,
+			grant_allocation=not is_december,
+		)
 
 
-def apply_ontime_reward_cycle(employee: str, settings=None, created_on=None):
+def apply_ontime_reward_cycle(
+	employee: str, settings=None, created_on=None, for_month=None, grant_allocation=True
+):
 	settings = settings or get_policy_impact_settings()
 	max_reward_leaves = cint(settings.max_reward_leaves_per_year)
 
@@ -209,15 +279,27 @@ def apply_ontime_reward_cycle(employee: str, settings=None, created_on=None):
 		},
 	)
 
-	if reward_leaves_this_year >= max_reward_leaves:
+	if grant_allocation and reward_leaves_this_year >= max_reward_leaves:
 		create_policy_impact_log(
-			employee, criteria="Reward", impact_type="Salary", status="Pending", created_on=created_on
+			employee,
+			criteria="Reward",
+			impact_type="Salary",
+			status="Pending",
+			created_on=created_on,
+			for_month=for_month,
 		)
 		return
 
-	grant_reward_leave(employee)
+	if grant_allocation:
+		grant_reward_leave(employee)
+
 	create_policy_impact_log(
-		employee, criteria="Reward", impact_type="Leaves", status="Applied", created_on=created_on
+		employee,
+		criteria="Reward",
+		impact_type="Leaves",
+		status="Applied",
+		created_on=created_on,
+		for_month=for_month,
 	)
 
 
@@ -285,7 +367,15 @@ def adjust_leave_allocation(allocation, delta: float):
 
 
 def create_policy_impact_log(
-	employee: str, criteria: str, impact_type: str, status: str, adjustment: int = 1, created_on=None
+	employee: str,
+	criteria: str,
+	impact_type: str,
+	status: str,
+	adjustment: int = 1,
+	created_on=None,
+	from_date=None,
+	to_date=None,
+	for_month=None,
 ):
 	doc = frappe.get_doc(
 		{
@@ -299,4 +389,10 @@ def create_policy_impact_log(
 	)
 	if created_on:
 		doc.created_on = created_on
+	if from_date:
+		doc.from_date = from_date
+	if to_date:
+		doc.to_date = to_date
+	if for_month:
+		doc.for_month = for_month
 	doc.insert(ignore_permissions=True)

@@ -12,9 +12,12 @@
   "criteria",
   "status",
   "column_break_vb8ik",
-  "naming_series",
-  "type",
-  "adjustment",
+   "naming_series",
+   "type",
+   "from_date",
+   "to_date",
+   "for_month",
+   "adjustment",
   "employee_information_section",
   "employee",
   "employee_name",
@@ -74,6 +77,22 @@
    "label": "Type",
    "options": "\nLeaves\nSalary",
    "reqd": 1
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date"
+  },
+  {
+   "fieldname": "for_month",
+   "fieldtype": "Select",
+   "label": "For Month",
+   "options": "\nJanuary\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember"
   },
   {
    "default": "1",

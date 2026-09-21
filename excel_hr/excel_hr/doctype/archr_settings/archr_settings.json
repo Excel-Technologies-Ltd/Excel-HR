@@ -24,8 +24,9 @@
   "enabled_date_validation_att_req",
   "column_break_blree",
   "disabled_policy_impact",
-  "section_break_policy_impact",
-  "late_entry_cycle_days",
+   "section_break_policy_impact",
+   "start_date",
+   "late_entry_cycle_days",
   "column_break_pi1",
   "max_annual_leave_deductions_per_year",
   "column_break_pi2",
@@ -196,6 +197,11 @@
    "fieldname": "section_break_policy_impact",
    "fieldtype": "Section Break",
    "label": "Policy Impact Thresholds"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
   },
   {
    "default": "5",

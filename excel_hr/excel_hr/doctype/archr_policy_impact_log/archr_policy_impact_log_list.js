@@ -15,13 +15,12 @@ frappe.listview_settings['ArcHR Policy Impact Log'] = {
 				function () {
 					frappe.call({
 						method: 'excel_hr.excel_hr.doctype.archr_policy_impact_log.archr_policy_impact_log.execute_policy_impact',
-						freeze: true,
-						freeze_message: __('Executing Policy Impact schedulers...'),
 						callback: function (r) {
 							if (r.message) {
-								frappe.show_alert({
+								frappe.msgprint({
 									message: r.message,
-									indicator: 'green',
+									indicator: 'blue',
+									title: __('Background Task Started')
 								});
 							}
 							listview.refresh();

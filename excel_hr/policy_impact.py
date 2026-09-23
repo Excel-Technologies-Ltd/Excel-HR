@@ -114,46 +114,47 @@ def process_late_entry_policy_impact():
         else:
             month_end = date(year, month + 1, 1) - timedelta(days=1)
 
-        applied_cycles = frappe.db.count(
-            "ArcHR Policy Impact Log",
-            {
-                "employee": employee,
-                "criteria": "Deduction",
-                "created_on": ["between", [f"{month_start} 00:00:00", f"{month_end} 23:59:59"]],
-            },
-        )
+        applied_cycles = frappe.db.sql("""
+            SELECT COUNT(name) FROM `tabArcHR Policy Impact Log`
+            WHERE employee = %s AND criteria = 'Deduction'
+            AND (
+                (to_date IS NOT NULL AND to_date BETWEEN %s AND %s)
+                OR
+                (to_date IS NULL AND created_on BETWEEN %s AND %s)
+            )
+        """, (employee, month_start, month_end, f"{month_start} 00:00:00", f"{month_end} 23:59:59"))[0][0]
 
         for cycle_index in range(applied_cycles, due_cycles):
             block = late_dates[cycle_index * cycle_days : (cycle_index + 1) * cycle_days]
             apply_late_entry_cycle(
                 employee,
                 settings,
-                created_on=block[-1],
                 from_date=block[0],
                 to_date=block[-1],
             )
 
-def apply_late_entry_cycle(employee: str, settings=None, created_on=None, from_date=None, to_date=None):
+def apply_late_entry_cycle(employee: str, settings=None, from_date=None, to_date=None):
     settings = settings or get_policy_impact_settings()
     max_deductions = cint(settings.max_annual_leave_deductions_per_year)
 
-    reference_date = created_on or getdate()
+    reference_date = to_date or getdate()
     year_start = date(reference_date.year, 1, 1)
     year_end = date(reference_date.year, 12, 31)
 
-    leave_deductions_this_year = frappe.db.count(
-        "ArcHR Policy Impact Log",
-        {
-            "employee": employee,
-            "criteria": "Deduction",
-            "type": "Leaves",
-            "status": "Applied",
-            "created_on": ["between", [f"{year_start} 00:00:00", f"{year_end} 23:59:59"]],
-        },
-    )
+    leave_deductions_this_year = frappe.db.sql("""
+        SELECT COUNT(name) FROM `tabArcHR Policy Impact Log`
+        WHERE employee = %s AND criteria = 'Deduction' AND type = 'Leaves' AND status = 'Applied'
+        AND (
+            (to_date IS NOT NULL AND to_date BETWEEN %s AND %s)
+            OR
+            (to_date IS NULL AND created_on BETWEEN %s AND %s)
+        )
+    """, (employee, year_start, year_end, f"{year_start} 00:00:00", f"{year_end} 23:59:59"))[0][0]
 
-    allocation = get_active_leave_allocation(employee, "Annual Leave")
+    allocation = get_active_leave_allocation(employee, "Annual Leave", date_for_allocation=to_date)
     remaining_days = allocation.total_leaves_allocated if allocation else 0
+
+    created_on = frappe.utils.now()
 
     if leave_deductions_this_year >= max_deductions or not remaining_days:
         create_policy_impact_log(
@@ -167,7 +168,9 @@ def apply_late_entry_cycle(employee: str, settings=None, created_on=None, from_d
         )
         return
 
-    adjust_leave_allocation(allocation, -1)
+    if allocation:
+        adjust_leave_allocation(allocation, -1)
+        
     create_policy_impact_log(
         employee,
         criteria="Deduction",
@@ -228,24 +231,23 @@ def process_ontime_reward_policy_impact():
             if not row.total_count or row.late_count:
                 continue
 
-            already_processed = frappe.db.exists(
-                "ArcHR Policy Impact Log",
-                {
-                    "employee": row.employee,
-                    "criteria": "Reward",
-                    "created_on": [
-                        "between",
-                        [f"{month_start} 00:00:00", f"{month_end} 23:59:59"],
-                    ],
-                },
-            )
+            already_processed = frappe.db.sql("""
+                SELECT name FROM `tabArcHR Policy Impact Log`
+                WHERE employee = %s AND criteria = 'Reward'
+                AND (
+                    (to_date IS NOT NULL AND to_date BETWEEN %s AND %s)
+                    OR
+                    (to_date IS NULL AND created_on BETWEEN %s AND %s)
+                )
+            """, (row.employee, month_start, month_end, f"{month_start} 00:00:00", f"{month_end} 23:59:59"))
             if already_processed:
                 continue
 
             apply_ontime_reward_cycle(
                 row.employee,
                 settings,
-                created_on=month_end,
+                from_date=month_start,
+                to_date=month_end,
                 for_month=for_month,
                 grant_allocation=not is_december,
             )
@@ -254,25 +256,26 @@ def process_ontime_reward_policy_impact():
         check_date = (month_start - timedelta(days=1))
 
 def apply_ontime_reward_cycle(
-    employee: str, settings=None, created_on=None, for_month=None, grant_allocation=True
+    employee: str, settings=None, from_date=None, to_date=None, for_month=None, grant_allocation=True
 ):
     settings = settings or get_policy_impact_settings()
     max_reward_leaves = cint(settings.max_reward_leaves_per_year)
 
-    reference_date = created_on or getdate()
+    reference_date = to_date or getdate()
     year_start = date(reference_date.year, 1, 1)
     year_end = date(reference_date.year, 12, 31)
 
-    reward_leaves_this_year = frappe.db.count(
-        "ArcHR Policy Impact Log",
-        {
-            "employee": employee,
-            "criteria": "Reward",
-            "type": "Leaves",
-            "status": "Applied",
-            "created_on": ["between", [f"{year_start} 00:00:00", f"{year_end} 23:59:59"]],
-        },
-    )
+    reward_leaves_this_year = frappe.db.sql("""
+        SELECT COUNT(name) FROM `tabArcHR Policy Impact Log`
+        WHERE employee = %s AND criteria = 'Reward' AND type = 'Leaves' AND status = 'Applied'
+        AND (
+            (to_date IS NOT NULL AND to_date BETWEEN %s AND %s)
+            OR
+            (to_date IS NULL AND created_on BETWEEN %s AND %s)
+        )
+    """, (employee, year_start, year_end, f"{year_start} 00:00:00", f"{year_end} 23:59:59"))[0][0]
+
+    created_on = frappe.utils.now()
 
     if grant_allocation and reward_leaves_this_year >= max_reward_leaves:
         create_policy_impact_log(
@@ -281,29 +284,31 @@ def apply_ontime_reward_cycle(
             impact_type="Salary",
             status="Pending",
             created_on=created_on,
+            from_date=from_date,
+            to_date=to_date,
             for_month=for_month,
         )
         return
-
-    if grant_allocation:
-        grant_reward_leave(employee)
 
     create_policy_impact_log(
         employee,
         criteria="Reward",
         impact_type="Leaves",
-        status="Applied",
+        status="Pending",
         created_on=created_on,
+        from_date=from_date,
+        to_date=to_date,
         for_month=for_month,
     )
 
-def grant_reward_leave(employee: str):
-    allocation = get_active_leave_allocation(employee, "Reward Leave")
+def grant_reward_leave(employee: str, to_date=None, adjustment=1):
+    allocation = get_active_leave_allocation(employee, "Reward Leave", date_for_allocation=to_date)
     if allocation:
-        adjust_leave_allocation(allocation, 1)
+        adjust_leave_allocation(allocation, adjustment)
         return
 
-    year = getdate().year
+    reference_date = to_date or getdate()
+    year = reference_date.year
     company = frappe.db.get_value("Employee", employee, "company")
 
     allocation = frappe.get_doc(
@@ -314,7 +319,7 @@ def grant_reward_leave(employee: str):
             "company": company,
             "from_date": date(year, 1, 1),
             "to_date": date(year, 12, 31),
-            "new_leaves_allocated": 1,
+            "new_leaves_allocated": adjustment,
             "carry_forward": 0,
         }
     )
@@ -326,16 +331,16 @@ def grant_reward_leave(employee: str):
 # Shared helpers
 # ---------------------------------------------------------------------------
 
-def get_active_leave_allocation(employee: str, leave_type: str):
-    today = getdate()
+def get_active_leave_allocation(employee: str, leave_type: str, date_for_allocation=None):
+    date_for_allocation = date_for_allocation or getdate()
     name = frappe.db.get_value(
         "Leave Allocation",
         {
             "employee": employee,
             "leave_type": leave_type,
             "docstatus": 1,
-            "from_date": ["<=", today],
-            "to_date": [">=", today],
+            "from_date": ["<=", date_for_allocation],
+            "to_date": [">=", date_for_allocation],
         },
         "name",
         order_by="to_date desc",

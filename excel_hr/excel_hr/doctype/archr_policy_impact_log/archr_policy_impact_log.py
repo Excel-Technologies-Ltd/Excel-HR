@@ -6,7 +6,46 @@ from frappe.model.document import Document
 
 
 class ArcHRPolicyImpactLog(Document):
-	pass
+	def on_update(self):
+		if self.has_value_changed("status"):
+			old_status = self.get_value_before_save("status")
+			
+			if self.type == "Leaves":
+				if old_status == "Applied" and self.status == "Rejected":
+					self.rollback_leave_allocation()
+				elif old_status == "Pending" and self.status == "Applied":
+					self.apply_leave_allocation()
+
+	def apply_leave_allocation(self):
+		from excel_hr.policy_impact import get_active_leave_allocation, adjust_leave_allocation, grant_reward_leave
+
+		if self.criteria == "Reward":
+			# Rule: December doesn't get allocation
+			if self.to_date and self.to_date.month == 12:
+				return
+			grant_reward_leave(self.employee, to_date=self.to_date, adjustment=self.adjustment)
+		
+		elif self.criteria == "Deduction":
+			allocation = get_active_leave_allocation(self.employee, "Annual Leave", date_for_allocation=self.to_date)
+			if allocation:
+				adjust_leave_allocation(allocation, -self.adjustment)
+
+	def rollback_leave_allocation(self):
+		from excel_hr.policy_impact import get_active_leave_allocation, adjust_leave_allocation
+
+		if self.criteria == "Reward":
+			# Rule: December didn't get allocation, so don't rollback
+			if self.to_date and self.to_date.month == 12:
+				return
+			
+			allocation = get_active_leave_allocation(self.employee, "Reward Leave", date_for_allocation=self.to_date)
+			if allocation:
+				adjust_leave_allocation(allocation, -self.adjustment)
+
+		elif self.criteria == "Deduction":
+			allocation = get_active_leave_allocation(self.employee, "Annual Leave", date_for_allocation=self.to_date)
+			if allocation:
+				adjust_leave_allocation(allocation, self.adjustment)
 
 
 @frappe.whitelist()

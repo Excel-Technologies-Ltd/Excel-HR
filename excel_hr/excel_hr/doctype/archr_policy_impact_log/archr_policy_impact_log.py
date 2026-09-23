@@ -8,7 +8,8 @@ from frappe.model.document import Document
 class ArcHRPolicyImpactLog(Document):
 	def on_update(self):
 		if self.has_value_changed("status"):
-			old_status = self.get_value_before_save("status")
+			# old_status = self.get_value_before_save("status")
+			old_status = self.get_doc_before_save()
 			
 			if self.type == "Leaves":
 				if old_status == "Applied" and self.status == "Rejected":

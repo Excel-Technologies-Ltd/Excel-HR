@@ -290,11 +290,15 @@ def apply_ontime_reward_cycle(
         )
         return
 
+    # December: log only, no allocation -> stays Pending
+    if grant_allocation:
+        grant_reward_leave(employee, to_date=to_date)
+
     create_policy_impact_log(
         employee,
         criteria="Reward",
         impact_type="Leaves",
-        status="Pending",
+        status="Applied" if grant_allocation else "Pending",
         created_on=created_on,
         from_date=from_date,
         to_date=to_date,

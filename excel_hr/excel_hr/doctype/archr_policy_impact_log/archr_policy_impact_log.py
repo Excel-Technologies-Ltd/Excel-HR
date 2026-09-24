@@ -9,8 +9,9 @@ class ArcHRPolicyImpactLog(Document):
 	def on_update(self):
 		if self.has_value_changed("status"):
 			# old_status = self.get_value_before_save("status")
-			old_status = self.get_doc_before_save()
-			
+			doc_before_save = self.get_doc_before_save()
+			old_status = doc_before_save.status if doc_before_save else None
+
 			if self.type == "Leaves":
 				if old_status == "Applied" and self.status == "Rejected":
 					self.rollback_leave_allocation()

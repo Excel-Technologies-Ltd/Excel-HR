@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import getdate
 
 
 class ArcHRPolicyImpactLog(Document):
@@ -23,7 +24,7 @@ class ArcHRPolicyImpactLog(Document):
 
 		if self.criteria == "Reward":
 			# Rule: December doesn't get allocation
-			if self.to_date and self.to_date.month == 12:
+			if self.to_date and getdate(self.to_date).month == 12:
 				return
 			grant_reward_leave(self.employee, to_date=self.to_date, adjustment=self.adjustment)
 		
@@ -37,7 +38,7 @@ class ArcHRPolicyImpactLog(Document):
 
 		if self.criteria == "Reward":
 			# Rule: December didn't get allocation, so don't rollback
-			if self.to_date and self.to_date.month == 12:
+			if self.to_date and getdate(self.to_date).month == 12:
 				return
 			
 			allocation = get_active_leave_allocation(self.employee, "Reward Leave", date_for_allocation=self.to_date)

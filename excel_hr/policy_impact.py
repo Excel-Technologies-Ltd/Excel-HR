@@ -53,6 +53,7 @@ from collections import defaultdict
 
 import frappe
 from frappe.utils import cint, flt, getdate
+from hrms.hr.doctype.leave_allocation.leave_allocation import LessAllocationError, OverAllocationError
 
 def get_policy_impact_settings():
     return frappe.get_cached_doc("ArcHR Settings")
@@ -169,8 +170,26 @@ def apply_late_entry_cycle(employee: str, settings=None, from_date=None, to_date
         return
 
     if allocation:
-        adjust_leave_allocation(allocation, -1)
-        
+        savepoint = "annual_leave_deduction"
+        frappe.db.savepoint(savepoint)
+        try:
+            adjust_leave_allocation(allocation, -1)
+        except LessAllocationError:
+            # Approved leave applications cannot be invalidated by a policy
+            # deduction. Undo the allocation update and defer this deduction
+            # to the salary workflow instead.
+            frappe.db.rollback(save_point=savepoint)
+            create_policy_impact_log(
+                employee,
+                criteria="Deduction",
+                impact_type="Salary",
+                status="Pending",
+                created_on=created_on,
+                from_date=from_date,
+                to_date=to_date,
+            )
+            return
+
     create_policy_impact_log(
         employee,
         criteria="Deduction",
@@ -291,8 +310,21 @@ def apply_ontime_reward_cycle(
         return
 
     # December: log only, no allocation -> stays Pending
-    if grant_allocation:
-        grant_reward_leave(employee, to_date=to_date)
+    if grant_allocation and not grant_reward_leave(employee, to_date=to_date):
+        # The Leave Type may have a lower maximum than the policy setting.
+        # Keep the monthly reward recorded as a pending salary incentive when
+        # HRMS rejects an allocation that would exceed that maximum.
+        create_policy_impact_log(
+            employee,
+            criteria="Reward",
+            impact_type="Salary",
+            status="Pending",
+            created_on=created_on,
+            from_date=from_date,
+            to_date=to_date,
+            for_month=for_month,
+        )
+        return
 
     create_policy_impact_log(
         employee,
@@ -308,8 +340,17 @@ def apply_ontime_reward_cycle(
 def grant_reward_leave(employee: str, to_date=None, adjustment=1):
     allocation = get_active_leave_allocation(employee, "Reward Leave", date_for_allocation=to_date)
     if allocation:
-        adjust_leave_allocation(allocation, adjustment)
-        return
+        savepoint = "reward_leave_allocation"
+        frappe.db.savepoint(savepoint)
+        try:
+            adjust_leave_allocation(allocation, adjustment)
+        except OverAllocationError:
+            # HRMS can raise from an after-save hook, after the document update
+            # has reached the database. Undo the partial update before falling
+            # back to the pending salary reward.
+            frappe.db.rollback(save_point=savepoint)
+            return False
+        return True
 
     reference_date = to_date or getdate()
     year = reference_date.year
@@ -328,8 +369,15 @@ def grant_reward_leave(employee: str, to_date=None, adjustment=1):
         }
     )
     allocation.flags.ignore_permissions = True
-    allocation.insert()
-    allocation.submit()
+    savepoint = "reward_leave_allocation"
+    frappe.db.savepoint(savepoint)
+    try:
+        allocation.insert()
+        allocation.submit()
+    except OverAllocationError:
+        frappe.db.rollback(save_point=savepoint)
+        return False
+    return True
 
 # ---------------------------------------------------------------------------
 # Shared helpers

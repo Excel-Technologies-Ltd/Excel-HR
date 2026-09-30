@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import add_days, date_diff, format_date, getdate, nowdate,today
+from frappe.utils import add_days, add_months, date_diff, format_date, getdate, nowdate, today
 from datetime import datetime, timedelta
 from erpnext.setup.doctype.employee.employee import Employee
 from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
@@ -33,13 +33,44 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         if "System Manager" in frappe.get_roles():
             return
 
+        if not self.from_date or self.is_in_allowed_mpl_teams(settings):
+            return
+
+        # From Date must fall in the current 29th-to-28th window:
+        # on the 1st-28th, 29th of last month to 28th of this month;
+        # on the 29th-31st, 29th of this month to 28th of next month.
         current_date = getdate(nowdate())
+        window_end = current_date.replace(day=28)
         if current_date.day > 28:
+            window_end = add_months(window_end, 1)
+        # Day after the previous month's 28th (29th, or 1st of March when February has 28 days)
+        window_start = add_days(add_months(window_end, -1), 1)
+
+        if not (window_start <= getdate(self.from_date) <= window_end):
             frappe.throw(
-                _("Monthly Paid Leave cannot be applied after the 28th of {0}.").format(
-                    current_date.strftime("%B")
+                _("From Date for Monthly Paid Leave must be between {0} and {1}.").format(
+                    frappe.bold(format_date(window_start)), frappe.bold(format_date(window_end))
                 )
             )
+
+    def is_in_allowed_mpl_teams(self, settings):
+        """Check if the employee's Parent Department, Section or Sub Section is in Allowed Teams (MPL)"""
+        if not self.employee:
+            return False
+
+        allowed_departments = {row.departments for row in settings.allowed_teams_mpl if row.departments}
+        if not allowed_departments:
+            return False
+
+        employee_departments = frappe.db.get_value(
+            "Employee",
+            self.employee,
+            ["excel_parent_department", "excel_hr_section", "excel_hr_sub_section"],
+            as_dict=True,
+        ) or {}
+        employee_departments = {value for value in employee_departments.values() if value}
+
+        return bool(employee_departments & allowed_departments)
 
     def validate_mpl_apply_weeks(self):
         settings = frappe.get_doc("ArcHR Settings")
@@ -49,17 +80,7 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         if not self.employee or not self.from_date:
             return
 
-        allowed_departments = {row.departments for row in settings.allowed_teams_mpl if row.departments}
-
-        employee_departments = frappe.db.get_value(
-            "Employee",
-            self.employee,
-            ["excel_parent_department", "excel_hr_section", "excel_hr_sub_section"],
-            as_dict=True,
-        )
-        employee_departments = {value for value in employee_departments.values() if value}
-
-        if employee_departments & allowed_departments:
+        if self.is_in_allowed_mpl_teams(settings):
             return
 
         from_date = getdate(self.from_date)

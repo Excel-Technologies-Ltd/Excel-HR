@@ -13,13 +13,14 @@
    "fieldname": "attachment",
    "fieldtype": "Attach",
    "in_list_view": 1,
-   "label": "Attachment"
+   "label": "Attachment",
+   "make_attachment_public": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-13 10:49:52.671607",
+ "modified": "2026-09-30 12:55:35.950168",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "Leave Attachments",

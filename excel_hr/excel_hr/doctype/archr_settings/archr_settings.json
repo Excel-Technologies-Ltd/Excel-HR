@@ -24,9 +24,9 @@
   "enabled_date_validation_att_req",
   "column_break_blree",
   "disabled_policy_impact",
-   "section_break_policy_impact",
-   "start_date",
-   "late_entry_cycle_days",
+  "section_break_policy_impact",
+  "start_date",
+  "late_entry_cycle_days",
   "column_break_pi1",
   "max_annual_leave_deductions_per_year",
   "column_break_pi2",
@@ -165,7 +165,7 @@
   },
   {
    "default": "0",
-   "description": "Disables employee actions after the 28th of the month if checked.",
+   "description": "From Date must fall between the 29th of last month and the 28th of this month (from the 29th onward: 29th of this month to 28th of next month). Allowed Teams (MPL) are exempt.",
    "fieldname": "lock_date_to_apply_mpl",
    "fieldtype": "Check",
    "label": "Lock Date to Apply (MPL)"
@@ -178,8 +178,8 @@
    "label": "Validate Apply Weeks (MPL)"
   },
   {
-   "depends_on": "eval:doc.validate_apply_weeks_mpl",
-   "description": "Selected team members will be allowed to apply for MPL in any week.",
+   "depends_on": "eval:doc.validate_apply_weeks_mpl || doc.lock_date_to_apply_mpl",
+   "description": "Selected team members are exempt from the Lock Date and Apply Weeks rules for MPL.",
    "fieldname": "allowed_teams_mpl",
    "fieldtype": "Table MultiSelect",
    "label": "Allowed Teams (MPL)",
@@ -242,7 +242,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-13 11:51:58.547882",
+ "modified": "2026-09-30 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

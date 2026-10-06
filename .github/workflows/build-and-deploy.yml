@@ -77,7 +77,7 @@ jobs:
 
           # Define all tags
           DOCKER_HUB_TAG="arcapps/hr:latest"
-          GITLAB_TAG="registry.gitlab.com/arcapps/arc-container-registry/hr-erp:1.0.12"
+          GITLAB_TAG="registry.gitlab.com/arcapps/arc-container-registry/hr-erp:latest"
           
           # Build once with multiple tags and push to all registries
           docker buildx build \

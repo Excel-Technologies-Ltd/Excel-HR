@@ -14,22 +14,25 @@ frappe.query_reports["Excel Monthly Attendance Matrix"] = {
     {
       fieldname: "company",
       label: __("Company"),
-      fieldtype: "Link",
-      options: "Company",
-      default: frappe.defaults.get_user_default("Company"),
-      reqd: 1,
+      fieldtype: "Select",
+      // Blank = all. Derived from the employee's Job Location server side.
+      options: ["", "Excel Technologies Ltd.", "Excel Intelligent Solutions Ltd."],
+      default: "",
     },
     {
       fieldname: "employee",
       label: __("Employee"),
       fieldtype: "MultiSelectList",
       get_data: function (txt) {
+        const eisl_job_location = "Kaliakoir Hi-Tech Park, Gazipur";
         var company = frappe.query_report.get_filter_value("company");
-        if (!company) {
-          return Promise.resolve([]);
-        }
 
-        let filters = { company: company };
+        let filters = {};
+        if (company === "Excel Intelligent Solutions Ltd.") {
+          filters["custom_job_location"] = eisl_job_location;
+        } else if (company === "Excel Technologies Ltd.") {
+          filters["custom_job_location"] = ["!=", eisl_job_location];
+        }
         if (txt) {
           filters["employee_name"] = ["like", `%${txt}%`];
         }
@@ -63,14 +66,6 @@ frappe.query_reports["Excel Monthly Attendance Matrix"] = {
       label: __("Parent Department"),
       fieldtype: "Link",
       options: "Department",
-      get_query: () => {
-        var company = frappe.query_report.get_filter_value("company");
-        return {
-          filters: {
-            company: company,
-          },
-        };
-      },
     },
     {
       fieldname: "excel_section",

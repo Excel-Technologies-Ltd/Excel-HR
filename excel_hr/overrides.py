@@ -9,6 +9,8 @@ from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequ
 from frappe.utils import getdate
 from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 
+MAX_LEAVE_ATTACHMENTS = 5
+
 
 class CustomLeaveDayAndDateValidation(LeaveApplication):
     def before_save(self):
@@ -16,6 +18,7 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         
     def validate(self):
         super().validate()
+        self.validate_leave_attachments_limit()
         self.run_validations()
         if self.leave_type == "Monthly Paid Leave":
             if self.to_date != self.from_date:
@@ -24,6 +27,10 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
             self.validate_mpl_lock_date()
             self.validate_mpl_apply_weeks()
             self.check_existing_monthly_paid_leave()
+
+    def validate_leave_attachments_limit(self):
+        if len(self.get("custom_leave_attachments") or []) > MAX_LEAVE_ATTACHMENTS:
+            frappe.throw(_("You cannot add more than {0} Leave Attachments.").format(MAX_LEAVE_ATTACHMENTS))
 
     def validate_mpl_lock_date(self):
         settings = frappe.get_doc("ArcHR Settings")

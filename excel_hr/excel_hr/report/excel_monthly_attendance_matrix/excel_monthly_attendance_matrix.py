@@ -11,6 +11,12 @@ from frappe.utils import getdate
 
 Filters = frappe._dict
 
+# Company shown and filtered in this report is derived from the employee's
+# Job Location, not the Employee.company link.
+EISL_JOB_LOCATION = "Kaliakoir Hi-Tech Park, Gazipur"
+ETL_COMPANY = "Excel Technologies Ltd."
+EISL_COMPANY = "Excel Intelligent Solutions Ltd."
+
 # Order matters: it drives both the tally dict and the Total sum.
 COUNT_FIELDS = [
 	"present",
@@ -70,7 +76,7 @@ def get_message() -> str:
 
 def get_columns() -> List[Dict]:
 	return [
-		
+		{"label": _("ID"), "fieldname": "employee_number", "fieldtype": "Data", "width": 100},
 		{"label": _("Name"), "fieldname": "employee_name", "fieldtype": "Data", "width": 150},
 		{
 			"label": _("Designation"),
@@ -79,7 +85,7 @@ def get_columns() -> List[Dict]:
 			"options": "Designation",
 			"width": 130,
 		},
-		{"label": _("Company"), "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 130},
+		{"label": _("Company"), "fieldname": "company", "fieldtype": "Data", "width": 200},
 		{
 			"label": _("Department"),
 			"fieldname": "department",
@@ -124,9 +130,11 @@ def get_employees(filters: Filters) -> List[Dict]:
 	Employee = frappe.qb.DocType("Employee")
 	query = frappe.qb.from_(Employee).select(
 		Employee.name,
+		Employee.employee_number,
 		Employee.employee_name,
 		Employee.designation,
 		Employee.company,
+		Employee.custom_job_location,
 		Employee.excel_parent_department.as_("department"),
 		Employee.excel_hr_section.as_("section"),
 		Employee.excel_hr_sub_section.as_("sub_section"),
@@ -135,8 +143,12 @@ def get_employees(filters: Filters) -> List[Dict]:
 		Employee.relieving_date,
 	)
 
-	if filters.company:
-		query = query.where(Employee.company == filters.company)
+	if filters.company == EISL_COMPANY:
+		query = query.where(Employee.custom_job_location == EISL_JOB_LOCATION)
+	elif filters.company == ETL_COMPANY:
+		query = query.where(
+			Employee.custom_job_location.isnull() | (Employee.custom_job_location != EISL_JOB_LOCATION)
+		)
 	if filters.custom_job_location:
 		query = query.where(Employee.custom_job_location == filters.custom_job_location)
 	if filters.excel_department:
@@ -276,19 +288,23 @@ def get_data(filters: Filters) -> List[Dict]:
 		return []
 
 	employee_ids = [emp.name for emp in employees]
-	default_holiday_list = (
-		frappe.get_cached_value("Company", filters.company, "default_holiday_list") if filters.company else None
-	)
+	# The Company filter is a Job Location based label, not a Company record,
+	# so fall back to each employee's own Company default holiday list.
+	company_holiday_lists = {
+		company: frappe.get_cached_value("Company", company, "default_holiday_list")
+		for company in {emp.company for emp in employees}
+		if company
+	}
 
 	attendance_map = get_attendance_map(employee_ids, from_date, to_date)
-	holiday_lists = list({emp.holiday_list for emp in employees} | {default_holiday_list})
+	holiday_lists = list({emp.holiday_list for emp in employees} | set(company_holiday_lists.values()))
 	holiday_map = get_holiday_map(holiday_lists, from_date, to_date)
 	leave_application_days = get_leave_application_days(employee_ids, from_date, to_date)
 	attendance_request_days = get_attendance_request_days(employee_ids, from_date, to_date)
 
 	data = []
 	for emp in employees:
-		holidays = holiday_map.get(emp.holiday_list or default_holiday_list, {})
+		holidays = holiday_map.get(emp.holiday_list or company_holiday_lists.get(emp.company), {})
 		emp_attendance = attendance_map.get(emp.name, {})
 		emp_leave_app_days = leave_application_days.get(emp.name, set())
 		emp_ar_app_days = attendance_request_days.get(emp.name, set())
@@ -327,9 +343,10 @@ def get_data(filters: Filters) -> List[Dict]:
 
 		row = {
 			"employee": emp.name,
+			"employee_number": emp.employee_number,
 			"employee_name": emp.employee_name,
 			"designation": emp.designation,
-			"company": emp.company,
+			"company": EISL_COMPANY if emp.custom_job_location == EISL_JOB_LOCATION else ETL_COMPANY,
 			"department": emp.department,
 			"section": emp.section,
 			"sub_section": emp.sub_section,

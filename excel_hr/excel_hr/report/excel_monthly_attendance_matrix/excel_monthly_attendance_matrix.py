@@ -76,6 +76,8 @@ def get_message() -> str:
 
 def get_columns() -> List[Dict]:
 	return [
+		# Hidden Employee link so "Add Column" can offer fields from Employee
+		{"label": _("Employee"), "fieldname": "employee", "fieldtype": "Link", "options": "Employee", "hidden": 1},
 		{"label": _("ID"), "fieldname": "employee_number", "fieldtype": "Data", "width": 100},
 		{"label": _("Name"), "fieldname": "employee_name", "fieldtype": "Data", "width": 150},
 		{
@@ -93,14 +95,10 @@ def get_columns() -> List[Dict]:
 			"options": "Department",
 			"width": 130,
 		},
-		{"label": _("Section"), "fieldname": "section", "fieldtype": "Link", "options": "Department", "width": 130},
-		{
-			"label": _("Sub-section"),
-			"fieldname": "sub_section",
-			"fieldtype": "Link",
-			"options": "Department",
-			"width": 130,
-		},
+		# Section / Sub-section are Data (not Link to Department) so "Add Column"
+		# lists Department only once and maps it to the department column
+		{"label": _("Section"), "fieldname": "section", "fieldtype": "Data", "width": 130},
+		{"label": _("Sub-section"), "fieldname": "sub_section", "fieldtype": "Data", "width": 130},
 		{"label": _("P"), "fieldname": "present", "fieldtype": "Float", "width": 70},
 		{"label": _("P%"), "fieldname": "present_percent", "fieldtype": "Percent", "width": 90},
 		{"label": _("L"), "fieldname": "leave", "fieldtype": "Float", "width": 70},

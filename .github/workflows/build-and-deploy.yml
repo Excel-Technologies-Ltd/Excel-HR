@@ -69,7 +69,8 @@ jobs:
             {
               "url": "https://gitlab.com/arcapps/excel-helpdesk.git",
               "branch": "master"
-            }
+            },
+            {"url": "https://github.com/Excel-Technologies-Ltd/arc_one_bridge.git", "branch": "main"}
           ]'
 
           # Convert apps JSON to base64

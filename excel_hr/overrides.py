@@ -43,15 +43,17 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         if not self.from_date or self.is_in_allowed_mpl_teams(settings):
             return
 
-        # From Date must fall in the current 29th-to-28th window:
-        # on the 1st-28th, 29th of last month to 28th of this month;
-        # on the 29th-31st, 29th of this month to 28th of next month.
+        # Get the current date (e.g., sometime in October)
         current_date = getdate(nowdate())
-        window_end = current_date.replace(day=28)
-        if current_date.day > 28:
-            window_end = add_months(window_end, 1)
-        # Day after the previous month's 28th (29th, or 1st of March when February has 28 days)
-        window_start = add_days(add_months(window_end, -1), 1)
+        
+        # Base date is the 28th of the CURRENT calendar month
+        base_date = current_date.replace(day=28)
+        
+        # Window starts on the 29th of the CURRENT calendar month
+        window_start = add_days(base_date, 1)
+        
+        # Window ends on the 28th of the NEXT calendar month
+        window_end = add_months(base_date, 1)
 
         if not (window_start <= getdate(self.from_date) <= window_end):
             frappe.throw(

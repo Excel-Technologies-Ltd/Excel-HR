@@ -76,9 +76,10 @@ def get_message() -> str:
 
 def get_columns() -> List[Dict]:
 	return [
-		# Hidden Employee link so "Add Column" can offer fields from Employee
+		# Hidden Link keeps "Add Column" / doctype linking working. Visible
+		# Employee column is Data so the cell shows the ID only (not the name).
 		{"label": _("Employee"), "fieldname": "employee", "fieldtype": "Link", "options": "Employee", "hidden": 1},
-		{"label": _("ID"), "fieldname": "employee_number", "fieldtype": "Data", "width": 100},
+		{"label": _("Employee"), "fieldname": "employee_id", "fieldtype": "Data", "width": 120},
 		{"label": _("Name"), "fieldname": "employee_name", "fieldtype": "Data", "width": 150},
 		{
 			"label": _("Designation"),
@@ -128,7 +129,6 @@ def get_employees(filters: Filters) -> List[Dict]:
 	Employee = frappe.qb.DocType("Employee")
 	query = frappe.qb.from_(Employee).select(
 		Employee.name,
-		Employee.employee_number,
 		Employee.employee_name,
 		Employee.designation,
 		Employee.company,
@@ -341,13 +341,13 @@ def get_data(filters: Filters) -> List[Dict]:
 
 		row = {
 			"employee": emp.name,
-			"employee_number": emp.employee_number,
+			"employee_id": emp.name,
 			"employee_name": emp.employee_name,
 			"designation": emp.designation,
 			"company": EISL_COMPANY if emp.custom_job_location == EISL_JOB_LOCATION else ETL_COMPANY,
-			"department": emp.department,
-			"section": emp.section,
-			"sub_section": emp.sub_section,
+			"department": emp.department or "",
+			"section": emp.section or "",
+			"sub_section": emp.sub_section or "",
 		}
 		row.update(counts)
 		row["total"] = sum(counts[field] for field in COUNT_FIELDS)

@@ -105,10 +105,10 @@ frappe.query_reports["Excel Monthly Attendance Matrix"] = {
     },
   ],
   formatter: function (value, row, column, data, default_formatter) {
-    // "ID" column: show the raw Employee ID, not the title field
-    // (employee_name) that Frappe's Link formatter auto-resolves to.
-    if (column.fieldname === "employee") {
-      return data.employee;
+    // Visible Employee column is Data (employee_id) — always the ID.
+    // Hidden Link (employee) is for Add Column only; if shown, force ID too.
+    if (column.fieldname === "employee_id" || column.fieldname === "employee") {
+      return (data && (data.employee_id || data.employee)) || value || "";
     }
 
     value = default_formatter(value, row, column, data);
@@ -140,11 +140,7 @@ frappe.query_reports["Excel Monthly Attendance Matrix"] = {
 
     return value;
   },
-  // This report has 24 columns, so the table is usually wider than the
-  // viewport. A plain mouse wheel only scrolls the container vertically by
-  // default (horizontal scroll needs Shift+wheel or dragging the thin
-  // scrollbar), which makes the columns past the visible edge easy to miss
-  // entirely. Translate vertical wheel input into horizontal scroll here.
+  // Vertical wheel = vertical scroll (default). Hold Shift for horizontal.
   after_datatable_render: function (datatable) {
     const scrollable = datatable.wrapper.querySelector(".dt-scrollable");
     if (!scrollable || scrollable.dataset.wheelScrollBound) return;
@@ -153,6 +149,9 @@ frappe.query_reports["Excel Monthly Attendance Matrix"] = {
     scrollable.addEventListener(
       "wheel",
       function (e) {
+        if (!e.shiftKey) {
+          return;
+        }
         if (e.deltaY !== 0 && scrollable.scrollWidth > scrollable.clientWidth) {
           e.preventDefault();
           scrollable.scrollLeft += e.deltaY;

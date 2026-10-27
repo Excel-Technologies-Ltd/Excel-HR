@@ -16,9 +16,10 @@ For every ArcHR Settings.late_entry_cycle_days Attendance records in a
 calendar month submitted with Late Entry = 1 (excluding "On Leave" days),
 the employee's Annual Leave allocation is reduced by one day, capped at
 ArcHR Settings.max_annual_leave_deductions_per_year days deducted per
-year. Once that cap is hit, or once the employee's current Annual Leave
-allocation is already at zero, the same threshold instead logs a pending
-Salary deduction, since there's no more leave to take from.
+year. A pending Salary deduction is logged instead (leave is not touched)
+when any of these is true: the yearly leave-deduction cap is already hit,
+Annual Leave allocated days are 0, or the employee has no available
+Annual Leave balance left (all allocated days already used).
 
 The cycle behaves as a batch threshold: with a cycle of 5, every complete
 block of 5 late entries within the month yields one deduction, while any
@@ -54,6 +55,7 @@ from collections import defaultdict
 import frappe
 from frappe.utils import cint, flt, getdate
 from hrms.hr.doctype.leave_allocation.leave_allocation import LessAllocationError, OverAllocationError
+from hrms.hr.doctype.leave_application.leave_application import get_leave_balance_on
 
 def get_policy_impact_settings():
     return frappe.get_cached_doc("ArcHR Settings")
@@ -134,71 +136,102 @@ def process_late_entry_policy_impact():
                 to_date=block[-1],
             )
 
+def should_deduct_salary_instead_of_leave(
+	employee: str,
+	allocation,
+	leave_deductions_this_year: int,
+	max_deductions: int,
+	as_of_date=None,
+) -> bool:
+	"""Salary deduction (skip leave) when any of these match:
+	1. Max Annual Leave Deductions (Per Year) already reached
+	2. No Annual Leave allocation, or allocated days = 0
+	3. No available Annual Leave left (all allocated days already used)
+	"""
+	if leave_deductions_this_year >= max_deductions:
+		return True
+
+	if not allocation or flt(allocation.total_leaves_allocated) <= 0:
+		return True
+
+	# Available balance (allocated − taken), not total allocated — otherwise
+	# employees with Used >= Allocated still get New Leaves Allocated reduced.
+	as_of_date = as_of_date or getdate()
+	available = flt(get_leave_balance_on(employee, "Annual Leave", as_of_date))
+	if available < 1:
+		return True
+
+	return False
+
+
 def apply_late_entry_cycle(employee: str, settings=None, from_date=None, to_date=None):
-    settings = settings or get_policy_impact_settings()
-    max_deductions = cint(settings.max_annual_leave_deductions_per_year)
+	settings = settings or get_policy_impact_settings()
+	max_deductions = cint(settings.max_annual_leave_deductions_per_year)
 
-    reference_date = to_date or getdate()
-    year_start = date(reference_date.year, 1, 1)
-    year_end = date(reference_date.year, 12, 31)
+	reference_date = to_date or getdate()
+	year_start = date(reference_date.year, 1, 1)
+	year_end = date(reference_date.year, 12, 31)
 
-    leave_deductions_this_year = frappe.db.sql("""
-        SELECT COUNT(name) FROM `tabArcHR Policy Impact Log`
-        WHERE employee = %s AND criteria = 'Deduction' AND type = 'Leaves' AND status = 'Applied'
-        AND (
-            (to_date IS NOT NULL AND to_date BETWEEN %s AND %s)
-            OR
-            (to_date IS NULL AND created_on BETWEEN %s AND %s)
-        )
-    """, (employee, year_start, year_end, f"{year_start} 00:00:00", f"{year_end} 23:59:59"))[0][0]
+	leave_deductions_this_year = frappe.db.sql("""
+		SELECT COUNT(name) FROM `tabArcHR Policy Impact Log`
+		WHERE employee = %s AND criteria = 'Deduction' AND type = 'Leaves' AND status = 'Applied'
+		AND (
+			(to_date IS NOT NULL AND to_date BETWEEN %s AND %s)
+			OR
+			(to_date IS NULL AND created_on BETWEEN %s AND %s)
+		)
+	""", (employee, year_start, year_end, f"{year_start} 00:00:00", f"{year_end} 23:59:59"))[0][0]
 
-    allocation = get_active_leave_allocation(employee, "Annual Leave", date_for_allocation=to_date)
-    remaining_days = allocation.total_leaves_allocated if allocation else 0
+	allocation = get_active_leave_allocation(employee, "Annual Leave", date_for_allocation=to_date)
+	created_on = frappe.utils.now()
 
-    created_on = frappe.utils.now()
+	if should_deduct_salary_instead_of_leave(
+		employee,
+		allocation,
+		leave_deductions_this_year,
+		max_deductions,
+		as_of_date=reference_date,
+	):
+		create_policy_impact_log(
+			employee,
+			criteria="Deduction",
+			impact_type="Salary",
+			status="Pending",
+			created_on=created_on,
+			from_date=from_date,
+			to_date=to_date,
+		)
+		return
 
-    if leave_deductions_this_year >= max_deductions or not remaining_days:
-        create_policy_impact_log(
-            employee,
-            criteria="Deduction",
-            impact_type="Salary",
-            status="Pending",
-            created_on=created_on,
-            from_date=from_date,
-            to_date=to_date,
-        )
-        return
+	savepoint = "annual_leave_deduction"
+	frappe.db.savepoint(savepoint)
+	try:
+		adjust_leave_allocation(allocation, -1)
+	except LessAllocationError:
+		# Approved leave applications cannot be invalidated by a policy
+		# deduction. Undo the allocation update and defer this deduction
+		# to the salary workflow instead.
+		frappe.db.rollback(save_point=savepoint)
+		create_policy_impact_log(
+			employee,
+			criteria="Deduction",
+			impact_type="Salary",
+			status="Pending",
+			created_on=created_on,
+			from_date=from_date,
+			to_date=to_date,
+		)
+		return
 
-    if allocation:
-        savepoint = "annual_leave_deduction"
-        frappe.db.savepoint(savepoint)
-        try:
-            adjust_leave_allocation(allocation, -1)
-        except LessAllocationError:
-            # Approved leave applications cannot be invalidated by a policy
-            # deduction. Undo the allocation update and defer this deduction
-            # to the salary workflow instead.
-            frappe.db.rollback(save_point=savepoint)
-            create_policy_impact_log(
-                employee,
-                criteria="Deduction",
-                impact_type="Salary",
-                status="Pending",
-                created_on=created_on,
-                from_date=from_date,
-                to_date=to_date,
-            )
-            return
-
-    create_policy_impact_log(
-        employee,
-        criteria="Deduction",
-        impact_type="Leaves",
-        status="Applied",
-        created_on=created_on,
-        from_date=from_date,
-        to_date=to_date,
-    )
+	create_policy_impact_log(
+		employee,
+		criteria="Deduction",
+		impact_type="Leaves",
+		status="Applied",
+		created_on=created_on,
+		from_date=from_date,
+		to_date=to_date,
+	)
 
 # ---------------------------------------------------------------------------
 # On-Time month -> Reward Leave grant

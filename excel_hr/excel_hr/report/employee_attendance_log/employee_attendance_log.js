@@ -46,7 +46,7 @@ frappe.query_reports["Employee Attendance Log"] = {
     },
     {
       fieldname: "department",
-      label: __("Department"),
+      label: __("Team"),
       fieldtype: "Link",
       options: "Department",
       get_query: () => {
@@ -56,6 +56,21 @@ frappe.query_reports["Employee Attendance Log"] = {
             company: company,
           },
         };
+      },
+      default: "",
+    },
+    {
+      fieldname: "excel_department",
+      label: __("Department"),
+      fieldtype: "Link",
+      options: "Department",
+      get_query: () => {
+        var company = frappe.query_report.get_filter_value("company");
+        let filters = { is_group: 1 };
+        if (company) {
+          filters.company = company;
+        }
+        return { filters: filters };
       },
       default: "",
     },
@@ -75,6 +90,7 @@ frappe.query_reports["Employee Attendance Log"] = {
     },
   ],
   onload: function (report) {
+    // Prefill Team (Employee.department) from the logged-in user's Employee record.
     if (!report.get_filter_value("department")) {
       frappe.call({
         method: "frappe.client.get_value",

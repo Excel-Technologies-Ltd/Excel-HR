@@ -18,57 +18,107 @@ Filters = frappe._dict
 
 status_map = {
 	# "Half Day": "HD",
-	"Holiday":"H",
+	"Holiday": "H",
 	"Weekly Off": "WO",
-#  green
- 	"Present": "P",
-	"Present GS-1":"P.GS1",
-	"Present GS-2":"P.GS2",
-	"Present GS-3":"P.GS3",
- 	"Present GS-4":"P.GS4",
-	"Present GS-5":"P.GS5",
-	"Present GS-6":"P.GS6",
-	"Late Attendance GS-1":"L.GS1",
-	"Late Attendance GS-2":"L.GS2",
-	"Late Attendance GS-3":"L.GS3",
- 	"Late Attendance GS-4":"L.GS4",
-	"Late Attendance GS-5":"L.GS5",
-	"Late Attendance GS-6":"L.GS6",
- 	"Work From Home": "WFH",
-	"Off Day Duty GS-1":"O.GS1",
-	"Off Day Duty GS-2":"O.GS2",
-	"Off Day Duty GS-3":"O.GS3",
- 	"Off Day Duty GS-4":"O.GS4",
-	"Off Day Duty GS-5":"O.GS5",
-	"Off Day Duty GS-6":"O.GS6",
- 	"Outside Duty GS-1":"OW.GS1",
-  	"Outside Duty GS-2":"OW.GS2",
-   	"Outside Duty GS-3":"OW.GS3",
- 	"Outside Duty GS-4":"OW.GS4",
-  	"Outside Duty GS-5":"OW.GS5",
-   	"Outside Duty GS-6":"OW.GS6",    
-    "Foreign Tour":"P.FT",
-	"Local Tour":"P.LT",
- 	
-#   blue
-  	"Absent": "A",
+	# green / blue — generic present & tours (shift-linked GS-* are generated dynamically)
+	"Present": "P",
+	"Work From Home": "WFH",
+	"Foreign Tour": "P.FT",
+	"Local Tour": "P.LT",
+	# red / leave
+	"Absent": "A",
 	"On Leave": "L",
-    "Annual Leave":"AL",
-    "Annual Casual Leave":"L.AC",
-    "Annual Medical Leave":"L.AM",
-	"Special Leave":"L.SP",
- 	"Special Casual Leave":"L.SC",
-    "Special Medical Leave":"L.SM",
-	"Monthly Paid Leave":"L.MP",
-    "Compensatory Leave":"L.AD",
-    "Leave Without Pay" :"LWP",
-    "Maternity Leave":"L.MT",
-    "Leave Application":"L.App",
-    "Attendance Request":"A.App"
-#  red
+	"Annual Leave": "AL",
+	"Annual Casual Leave": "L.AC",
+	"Annual Medical Leave": "L.AM",
+	"Special Leave": "L.SP",
+	"Special Casual Leave": "L.SC",
+	"Special Medical Leave": "L.SM",
+	"Monthly Paid Leave": "L.MP",
+	"Compensatory Leave": "L.AD",
+	"Leave Without Pay": "LWP",
+	"Maternity Leave": "L.MT",
+	"Leave Application": "L.App",
+	"Attendance Request": "A.App",
 }
 
+# Shift-linked status kinds → ABBR prefix. Order longest-first for matching.
+SHIFT_STATUS_KINDS = (
+	("Outside Duty", "OW"),
+	("Off Day Duty", "O"),
+	("Late Attendance", "L"),
+	("Present", "P"),
+)
+
+# Matches Shift Type names like "General Shift-5", "General Shift - 5", "General Shift5"
+SHIFT_GS_PATTERN = re.compile(r"General\s*Shift\s*-?\s*(\d+)", re.IGNORECASE)
+
 day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+
+def get_shift_gs_label(shift_name: Optional[str]) -> Optional[str]:
+	"""Return 'GS-N' from a Shift Type name (e.g. 'General Shift-5' → 'GS-5'), or None."""
+	if not shift_name:
+		return None
+	match = SHIFT_GS_PATTERN.search(cstr(shift_name))
+	if not match:
+		return None
+	return f"GS-{match.group(1)}"
+
+
+def get_shift_status(kind: str, shift_name: Optional[str]) -> Optional[str]:
+	"""Build a shift-linked status like 'Present GS-5'. Returns None if shift isn't GS-linked."""
+	gs_label = get_shift_gs_label(shift_name)
+	if not gs_label:
+		return None
+	return f"{kind} {gs_label}"
+
+
+def get_abbr(status: Optional[str]) -> str:
+	"""Resolve ABBR for a status, including dynamically generated shift-linked ones
+	(e.g. 'Present GS-7' → 'P.GS7') so newly created General Shift-N types work
+	without updating a hard-coded list.
+	"""
+	if not status:
+		return "A"
+	if status in status_map:
+		return status_map[status]
+
+	for kind, prefix in SHIFT_STATUS_KINDS:
+		# e.g. status "Present GS-7" / "Outside Duty GS-12"
+		marker = f"{kind} GS-"
+		if status.startswith(marker):
+			gs_num = status[len(marker) :]  # "7"
+			if gs_num.isdigit():
+				return f"{prefix}.GS{gs_num}"
+
+	return "A"
+
+
+def get_general_shift_numbers() -> List[int]:
+	"""All General Shift-N numbers currently defined on Shift Type (sorted)."""
+	numbers = set()
+	for name in frappe.get_all("Shift Type", pluck="name"):
+		match = SHIFT_GS_PATTERN.search(cstr(name))
+		if match:
+			numbers.add(int(match.group(1)))
+	return sorted(numbers)
+
+
+def get_dynamic_shift_legend_entries() -> List[Tuple[str, str]]:
+	"""Legend rows for every General Shift-N present in Shift Type."""
+	entries: List[Tuple[str, str]] = []
+	for n in get_general_shift_numbers():
+		gs = f"GS-{n}"
+		gs_abbr = f"GS{n}"
+		entries.append((f"Present {gs}", f"P.{gs_abbr}"))
+		entries.append((f"Late Attendance {gs}", f"L.{gs_abbr}"))
+	for n in get_general_shift_numbers():
+		gs = f"GS-{n}"
+		gs_abbr = f"GS{n}"
+		entries.append((f"Off Day Duty {gs}", f"O.{gs_abbr}"))
+		entries.append((f"Outside Duty {gs}", f"OW.{gs_abbr}"))
+	return entries
 
 
 def execute(filters: Optional[Filters] = None) -> Tuple:
@@ -93,100 +143,77 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 
 
 def get_message() -> str:
-    message = ""
-    colors_group1 = [
-        "green", "red", "orange", "blue", "#318AD8",
-        "lightgray", "green", "green", "green", "green"
-    ]
-
-    colors_group2 = [
-        "green", "green", "green", "green", "green",
-        "green", "green", "green", "purple", "brown",
-        "blue", "blue", "blue", "blue", "blue",
-        "blue", "blue", "blue", "blue", "blue"
-    ]
-
-    colors_group3 = [
-        "green", "green", "green", "green", "green",
-        "green", "green", "green", "purple", "brown",
-        "blue", "blue", "blue", "blue", "blue",
-        "blue", "blue", "blue", "blue", "blue"
-    ]
-
-    count = 0
-
-    # Start the row
-    message += "<div style='display: flex;height:30vh'>"
-
-    # First column
-    message += "<div style='flex: 1;'>"
-    for (status, abbr), color in zip(list(status_map.items())[:2], colors_group1):
-        message += f"""
-            <span style='font-size:10px;color:black; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
-                	&#8718; {status} - {abbr}
-            </span>
-        """
-        count += 1
-    message += "</div>"
-
-    # Second column
-    message += "<div style='flex: 1; '>"
-    count = 0
-    for (status, abbr), color in zip(list(status_map.items())[2:16], colors_group2):
-        message += f"""
-            <span style='font-size:10px; color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
+	"""ABBR legend. Shift-linked rows are built from Shift Type so new
+	General Shift-N entries appear automatically. Remote Checkin sits under Weekly Off.
+	"""
+	def _legend_item(status: str, abbr: str, color: str) -> str:
+		return f"""
+            <span style='font-size:10px; color:{color}; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
                 &#8718; {status} - {abbr}
             </span>
         """
-        count += 1
-    message += "</div>"
 
-    # Third column
-    message += "<div style='flex: 1;'>"
-    count = 0
-    for (status, abbr), color in zip(list(status_map.items())[16:30], colors_group3):
-        message += f"""
-            <span style='font-size:10px; color:blue; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
-                &#8718; {status} - {abbr}
-            </span>
-        """
-        count += 1
-    message += "</div>"
-    # Fourth column
-    message += "<div style='flex: 1;'>"
-    count = 0
-    message +="<h1 style='font-size:10px; color:red;'> **N.B: Empty cells signify Absence.</h1>"
-    for (status, abbr), color in zip(list(status_map.items())[30:], colors_group3):
-        message += f"""
-            <span style='font-size:10px; color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
-                &#8718; {status} - {abbr}
-            </span>
+	shift_entries = get_dynamic_shift_legend_entries()
+	# Split Present/Late vs Off Day/Outside roughly in half for layout
+	mid = (len(shift_entries) + 1) // 2
+	shift_col_a = shift_entries[:mid]
+	shift_col_b = shift_entries[mid:]
 
-        """
-        count += 1
-    message += """
-        <span style='font-size:10px; color:black; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
-            &#8718; Remote Checkin - RC
-        </span>
-    """
-    message += "</div>"
-    # Fifth column
-    # message += "<div style='flex: 1;'>"
-    # count = 0
-    # for (status, abbr), color in zip(list(status_map.items())[36:46], colors_group3):
-    #     message += f"""
-    #         <span style='font-size:10px; color:red; padding-right: 12px; padding-left: 5px; margin-right: 3px; display: block;'>
-    #             &#8718; {status} - {abbr}
-    #         </span>
-    #     """
-    #     count += 1
-    # message += "</div>"  
-         
+	static_present = [
+		("Present", "P"),
+		("Work From Home", "WFH"),
+		("Foreign Tour", "P.FT"),
+		("Local Tour", "P.LT"),
+	]
+	leave_entries = [
+		("Absent", "A"),
+		("On Leave", "L"),
+		("Annual Leave", "AL"),
+		("Annual Casual Leave", "L.AC"),
+		("Annual Medical Leave", "L.AM"),
+		("Special Leave", "L.SP"),
+		("Special Casual Leave", "L.SC"),
+		("Special Medical Leave", "L.SM"),
+		("Monthly Paid Leave", "L.MP"),
+		("Compensatory Leave", "L.AD"),
+		("Leave Without Pay", "LWP"),
+		("Maternity Leave", "L.MT"),
+		("Leave Application", "L.App"),
+		("Attendance Request", "A.App"),
+	]
 
-    # End the row
-    message += "</div>"
+	message = "<div style='display: flex;height:30vh'>"
 
-    return message
+	# Column 1: Holiday / Weekly Off / Remote Checkin
+	message += "<div style='flex: 1;'>"
+	message += _legend_item("Holiday", "H", "black")
+	message += _legend_item("Weekly Off", "WO", "black")
+	message += _legend_item("Remote Checkin", "RC", "black")
+	message += "</div>"
+
+	# Column 2: generic present + first half of shift ABBRs
+	message += "<div style='flex: 1;'>"
+	for status, abbr in static_present:
+		message += _legend_item(status, abbr, "blue")
+	for status, abbr in shift_col_a:
+		message += _legend_item(status, abbr, "blue")
+	message += "</div>"
+
+	# Column 3: remaining shift ABBRs
+	message += "<div style='flex: 1;'>"
+	for status, abbr in shift_col_b:
+		message += _legend_item(status, abbr, "blue")
+	message += "</div>"
+
+	# Column 4: leave / absence
+	message += "<div style='flex: 1;'>"
+	message += "<h1 style='font-size:10px; color:red;'> **N.B: Empty cells signify Absence.</h1>"
+	for status, abbr in leave_entries:
+		message += _legend_item(status, abbr, "red")
+	message += "</div>"
+
+	message += "</div>"
+	return message
 
 
 
@@ -508,68 +535,26 @@ def get_attendance_map(filters: Filters) -> Tuple[Dict, Dict]:
             holiday_anchors.setdefault(d.employee, []).append((d.day_of_month, d.holiday_list))
 
         status = d.status
-        # Handle status variations as in the original code
+        # Handle status variations — shift-linked statuses are derived dynamically
+        # from the Shift Type name (General Shift-N → GS-N) so newly added shifts
+        # get P.GSN / L.GSN / O.GSN / OW.GSN without a hard-coded list.
         if d.status == 'Present' and d.late_entry == 0:
             if d.attendance_request:
                data = frappe.db.get_value('Attendance Request', d.attendance_request, ['reason','excel_criteria_of_reason'])
-               if data:
-                  reason = data[0]
-                  criteria = data[1] 
+               reason = data[0] if data else None
+               criteria = data[1] if data else None
                if reason == 'On Duty' and criteria == 'Foreign Tour':
                    status = 'Foreign Tour'
                elif reason == 'On Duty' and criteria == 'Local Tour':
                    status = 'Local Tour'
                elif reason == 'On Duty' and criteria == 'Off Day Duty':
-                   if d.shift == "General Shift-1":
-                       status = "Off Day Duty GS-1" 
-                   elif d.shift == "General Shift-2":
-                        status = "Off Day Duty GS-2"
-                   elif d.shift == "General Shift-3":
-                       status = "Off Day Duty GS-3"
-                   elif d.shift == "General Shift-4":
-                       status = "Off Day Duty GS-4"
-                   elif d.shift == "General Shift-5":
-                       status = "Off Day Duty GS-5"
-                   elif d.shift == "General Shift-6":
-                       status = "Off Day Duty GS-6"                                                                     
+                   status = get_shift_status("Off Day Duty", d.shift) or status
                elif reason == 'On Duty':
-                   if d.shift == "General Shift-1":
-                       status = "Outside Duty GS-1"
-                   elif d.shift == "General Shift-2":
-                       status = "Outside Duty GS-2"
-                   elif d.shift == "General Shift-3":
-                       status = "Outside Duty GS-3"  
-                   elif d.shift == "General Shift-4":
-                       status = "Outside Duty GS-4" 
-                   elif d.shift == "General Shift-5":
-                       status = "Outside Duty GS-5" 
-                   elif d.shift == "General Shift-6":
-                       status = "Outside Duty GS-6"                                                                           
-            elif d.shift == "General Shift-1":
-                status = "Present GS-1"
-            elif d.shift == "General Shift-2":
-                status = "Present GS-2" 
-            elif d.shift == "General Shift-3":
-                status = "Present GS-3"   
-            elif d.shift == "General Shift-4":
-                status = "Present GS-4"   
-            elif d.shift == "General Shift-5":
-                status = "Present GS-5"   
-            elif d.shift == "General Shift-6":
-                status = "Present GS-6"                                                   
-        elif d.status == 'Present' and d.late_entry == 1: 
-            if d.shift == "General Shift-1":
-                status = "Late Attendance GS-1"
-            elif d.shift == "General Shift-2":
-                status = "Late Attendance GS-2" 
-            elif d.shift == "General Shift-3":
-                status = "Late Attendance GS-3" 
-            elif d.shift == "General Shift-4":
-                status = "Late Attendance GS-4"  
-            elif d.shift == "General Shift-5":
-                status = "Late Attendance GS-5"  
-            elif d.shift == "General Shift-6":
-                status = "Late Attendance GS-6"                                                            	
+                   status = get_shift_status("Outside Duty", d.shift) or status
+            else:
+                status = get_shift_status("Present", d.shift) or status
+        elif d.status == 'Present' and d.late_entry == 1:
+            status = get_shift_status("Late Attendance", d.shift) or status
         elif d.status == "On Leave":
             data = frappe.db.get_value('Leave Application', d.leave_application, ['leave_type','excel_leave_category'])
             if not data:
@@ -1107,7 +1092,7 @@ def get_attendance_status_for_detailed_view(
         if status is None:
             status = "Absent"
 
-        abbr = status_map.get(status, "A")  # Default to "A" for Absent if no mapping
+        abbr = get_abbr(status)  # Dynamic for shift-linked statuses; default "A"
         color = get_color_for_status(status)
 
         if status.startswith("Present") and day_tags.get(day):
@@ -1140,22 +1125,36 @@ def format_shift_time(time_value) -> str:
 
 
 def get_color_for_status(status: str) -> str:
-    if status in ("Absent", "On Leave", "Annual Leave", "Compensatory Leave", "Leave Without Pay", "Maternity Leave", 
-                 "Annual Casual Leave", "Annual Medical Leave", "Special Leave", "Special Casual Leave", 
-                 "Special Medical Leave", "Monthly Paid Leave", "Leave Application", "Attendance Request"):
-        return "red"
-    elif status in ("Holiday", "Weekly Off"):
-        return "black"
-    elif status in ("Present", "Present GS-1", "Present GS-2", "Present GS-3", "Present GS-4", "Present GS-5", 
-                   "Present GS-6", "Late Attendance GS-1", "Late Attendance GS-2", "Late Attendance GS-3", 
-                   "Late Attendance GS-4", "Late Attendance GS-5", "Late Attendance GS-6", "Off Day Duty GS-1", 
-                   "Off Day Duty GS-2", "Off Day Duty GS-3", "Off Day Duty GS-4", "Off Day Duty GS-5", 
-                   "Off Day Duty GS-6", "Outside Duty GS-1", "Outside Duty GS-2", "Outside Duty GS-3", 
-                   "Outside Duty GS-4", "Outside Duty GS-5", "Outside Duty GS-6", "Foreign Tour", "Local Tour", 
-                   "Work From Home"):
-        return "blue"
-    else:
-        return "black"  # Default color
+	if status in (
+		"Absent",
+		"On Leave",
+		"Annual Leave",
+		"Compensatory Leave",
+		"Leave Without Pay",
+		"Maternity Leave",
+		"Annual Casual Leave",
+		"Annual Medical Leave",
+		"Special Leave",
+		"Special Casual Leave",
+		"Special Medical Leave",
+		"Monthly Paid Leave",
+		"Leave Application",
+		"Attendance Request",
+	):
+		return "red"
+	if status in ("Holiday", "Weekly Off"):
+		return "black"
+	# Present / Late / Off Day / Outside Duty — including any dynamic GS-N
+	if (
+		status == "Present"
+		or status.startswith("Present GS-")
+		or status.startswith("Late Attendance GS-")
+		or status.startswith("Off Day Duty GS-")
+		or status.startswith("Outside Duty GS-")
+		or status in ("Foreign Tour", "Local Tour", "Work From Home")
+	):
+		return "blue"
+	return "black"
 
 
 def get_holiday_status(day: int, holidays: List) -> str:

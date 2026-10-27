@@ -36,7 +36,7 @@ def get_columns() -> List[Dict]:
 		{"label": _("Employee ID"), "fieldname": "employee", "fieldtype": "Data", "width": 120},
 		{"label": _("Employee Name"), "fieldname": "employee_name", "fieldtype": "Data", "width": 160},
 		{
-			"label": _("Department"),
+			"label": _("Team"),
 			"fieldname": "department",
 			"fieldtype": "Link",
 			"options": "Department",
@@ -77,6 +77,8 @@ def get_employees(filters: Filters, start_date, end_date) -> List[Dict]:
 			Employee.name,
 			Employee.employee_name,
 			Employee.department,
+			Employee.excel_parent_department,
+			Employee.excel_hr_section,
 			Employee.custom_job_location,
 			Employee.default_shift,
 			Employee.holiday_list,
@@ -86,8 +88,16 @@ def get_employees(filters: Filters, start_date, end_date) -> List[Dict]:
 		.where(Employee.company == filters.company)
 		.where(get_active_or_recently_relieved_condition(Employee, filters, start_date, end_date))
 	)
+	# Team filter → Employee.department (unchanged behavior, renamed label only)
 	if filters.get("department"):
 		query = query.where(Employee.department == filters.department)
+	# Department filter (is_group=1): include employee if selected value matches
+	# excel_parent_department (1st) or excel_hr_section (2nd); otherwise ignore.
+	if filters.get("excel_department"):
+		dept = filters.excel_department
+		query = query.where(
+			(Employee.excel_parent_department == dept) | (Employee.excel_hr_section == dept)
+		)
 	if filters.employee:
 		employees = filters.employee if isinstance(filters.employee, list) else [filters.employee]
 		query = query.where(Employee.name.isin(employees))

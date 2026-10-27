@@ -83,6 +83,7 @@
   },
   {
    "default": "0",
+   "description": "Saving is restricted if total leave days (Approved + Pending) for the year exceed the annual allocation.",
    "fieldname": "enabled_day_validation_annual_leave",
    "fieldtype": "Check",
    "label": "Enabled Day validation (Annual Leave)"
@@ -93,6 +94,7 @@
   },
   {
    "default": "0",
+   "description": "Posting dates 1st\u201325th restrict \"From Date\" to the 21st of last month; 26th\u201331st restrict it to the 21st of the current month (except MPL).",
    "fieldname": "enabled_date_validation",
    "fieldtype": "Check",
    "label": "Enabled Date validation"
@@ -145,6 +147,7 @@
   },
   {
    "default": "0",
+   "description": "Posting dates 1st\u201325th restrict \"From Date\" to the 21st of last month; 26th\u201331st restrict it to the 21st of the current month (except MPL).",
    "fieldname": "enabled_date_validation_att_req",
    "fieldtype": "Check",
    "label": "Enabled Date validation (Att. Req)"
@@ -165,7 +168,7 @@
   },
   {
    "default": "0",
-   "description": "From Date must fall between the 29th of last month and the 28th of this month (from the 29th onward: 29th of this month to 28th of next month). Allowed Teams (MPL) are exempt.",
+   "description": "From Date must fall within the Monthly Paid Leave application period: from the 29th of last month to the 28th of this month. Only upcoming-month leave applications are allowed. Allowed Teams (MPL) are exempt.",
    "fieldname": "lock_date_to_apply_mpl",
    "fieldtype": "Check",
    "label": "Lock Date to Apply (MPL)"
@@ -208,6 +211,7 @@
    "description": "Every this many Late Entry attendance days in a month deducts one Annual Leave day.",
    "fieldname": "late_entry_cycle_days",
    "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "Late Entry Cycle (Days)",
    "non_negative": 1,
    "reqd": 1
@@ -221,6 +225,7 @@
    "description": "Maximum Annual Leave days that can be deducted for an employee in a year.",
    "fieldname": "max_annual_leave_deductions_per_year",
    "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "Max Annual Leave Deductions (Per Year)",
    "non_negative": 1,
    "reqd": 1
@@ -234,6 +239,7 @@
    "description": "Maximum Reward Leave days that can be granted to an employee in a year.",
    "fieldname": "max_reward_leaves_per_year",
    "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "Max Reward Leaves (Per Year)",
    "non_negative": 1,
    "reqd": 1
@@ -242,7 +248,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-09-30 13:00:00.000000",
+ "modified": "2026-10-27 17:45:08.904941",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

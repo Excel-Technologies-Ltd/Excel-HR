@@ -168,7 +168,7 @@
   },
   {
    "default": "0",
-   "description": "From Date must fall within the Monthly Paid Leave application period: from the 29th of last month to the 28th of this month. Only upcoming-month leave applications are allowed. Allowed Teams (MPL) are exempt.",
+   "description": "Monthly Paid Leave applications for the upcoming month must be submitted between the 29th of the previous month and the 28th of the current month. Approved Teams (MPL) are exempt.",
    "fieldname": "lock_date_to_apply_mpl",
    "fieldtype": "Check",
    "label": "Lock Date to Apply (MPL)"
@@ -248,7 +248,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-27 17:45:08.904941",
+ "modified": "2026-10-28 20:02:42.510281",
  "modified_by": "Administrator",
  "module": "Excel Hr",
  "name": "ArcHR Settings",

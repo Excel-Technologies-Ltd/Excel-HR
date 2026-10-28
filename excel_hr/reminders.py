@@ -144,20 +144,8 @@ def send_birthday_reminders():
         return
 
     employees_born_today = get_employees_who_are_born_today()
+    print(f"\n\nEmployees born today: {employees_born_today}\n\n")
     send_all_birthday_mails(employees_born_today)
-
-    
-    
-    # for company, birthday_persons in employees_born_today.items():
-    #     for person in birthday_persons:  
-    #         full_name = get_employee_full_name(person.user_id)
-    #         location,department= get_job_location_and_department(person.user_id)
-    #         if check_active_and_intern_employee(person.user_id):
-    #             company_email = get_company_email(person.user_id)
-    #             print("sending birthday wish to",company_email,full_name,department,location)
-    #             send_birthday_wish(company_email,full_name,department,location)
-    #         else:
-    #             print(f"Employee {full_name} is not active or an intern")
 
 
 def send_all_birthday_mails(employees):

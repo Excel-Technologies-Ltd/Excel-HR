@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Work Anniversary</title>
+    <title>Work Anniversary - Excel Technologies Ltd.</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Montserrat:wght@600;700;800&family=Playfair+Display:ital,wght@1,500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -16,59 +16,126 @@
         .darkmode-bg {
           background-color: #1a1a1a !important;
         }
-        
+
         .darkmode-card {
-          background-color: #2d2d2d !important;
-          border: 1px solid #404040 !important;
+          background-color: #262626 !important;
+          border: 1px solid #3d3d3d !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
         }
-        
-        .darkmode-text {
-          color: #ffffff !important;
+
+        .darkmode-text-name {
+          color: #5a9df5 !important;
         }
-        
-        .darkmode-text-secondary {
-          color: #cccccc !important;
+
+        .darkmode-text-dept {
+          color: #e0e0e0 !important;
         }
-        
-        .darkmode-badge {
-          background-color: #2C269B !important;
+
+        .darkmode-text-loc {
+          color: #f0b043 !important;
         }
-        
+
         .darkmode-footer {
-          color: #7bb972 !important;
+          color: #5a9df5 !important;
         }
       }
-      
-      /* Mobile responsive styles */
-      @media only screen and (max-width: 600px) {
+
+      /* Small screen: force 1 column stack (same pattern as birthday) */
+      @media only screen and (max-width: 680px) {
         .main-container {
           width: 100% !important;
-          min-width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
         }
-        
-        .card-row {
-          display: block !important;
+
+        .cards-section {
+          padding-left: 12px !important;
+          padding-right: 12px !important;
         }
-        
-        .card-cell {
+
+        .card-col {
           display: block !important;
           width: 100% !important;
-          padding: 10px 0 !important;
+          max-width: 340px !important;
+          margin: 0 auto 12px auto !important;
         }
-        
+
         .employee-card {
           width: 100% !important;
           max-width: 340px !important;
           margin: 0 auto !important;
         }
-        
-        .title-text {
-          font-size: 20px !important;
+
+        .footer-message {
+          font-size: 12px !important;
+          padding: 20px 16px 10px 16px !important;
         }
-        
-        .happy-text {
-          font-size: 2.5rem !important;
+
+        .bottom-obj-1 {
+          width: 95px !important;
+          max-width: 100% !important;
+          height: auto !important;
         }
+
+        .bottom-obj-2 {
+          width: 65px !important;
+          max-width: 100% !important;
+          height: auto !important;
+        }
+
+        .bottom-obj-3 {
+          width: 135px !important;
+          max-width: 100% !important;
+          height: auto !important;
+        }
+      }
+
+      .ubuntu-light {
+        font-family: "Ubuntu", sans-serif;
+        font-weight: 300;
+        font-style: normal;
+      }
+
+      .ubuntu-regular {
+        font-family: "Ubuntu", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      .ubuntu-medium {
+        font-family: "Ubuntu", sans-serif;
+        font-weight: 500;
+        font-style: normal;
+      }
+
+      .ubuntu-bold {
+        font-family: "Ubuntu", sans-serif;
+        font-weight: 700;
+        font-style: normal;
+      }
+
+      .ubuntu-light-italic {
+        font-family: "Ubuntu", sans-serif;
+        font-weight: 300;
+        font-style: italic;
+      }
+
+      .ubuntu-regular-italic {
+        font-family: "Ubuntu", sans-serif;
+        font-weight: 400;
+        font-style: italic;
+      }
+
+      .ubuntu-medium-italic {
+        font-family: "Ubuntu", sans-serif;
+        font-weight: 500;
+        font-style: italic;
+      }
+
+      .ubuntu-bold-italic {
+        font-family: "Ubuntu", sans-serif;
+        font-weight: 700;
+        font-style: italic;
       }
     </style>
   </head>
@@ -76,31 +143,231 @@
     style="
       margin: 0;
       padding: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Ubuntu', Arial, sans-serif;
       background-color: #f5f5f5;
       -webkit-text-size-adjust: 100%;
       -ms-text-size-adjust: 100%;
     "
   >
-    <!--[if mso]>
-    <style type="text/css">
-    table {border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt;}
-    </style>
-    <![endif]-->
-    
+    {% macro employee_card(employee) %}
+    <!-- Email-safe card: decorations as backgrounds (absolute imgs break in mail clients) -->
     <table
       width="100%"
       cellpadding="0"
       cellspacing="0"
       border="0"
-      style="background-color: #f5f5f5;"
+      align="center"
+      class="employee-card darkmode-card"
+      role="presentation"
+      style="
+        background-color: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e8e8e8;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        width: 100%;
+        max-width: 340px;
+        border-collapse: separate;
+        overflow: hidden;
+        margin: 0 auto;
+      "
+    >
+      <!-- Top Crimson Badge -->
+      <tr>
+        <td
+          align="center"
+          valign="top"
+          style="line-height: 0; font-size: 0; padding: 0; margin: 0;"
+        >
+          <table
+            width="170"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            role="presentation"
+            style="
+              margin: -1px auto 0 auto;
+              background-color: #b83b5e;
+              border-radius: 0 0 10px 10px;
+              width: 170px;
+              border-collapse: collapse;
+            "
+          >
+            <tr>
+              <td
+                align="center"
+                style="
+                  font-family: 'Ubuntu', Arial, sans-serif;
+                  font-size: 12px;
+                  font-weight: 700;
+                  font-style: italic;
+                  color: #ffffff;
+                  letter-spacing: 0.5px;
+                  padding: 5px 8px 0 8px;
+                  line-height: 1.15;
+                "
+              >
+                HAPPY {{ employee.years|replace('st', '<sup>st</sup>')|replace('nd', '<sup>nd</sup>')|replace('rd', '<sup>rd</sup>')|replace('th', '<sup>th</sup>')|safe }}
+              </td>
+            </tr>
+            <tr>
+              <td
+                align="center"
+                style="
+                  font-family: 'Ubuntu', Arial, sans-serif;
+                  font-size: 11px;
+                  font-weight: 700;
+                  font-style: italic;
+                  color: #ffffff;
+                  letter-spacing: 1.5px;
+                  padding: 0 8px 5px 8px;
+                  line-height: 1.15;
+                "
+              >
+                ANNIVERSARY
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- Same image pattern as birthday: full card height, no side padding -->
+      <tr>
+        <td
+          bgcolor="#ffffff"
+          style="padding: 0; background-color: #ffffff;"
+        >
+          <table
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            role="presentation"
+            style="width: 100%; border-collapse: collapse;"
+          >
+            <tr>
+              <!-- Left: full card height, no side padding -->
+              <td
+                width="45"
+                align="left"
+                valign="middle"
+                height="78"
+                style="width: 45px; height: 78px; padding: 0; margin: 0; line-height: 0; font-size: 0;"
+              >
+                <img
+                  src="https://raw.githubusercontent.com/Excel-Technologies-Ltd/Public-Images/refs/heads/main/anniversary/work-ann-left.png"
+                  width="45"
+                  height="78"
+                  alt=""
+                  style="display: block; border: 0; width: 45px; height: 78px; margin: 0; padding: 0;"
+                />
+              </td>
+              <td
+                align="center"
+                valign="middle"
+                style="padding: 10px 6px;"
+              >
+                <div
+                  class="darkmode-text-name"
+                  style="
+                    font-family: 'Ubuntu', Arial, sans-serif;
+                    font-size: 15px;
+                    font-weight: 700;
+                    color: #2465c0;
+                    line-height: 1.2;
+                    margin: 0 0 2px 0;
+                  "
+                >
+                  {{ employee.name }}
+                </div>
+                <div
+                  class="darkmode-text-dept"
+                  style="
+                    font-family: 'Ubuntu', Arial, sans-serif;
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #1a1a1a;
+                    line-height: 1.2;
+                    margin: 0 0 2px 0;
+                  "
+                >
+                  {{ employee.department or '' }}
+                </div>
+                <div
+                  class="darkmode-text-loc"
+                  style="
+                    font-family: 'Ubuntu', Arial, sans-serif;
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #df8808;
+                    line-height: 1.2;
+                    margin: 0;
+                  "
+                >
+                  {{ employee.location or '' }}
+                </div>
+              </td>
+              <!-- Right: full card height, no side padding -->
+              <td
+                width="65"
+                align="right"
+                valign="middle"
+                height="78"
+                style="width: 65px; height: 78px; padding: 0; margin: 0; line-height: 0; font-size: 0;"
+              >
+                <img
+                  src="https://raw.githubusercontent.com/Excel-Technologies-Ltd/Public-Images/refs/heads/main/anniversary/work-ann-right.png"
+                  width="65"
+                  height="78"
+                  alt=""
+                  style="display: block; border: 0; width: 65px; height: 78px; margin: 0; padding: 0;"
+                />
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    {% endmacro %}
+
+    <!-- Preheader text for inbox preview -->
+    <div
+      style="
+        display: none;
+        font-size: 1px;
+        color: #f5f5f5;
+        line-height: 1px;
+        max-height: 0px;
+        max-width: 0px;
+        opacity: 0;
+        overflow: hidden;
+      "
+    >
+      Happy Work Anniversary to our dedicated team members! Thank you for your hard work and positive impact.
+    </div>
+
+    <!--[if mso]>
+      <style type="text/css">
+        table {
+          border-collapse: collapse;
+          mso-table-lspace: 0pt;
+          mso-table-rspace: 0pt;
+        }
+      </style>
+    <![endif]-->
+
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f5f5f5"
       role="presentation"
     >
       <tr>
-        <td align="center" style="padding: 0 0;">
-          <!-- Main Container -->
+        <td align="center" style="padding: 10px 0 20px 0">
+          <!-- Main Container (fluid, max 768px) -->
           <table
-            width="768"
+            width="100%"
             cellpadding="0"
             cellspacing="0"
             border="0"
@@ -109,408 +376,219 @@
               background-color: #ffffff;
               max-width: 768px;
               width: 100%;
+              min-width: 0;
               border-collapse: collapse;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             "
             role="presentation"
           >
-            <!-- Header with Flowers -->
+            <!-- Top Header Banner -->
             <tr>
-              <td align="center" style="background-color: #ffffff;">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
-                  <tr>
-                    <td align="center">
-                      <img
-                        src="https://raw.githubusercontent.com/Excel-Technologies-Ltd/Public-Images/refs/heads/main/work-anniversary.jpeg"
-                        alt="Decorative Flowers"
-                        style="
-                          display: block;
-                          margin: 0 auto;
-                          max-width: 100%;
-                          height: auto;
-                          width: 100%;
-                        "
-                        width="768"
-                      />
-                    </td>
-                  </tr>
-                </table>
+              <td
+                align="center"
+                style="background-color: #f7f7ed; line-height: 0; padding: 0;"
+              >
+                <img
+                  src="https://raw.githubusercontent.com/Excel-Technologies-Ltd/Public-Images/refs/heads/main/anniversary/happy-work-anniversary.png"
+                  alt="Happy Work Anniversary - Thank you for your dedication, hard work and the positive impact you make every day."
+                  width="768"
+                  height="430"
+                  style="
+                    display: block;
+                    margin: 0 auto;
+                    max-width: 100%;
+                    height: auto;
+                    width: 100%;
+                    border: 0;
+                  "
+                />
               </td>
             </tr>
-
-            <!-- Card title Section -->
-            <tr>
-              <td align="center" style="padding: 30px 20px 10px 20px; background-color: #ffffff;">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
-                  <tr>
-                    <td
-                      align="center"
-                      class="title-text darkmode-text"
-                      style="
-                        font-size: 24px;
-                        font-weight: bold;
-                        color: #2C269B;
-                        padding-bottom: 10px;
-                        line-height: 1.4;
-                        font-family: Georgia, serif;
-                        font-style: italic;
-                      "
-                    >
-                      Thank you for your continued commitment and contributions. Your dedication and professionalism play a vital role in our shared success, and we truly value the impact you make.
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            
 
             <!-- Employee Cards Section -->
             <tr>
-              <td align="center" style="padding: 0px 20px 10px 20px; background-color: #ffffff;">
+              <td
+                align="center"
+                class="cards-section"
+                style="padding: 25px 16px 10px 16px; background-color: #ffffff"
+              >
                 {% set all_employees = [] %}
                 {% for company, employee_list in employees.items() %}
                   {% for employee in employee_list %}
                     {% set _ = all_employees.append(employee) %}
                   {% endfor %}
                 {% endfor %}
-                
+
                 {% set total_employees = all_employees|length %}
-                
-                {% if total_employees == 1 %}
-                  <!-- Single Card - Centered Layout -->
-                  <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
-                    <tr>
-                      <td align="center" style="padding: 10px;">
-                        <table
-                          width="340"
-                          cellpadding="0"
-                          cellspacing="0"
-                          border="0"
-                          class="employee-card darkmode-card"
-                          style="
-                            background-color: #f8f5ff;
-                            border-radius: 20px;
-                            padding: 20px;
-                            width: 100%;
-                            max-width: 340px;
-                            border: 1px solid #e6e0f8;
-                          "
-                          role="presentation"
-                        >
-                          <tr>
-                            <td align="center">
-                              <!-- Anniversary Badge -->
-                              <table
-                                width="100%"
-                                cellpadding="0"
-                                cellspacing="0"
-                                border="0"
-                                style="margin-bottom: 15px;"
-                                role="presentation"
-                              >
-                                <tr>
-                                  <td align="center">
-                                    <table
-                                      class="darkmode-badge"
-                                      cellpadding="12"
-                                      cellspacing="0"
-                                      border="0"
-                                      style="
-                                        background-color: #1B7ABF;
-                                        border-radius: 8px;
-                                        padding: 0 10px 10px 10px;
-                                        color: white;
-                                        width: 100%;
-                                        max-width: 200px;
-                                        margin: 0 auto;
-                                      "
-                                      role="presentation"
-                                    >
-                                      <tr>
-                                        <td
-                                          align="center"
-                                          style="
-                                            font-family: Georgia, serif;
-                                            font-style: italic;
-                                            font-size: 9px;
-                                            letter-spacing: 1px;
-                                            color: #ffffff;
-                                            font-weight: bold;
-                                            padding: 6px 6px 3px 0px;
-                                            border-bottom: none;
-                                          "
-                                        >
-                                          HAPPY <strong style="font-size: 11px;">{{ all_employees[0].years|replace('st', '<sup>st</sup>')|replace('nd', '<sup>nd</sup>')|replace('rd', '<sup>rd</sup>')|replace('th', '<sup>th</sup>')|safe }}</strong>
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td
-                                          align="center"
-                                          style="
-                                            border: 1px solid rgba(255, 255, 255, 0.7);
-                                            padding: 6px 10px;
-                                            font-family: Georgia, serif;
-                                            font-style: italic;
-                                            font-size: 10px;
-                                            color: #ffffff;
-                                            border-radius: 4px;
-                                            margin-top: 4px;
-                                          "
-                                        >
-                                          ANNIVERSARY
-                                        </td>
-                                      </tr>
-                                    </table>
-                                  </td>
-                                </tr>
-                              </table>
 
-                              <!-- Name -->
-                              <table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
-                                <tr>
-                                  <td
-                                    align="center"
-                                    class="darkmode-text"
-                                    style="
-                                      font-family: Arial, sans-serif;
-                                      font-size: 17px;
-                                      font-weight: bold;
-                                      color: #2C269B;
-                                      padding-bottom: 8px;
-                                      line-height: 1.3;
-                                    "
-                                  >
-                                    {{ all_employees[0].name }}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td
-                                    align="center"
-                                    class="darkmode-text-secondary"
-                                    style="
-                                      font-family: Arial, sans-serif;
-                                      font-size: 12px;
-                                      font-weight: bold;
-                                      color: #444444;
-                                      padding-bottom: 5px;
-                                      line-height: 1.3;
-                                    "
-                                  >
-                                    {{ all_employees[0].department or '' }}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td
-                                    align="center"
-                                    class="darkmode-text"
-                                    style="
-                                      font-family: Arial, sans-serif;
-                                      font-size: 12px;
-                                      font-weight: bold;
-                                      color: #2C269B;
-                                      line-height: 1.3;
-                                    "
-                                  >
-                                    {{ all_employees[0].location or '' }}
-                                  </td>
-                                </tr>
-                              </table>
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                    </tr>
-                  </table>
-                {% else %}
-                  <!-- Multiple Cards - 2 per row Layout -->
-                  <table width="700" cellpadding="15" cellspacing="0" border="0" class="main-container" role="presentation" style="max-width: 700px; width: 100%;">
-                    {% set ns = namespace(count=0, row_started=false) %}
-                    {% for employee in all_employees %}
-                      {% if ns.count % 2 == 0 %}
-                        {% if ns.row_started %}</tr>{% endif %}
-                        <tr class="card-row">
-                        {% set ns.row_started = true %}
-                      {% endif %}
-
-                      <!-- Employee Card -->
-                      <td width="50%" align="center" class="card-cell" style="padding: 10px; vertical-align: top;">
-                        <table
-                          width="340"
-                          cellpadding="0"
-                          cellspacing="0"
-                          border="0"
-                          class="employee-card darkmode-card"
-                          style="
-                            background-color: #f8f5ff;
-                            border-radius: 20px;
-                            padding: 20px;
-                            width: 100%;
-                            max-width: 340px;
-                            border: 1px solid #e6e0f8;
-                            /* Add for mobile */
-                            width: 100% !important;
-                            max-width: 100% !important;
-                            margin: 0 auto !important;
-                          "
-                          role="presentation"
-                        >
-                          <tr>
-                            <td align="center">
-                              <!-- Anniversary Badge -->
-                              <table
-                                width="100%"
-                                cellpadding="0"
-                                cellspacing="0"
-                                border="0"
-                                style="margin-bottom: 15px;"
-                                role="presentation"
-                              >
-                                <tr>
-                                  <td align="center">
-                                    <table
-                                      class="darkmode-badge"
-                                      cellpadding="12"
-                                      cellspacing="0"
-                                      border="0"
-                                      style="
-                                        background-color: #1B7ABF;
-                                        border-radius: 8px;
-                                        padding: 0 10px 10px 10px;
-                                        color: white;
-                                        width: 100%;
-                                        max-width: 200px;
-                                        margin: 0 auto;
-                                      "
-                                      role="presentation"
-                                    >
-                                      <tr>
-                                        <td
-                                          align="center"
-                                          style="
-                                            font-family: Georgia, serif;
-                                            font-style: italic;
-                                            font-size: 9px;
-                                            letter-spacing: 1px;
-                                            color: #ffffff;
-                                            font-weight: bold;
-                                            padding: 6px 6px 3px 0px;
-                                            border-bottom: none;
-                                          "
-                                        >
-                                          HAPPY <strong style="font-size: 12px;">{{ employee.years|replace('st', '<sup>st</sup>')|replace('nd', '<sup>nd</sup>')|replace('rd', '<sup>rd</sup>')|replace('th', '<sup>th</sup>')|safe }}</strong>
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td
-                                          align="center"
-                                          style="
-                                            border: 1px solid rgba(255, 255, 255, 0.7);
-                                            padding: 5px 10px;
-                                            font-family: Georgia, serif;
-                                            font-style: italic;
-                                            font-size: 11px;
-                                            color: #ffffff;
-                                            border-radius: 4px;
-                                            margin-top: 4px;
-                                          "
-                                        >
-                                          <strong>ANNIVERSARY</strong>
-                                        </td>
-                                      </tr>
-                                    </table>
-                                  </td>
-                                </tr>
-                              </table>
-
-                              <!-- Name -->
-                              <table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
-                                <tr>
-                                  <td
-                                    align="center"
-                                    class="darkmode-text"
-                                    style="
-                                      font-family: Arial, sans-serif;
-                                      font-size: 17px;
-                                      font-weight: bold;
-                                      color: #2C269B;
-                                      padding-bottom: 8px;
-                                      line-height: 1.3;
-                                    "
-                                  >
-                                    {{ employee.name }}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td
-                                    align="center"
-                                    class="darkmode-text-secondary"
-                                    style="
-                                      font-family: Arial, sans-serif;
-                                      font-size: 12px;
-                                      font-weight: bold;
-                                      color: #444444;
-                                      padding-bottom: 5px;
-                                      line-height: 1.3;
-                                    "
-                                  >
-                                    {{ employee.department or '' }}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td
-                                    align="center"
-                                    class="darkmode-text"
-                                    style="
-                                      font-family: Arial, sans-serif;
-                                      font-size: 12px;
-                                      font-weight: bold;
-                                      color: #2C269B;
-                                      line-height: 1.3;
-                                    "
-                                  >
-                                    {{ employee.location or '' }}
-                                  </td>
-                                </tr>
-                              </table>
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-
-                      {% set ns.count = ns.count + 1 %}
-                    {% endfor %}
-
-                    {% if ns.row_started %}
-                      {% if ns.count % 2 == 1 %}
-                        <!-- Empty cell to complete the row if odd number of employees -->
-                        <td width="50%" align="center" class="card-cell" style="padding: 10px;"></td>
-                      {% endif %}
-                    </tr>
+                {# Hybrid grid: 2-col when wide, 1-col when narrow; odd last card stays centered #}
+                <div
+                  class="cards-table"
+                  style="
+                    max-width: 720px;
+                    width: 100%;
+                    margin: 0 auto;
+                    text-align: center;
+                    font-size: 0;
+                    line-height: 0;
+                  "
+                >
+                  {% for employee in all_employees %}
+                    <!--[if mso]>
+                    <table role="presentation" width="340" align="{{ 'left' if loop.index0 % 2 == 0 else 'right' }}" cellpadding="0" cellspacing="0" border="0" style="width:340px;float:{{ 'left' if loop.index0 % 2 == 0 else 'right' }};"><tr><td style="padding:8px;">
+                    <![endif]-->
+                    <div
+                      class="card-col"
+                      style="
+                        display: inline-block;
+                        width: 100%;
+                        max-width: 340px;
+                        vertical-align: top;
+                        text-align: center;
+                        font-size: 16px;
+                        line-height: normal;
+                        padding: 8px;
+                        box-sizing: border-box;
+                      "
+                    >
+                      {{ employee_card(employee) }}
+                    </div>
+                    <!--[if mso]>
+                    </td></tr></table>
+                    {% if loop.index0 % 2 == 1 or loop.last %}
+                    <div style="clear:both;"></div>
                     {% endif %}
-                  </table>
-                {% endif %}
+                    <![endif]-->
+                  {% endfor %}
+                </div>
               </td>
             </tr>
-          
 
-            <!-- Footer Message -->
+            <!-- Appreciation Message Section -->
             <tr>
-              <td align="center" style="padding: 30px 20px 40px 20px; background-color: #ffffff;">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+              <td
+                align="center"
+                class="footer-message"
+                style="padding: 25px 40px 15px 40px; background-color: #ffffff"
+              >
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  role="presentation"
+                >
                   <tr>
                     <td
                       align="center"
                       class="darkmode-footer"
                       style="
-                        font-family: Georgia, serif;
-                        font-size: 20px;
-                        font-style: italic;
-                        color: #5a8f50;
-                        line-height: 1.4;
-                        padding: 0 10px;
+                        font-family: 'Ubuntu', Arial, sans-serif;
+                        font-size: 13px;
+                        font-weight: 700;
+                        color: #2465c0;
+                        line-height: 1.6;
+                        text-align: center;
+                        max-width: 580px;
+                        margin: 0 auto;
                       "
                     >
-                      <!-- Thank you for being an amazing part of our journey. -->
-                      We sincerely appreciate the journey you have taken with us and the impact you continue to make. We look forward to your continued growth and success, and to achieving many more milestones together in the years ahead.
+                      We sincerely appreciate the journey you have taken with us
+                      and the impact you continue to make. We look forward to
+                      your continued growth and success, and to achieving many
+                      more milestones together in the years ahead.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Bottom Desk Illustrations -->
+            <tr>
+              <td
+                align="center"
+                style="
+                  background-color: #ffffff;
+                  padding: 0;
+                  margin: 0;
+                  line-height: 0;
+                  font-size: 0;
+                "
+              >
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  role="presentation"
+                  style="border-collapse: collapse; margin: 0; padding: 0;"
+                >
+                  <tr>
+                    <td
+                      width="33%"
+                      align="left"
+                      valign="bottom"
+                      style="line-height: 0; font-size: 0; padding: 0; margin: 0;"
+                    >
+                      <img
+                        class="bottom-obj-1"
+                        src="https://raw.githubusercontent.com/Excel-Technologies-Ltd/Public-Images/refs/heads/main/anniversary/Isolation_Mode-1.png"
+                        alt="Notebook"
+                        width="140"
+                        height="113"
+                        style="
+                          display: block;
+                          margin: 0 auto 0 0;
+                          max-width: 100%;
+                          height: auto;
+                          border: 0;
+                          line-height: 0;
+                        "
+                      />
+                    </td>
+                    <td
+                      width="34%"
+                      align="center"
+                      valign="bottom"
+                      style="line-height: 0; font-size: 0; padding: 0 0 6px 0; margin: 0;"
+                    >
+                      <img
+                        class="bottom-obj-2"
+                        src="https://raw.githubusercontent.com/Excel-Technologies-Ltd/Public-Images/refs/heads/main/anniversary/Isolation_Mode-2.png"
+                        alt="Journal with pencil"
+                        width="95"
+                        height="106"
+                        style="
+                          display: block;
+                          margin: 0 auto;
+                          max-width: 100%;
+                          height: auto;
+                          border: 0;
+                          line-height: 0;
+                        "
+                      />
+                    </td>
+                    <td
+                      width="33%"
+                      align="right"
+                      valign="bottom"
+                      style="line-height: 0; font-size: 0; padding: 0; margin: 0;"
+                    >
+                      <img
+                        class="bottom-obj-3"
+                        src="https://raw.githubusercontent.com/Excel-Technologies-Ltd/Public-Images/refs/heads/main/anniversary/Isolation_Mode-3.png"
+                        alt="Laptop typing"
+                        width="215"
+                        height="192"
+                        style="
+                          display: block;
+                          margin: 0 0 0 auto;
+                          max-width: 100%;
+                          height: auto;
+                          border: 0;
+                          line-height: 0;
+                        "
+                      />
                     </td>
                   </tr>
                 </table>

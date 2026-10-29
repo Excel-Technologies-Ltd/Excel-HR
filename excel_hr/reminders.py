@@ -144,7 +144,6 @@ def send_birthday_reminders():
         return
 
     employees_born_today = get_employees_who_are_born_today()
-    print(f"\n\nEmployees born today: {employees_born_today}\n\n")
     send_all_birthday_mails(employees_born_today)
 
 

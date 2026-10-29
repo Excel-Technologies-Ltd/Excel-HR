@@ -697,89 +697,111 @@ def send_birthday_wish(email="sohan.dev@excelbd.com", name="Sohanur Rahman Lelin
 
 import frappe
 from frappe import _
-from frappe.utils import nowdate, getdate
+
+from frappe.utils import nowdate, get_year_start, get_year_ending
 @frappe.whitelist()
 def get_employee_overview(email):
     if not email:
         frappe.throw(_("Email is required"))
 
+    today = nowdate()
+    year_start = get_year_start(today)
+    year_end = get_year_ending(today)
+
     query = """
-    SELECT 
-        emp.employee,
-        emp.employee_name,
-        emp.company_email,
-        lle.leave_type,
+        SELECT 
+            emp.employee,
+            emp.employee_name,
+            emp.company_email,
+            lle.leave_type,
 
-        -- Leave Ledger Summary
-        SUM(CASE WHEN lle.transaction_type = 'Leave Allocation' THEN lle.leaves ELSE 0 END) AS total_allocated,
-        SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END) AS total_taken,
+            -- Leave Ledger Summary
+            SUM(CASE WHEN lle.transaction_type = 'Leave Allocation' THEN lle.leaves ELSE 0 END) AS total_allocated,
+            SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END) AS total_taken,
 
-        -- Remaining Leave
-        (SUM(CASE WHEN lle.transaction_type = 'Leave Allocation' THEN lle.leaves ELSE 0 END) - 
-        SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END)) AS remaining_leave,
+            -- Remaining Leave
+            (SUM(CASE WHEN lle.transaction_type = 'Leave Allocation' THEN lle.leaves ELSE 0 END) - 
+            SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END)) AS remaining_leave,
 
-        -- Pending Leave Applications (count)
-        COALESCE((
-            SELECT COUNT(*) 
-            FROM `tabLeave Application` la 
-            WHERE la.employee = emp.name 
-            AND la.docstatus = 0  -- Only pending applications
-            AND YEAR(la.from_date) = YEAR(CURDATE())
-        ), 0) AS pending_leave_requests,
-
-        -- Pending Leave Applications (total days)
-        COALESCE((
-            SELECT SUM(DATEDIFF(la.to_date, la.from_date))
-            FROM `tabLeave Application` la 
-            WHERE la.employee = emp.name 
-            AND la.docstatus = 0  -- Pending applications
-            AND YEAR(la.from_date) = YEAR(CURDATE())
-        ), 0) AS pending_leave_days,
-
-        -- Pending Attendance Requests (workflow_state = 'Applied')
-        COALESCE((
-            SELECT COUNT(*) 
-            FROM `tabAttendance Request` ar 
-            WHERE ar.employee = emp.name 
-            AND ar.workflow_state = 'Applied'  -- Only applied requests
-            AND YEAR(ar.from_date) = YEAR(CURDATE())
-        ), 0) AS pending_attendance_requests,
-        
-        -- Pending Compensatory Leave Requests (workflow_state = 'Applied')
-        COALESCE((
-            SELECT COUNT(*) 
-            FROM `tabCompensatory Leave Request` clr 
-            WHERE clr.employee = emp.name 
-            AND clr.workflow_state = 'Applied'
-            AND YEAR(clr.creation) = YEAR(CURDATE())
-        ), 0) AS pending_compensatory_leave_requests,
-        
-        -- Used Leave (Approved leaves + Pending leaves days)
-        (
-            SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END) +  -- Approved leaves
+            -- Pending Leave Applications (count for this leave type in current year)
             COALESCE((
-                SELECT SUM(DATEDIFF(la.to_date, la.from_date) )
+                SELECT COUNT(*) 
                 FROM `tabLeave Application` la 
                 WHERE la.employee = emp.name 
-                AND la.docstatus = 0  -- Pending applications
-                AND YEAR(la.from_date) = YEAR(CURDATE())
-            ), 0)
-        ) AS used_leave
+                AND la.leave_type = lle.leave_type
+                AND la.docstatus = 0
+                AND la.from_date <= %(year_end)s
+                AND la.to_date >= %(year_start)s
+            ), 0) AS pending_leave_requests,
 
-    FROM `tabLeave Ledger Entry` lle
-    JOIN `tabEmployee` emp ON lle.employee = emp.name
+            -- Pending Leave Applications (total days for this leave type in current year)
+            COALESCE((
+                SELECT SUM(la.total_leave_days)
+                FROM `tabLeave Application` la 
+                WHERE la.employee = emp.name 
+                AND la.leave_type = lle.leave_type
+                AND la.docstatus = 0
+                AND la.from_date <= %(year_end)s
+                AND la.to_date >= %(year_start)s
+            ), 0) AS pending_leave_days,
 
-    WHERE lle.docstatus = 1
-    AND YEAR(lle.from_date) = YEAR(CURDATE())
-    AND YEAR(lle.to_date) = YEAR(CURDATE())
-    AND emp.company_email = %s
+            -- Pending Attendance Requests (workflow_state = 'Applied')
+            COALESCE((
+                SELECT COUNT(*) 
+                FROM `tabAttendance Request` ar 
+                WHERE ar.employee = emp.name 
+                AND ar.workflow_state = 'Applied'
+                AND ar.from_date <= %(year_end)s
+                AND ar.to_date >= %(year_start)s
+            ), 0) AS pending_attendance_requests,
+            
+            -- Pending Compensatory Leave Requests (workflow_state = 'Applied')
+            COALESCE((
+                SELECT COUNT(*) 
+                FROM `tabCompensatory Leave Request` clr 
+                WHERE clr.employee = emp.name 
+                AND clr.workflow_state = 'Applied'
+                AND clr.work_from_date <= %(year_end)s
+                AND clr.work_end_date >= %(year_start)s
+            ), 0) AS pending_compensatory_leave_requests,
+            
+            -- Used Leave (Approved leaves + Pending leaves days)
+            (
+                SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END) + 
+                COALESCE((
+                    SELECT SUM(la.total_leave_days)
+                    FROM `tabLeave Application` la 
+                    WHERE la.employee = emp.name 
+                    AND la.leave_type = lle.leave_type
+                    AND la.docstatus = 0
+                    AND la.from_date <= %(year_end)s
+                    AND la.to_date >= %(year_start)s
+                ), 0)
+            ) AS used_leave
 
-    GROUP BY emp.employee, emp.employee_name, emp.company_email, lle.leave_type
-    ORDER BY emp.employee, lle.leave_type;
+        FROM `tabLeave Ledger Entry` lle
+        JOIN `tabEmployee` emp ON lle.employee = emp.name
+
+        WHERE lle.docstatus = 1
+        AND lle.is_expired = 0
+        AND lle.from_date <= %(year_end)s
+        AND lle.to_date >= %(year_start)s
+        AND emp.company_email = %(email)s
+
+        GROUP BY emp.employee, emp.employee_name, emp.company_email, lle.leave_type
+        ORDER BY emp.employee, lle.leave_type;
     """
 
-    results = frappe.db.sql(query, (email,), as_dict=True)
-    
+    results = frappe.db.sql(
+        query,
+        {
+            "email": email,
+            "year_start": year_start,
+            "year_end": year_end,
+        },
+        as_dict=True,
+    )
+
     if not results:
         frappe.throw(_("No leave records found for this employee."))
 

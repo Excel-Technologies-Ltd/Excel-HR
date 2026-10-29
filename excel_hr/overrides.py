@@ -43,22 +43,26 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
         if not self.from_date or self.is_in_allowed_mpl_teams(settings):
             return
 
-        # Get the current date 
         current_date = getdate(nowdate())
-        
-        # --- VALIDATION LOGIC (Kept exactly as you had it) ---
-        base_date = current_date.replace(day=28)
-        window_start = add_days(base_date, 1)        # e.g., Oct 29
-        window_end = add_months(base_date, 1)        # e.g., Nov 28
+        from_date = getdate(self.from_date)
 
-        if not (window_start <= getdate(self.from_date) <= window_end):
-            # --- MESSAGE LOGIC (Calculated to show the previous cycle) ---
-            msg_window_end = current_date.replace(day=28)                  # e.g., Oct 28
-            msg_window_start = add_days(add_months(msg_window_end, -1), 1) # e.g., Sep 29
-            
+        # Application window: 29th of month N → 28th of month N+1 → leave for month N+2
+        # e.g. Sep 29–Oct 28 → November; Oct 29–Nov 28 → December
+        if current_date.day <= 28:
+            window_end = current_date.replace(day=28)
+            window_start = add_days(add_months(window_end, -1), 1)
+            leave_month_start = add_months(current_date.replace(day=1), 1)
+        else:
+            window_start = current_date.replace(day=29)
+            window_end = add_months(current_date.replace(day=28), 1)
+            leave_month_start = add_months(current_date.replace(day=1), 2)
+
+        leave_month_end = add_days(add_months(leave_month_start, 1), -1)
+
+        if not (leave_month_start <= from_date <= leave_month_end):
             frappe.throw(
                 _("Monthly Paid Leave can only be applied for the upcoming month. Please apply between {0} to {1} to proceed with your application.").format(
-                    frappe.bold(format_date(msg_window_start)), frappe.bold(format_date(msg_window_end))
+                    frappe.bold(format_date(window_start)), frappe.bold(format_date(window_end))
                 )
             )
 

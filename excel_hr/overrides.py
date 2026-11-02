@@ -61,7 +61,7 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
 
         if not (leave_month_start <= from_date <= leave_month_end):
             frappe.throw(
-                _("Monthly Paid Leave can only be applied for the upcoming month. Please apply between {0} to {1} to proceed with your application.").format(
+                _("Monthly Paid Leave can only be applied for the upcoming month. Please apply/update between {0} to {1} to proceed with your application.").format(
                     frappe.bold(format_date(window_start)), frappe.bold(format_date(window_end))
                 )
             )

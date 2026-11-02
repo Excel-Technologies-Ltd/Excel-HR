@@ -296,6 +296,9 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
                 )
 
     def validate_annual_leave_balance(self):
+        if self.leave_type != "Annual Leave":
+            return
+
         if not self.employee:
             frappe.throw(_("Please select an employee."))
             return
@@ -305,34 +308,35 @@ class CustomLeaveDayAndDateValidation(LeaveApplication):
             frappe.throw(_("Could not fetch leave allocation details."))
             return
 
-        current_year = datetime.now().year
-        existing_leaves = self.get_existing_leaves(current_year)
+        as_on = getdate(self.from_date) if self.from_date else getdate(nowdate())
+        existing_leaves = self.get_existing_leaves(as_on.year)
 
         new_leave_days = self.calculate_leave_days()
         if new_leave_days is None:
             return
 
-        total_used_leaves = sum(leave["total_leave_days"] for leave in existing_leaves)
-        
+        total_used_leaves = sum(leave["total_leave_days"] or 0 for leave in existing_leaves)
         total_after_new = total_used_leaves + new_leave_days
-        if total_after_new > leave_details and self.leave_type == "Annual Leave":
+        if total_after_new > leave_details:
             frappe.throw(_(
                 "<b>Total of the leave days exceeds your current allowance.</b> "
                 "Please reduce the number of days or select a different leave type."
             ))
 
-    
-    
     def get_leave_allocation_details(self):
-        try:
-            leave_details = frappe.get_doc("Leave Allocation", {
+        """Return Annual Leave allocation for the leave period (not an arbitrary/old allocation)."""
+        as_on = getdate(self.from_date) if self.from_date else getdate(nowdate())
+        return frappe.db.get_value(
+            "Leave Allocation",
+            {
                 "employee": self.employee,
                 "leave_type": "Annual Leave",
-                "docstatus": 1
-            })
-            return leave_details.total_leaves_allocated
-        except Exception:
-            return None
+                "docstatus": 1,
+                "from_date": ["<=", as_on],
+                "to_date": [">=", as_on],
+            },
+            "total_leaves_allocated",
+        )
 
     def get_existing_leaves(self, year):
         return frappe.get_all("Leave Application",

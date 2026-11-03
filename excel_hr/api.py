@@ -168,11 +168,31 @@ def get_leave_dashboard_data(employee=None, date=None):
     GROUP BY leave_type
     """
 
+    # Applied policy deductions already reduce Annual Leave allocations.
+    # Report them separately without subtracting them from availability again.
+    # Use the policy period end, falling back to creation for older logs.
+    penalized_query = """
+    SELECT COALESCE(SUM(adjustment), 0) AS penalized_leaves
+    FROM `tabArcHR Policy Impact Log`
+    WHERE employee = %(employee)s
+        AND criteria = 'Deduction'
+        AND type = 'Leaves'
+        AND status = 'Applied'
+        AND docstatus < 2
+        AND (
+            to_date BETWEEN %(year_start)s AND %(date)s
+            OR (to_date IS NULL
+                AND DATE(created_on) BETWEEN %(year_start)s AND %(date)s)
+        )
+    """
+
     # Execute all queries
     allocations = frappe.db.sql(allocation_query, params, as_dict=True)
     leaves_taken = frappe.db.sql(taken_query, params, as_dict=True)
     pending_requests = frappe.db.sql(pending_query, params, as_dict=True)
     expired_leaves = frappe.db.sql(expired_query, params, as_dict=True)
+
+    penalized = frappe.db.sql(penalized_query, params, as_dict=True)[0].penalized_leaves
 
     # Convert to dictionaries
     alloc_map = {a.leave_type: a.total_allocated for a in allocations}
@@ -187,6 +207,9 @@ def get_leave_dashboard_data(employee=None, date=None):
         set(expired_map.keys())
     )
 
+    if penalized:
+        all_leave_types.add("Annual Leave")
+
     leave_data = {}
     for leave_type in all_leave_types:
         allocated = alloc_map.get(leave_type, 0)
@@ -198,6 +221,7 @@ def get_leave_dashboard_data(employee=None, date=None):
         if leave_type == "Special Leave":
             leave_data[leave_type] = {
                 "total_leaves": allocated,
+                "penalized_leaves": 0,
                 "expired_leaves": expired,
                 "leaves_taken": taken,
                 "leaves_pending_approval": pending,
@@ -209,6 +233,7 @@ def get_leave_dashboard_data(employee=None, date=None):
             
             leave_data[leave_type] = {
                 "total_leaves": allocated,
+                "penalized_leaves": penalized if leave_type == "Annual Leave" else 0,
                 "expired_leaves": expired,
                 "leaves_taken": taken,
                 "leaves_pending_approval": pending,
@@ -717,6 +742,23 @@ def get_employee_overview(email):
 
             -- Leave Ledger Summary
             SUM(CASE WHEN lle.transaction_type = 'Leave Allocation' THEN lle.leaves ELSE 0 END) AS total_allocated,
+
+            -- Applied penalties already reduce allocations; expose without deducting again.
+            CASE WHEN lle.leave_type = 'Annual Leave' THEN COALESCE((
+                SELECT SUM(pil.adjustment)
+                FROM `tabArcHR Policy Impact Log` pil
+                WHERE pil.employee = emp.name
+                AND pil.criteria = 'Deduction'
+                AND pil.type = 'Leaves'
+                AND pil.status = 'Applied'
+                AND pil.docstatus < 2
+                AND (
+                    pil.to_date BETWEEN %(year_start)s AND %(year_end)s
+                    OR (pil.to_date IS NULL
+                        AND DATE(pil.created_on) BETWEEN %(year_start)s AND %(year_end)s)
+                )
+            ), 0) ELSE 0 END AS penalized_leaves,
+
             SUM(CASE WHEN lle.transaction_type = 'Leave Application' THEN ABS(lle.leaves) ELSE 0 END) AS total_taken,
 
             -- Remaining Leave

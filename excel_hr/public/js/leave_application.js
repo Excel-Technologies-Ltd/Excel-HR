@@ -1,3 +1,40 @@
+// Extend the template used by the existing Leave Application client script.
+// Keep this in Excel HR so HRMS upgrades do not overwrite the column.
+frappe.templates["leave_application_dashboard"] = `
+{% if not jQuery.isEmptyObject(data) %}
+<table class="table table-bordered small">
+	<thead>
+		<tr>
+			<th style="width: 14%">{{ __("Leave Type") }}</th>
+			<th style="width: 14%" class="text-right">{{ __("Total Allocated Leaves") }}</th>
+			<th style="width: 14%" class="text-right">{{ __("Panalized Leaves") }}</th>
+			<th style="width: 14%" class="text-right">{{ __("Expired Leaves") }}</th>
+			<th style="width: 14%" class="text-right">{{ __("Used Leaves") }}</th>
+			<th style="width: 14%" class="text-right">{{ __("Leaves Pending Approval") }}</th>
+			<th style="width: 14%" class="text-right">{{ __("Available Leaves") }}</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for(const [key, value] of Object.entries(data)) { %}
+			{% let color = cint(value["remaining_leaves"]) > 0 ? "green" : "red" %}
+			<tr>
+				<td> {%= key %} </td>
+				<td class="text-right"> {%= value["total_leaves"] %} </td>
+				<td class="text-right"> {%= value["penalized_leaves"] || 0 %} </td>
+				<td class="text-right"> {%= value["expired_leaves"] %} </td>
+				<td class="text-right"> {%= value["leaves_taken"] %} </td>
+				<td class="text-right"> {%= value["leaves_pending_approval"] %} </td>
+				<td class="text-right" style="color: {{ color }}"> {%= value["remaining_leaves"] %} </td>
+			</tr>
+		{% } %}
+	</tbody>
+</table>
+{% else %}
+<p style="margin-top: 30px;"> {{ __("No leaves have been allocated.") }} </p>
+{% endif %}
+`;
+delete frappe.template.compiled["leave_application_dashboard"];
+
 // Limit the Leave Attachments table to MAX_LEAVE_ATTACHMENTS rows.
 // The same limit is enforced server side in overrides.py.
 const MAX_LEAVE_ATTACHMENTS = 5;

@@ -87,6 +87,29 @@ def get_data(filters, leave_types):
     for employee in active_employees:
         row = [employee.name, employee.employee_name, employee.department]
         available_leave = get_leave_details(employee.name, get_last_date)
+        # Replace only new allocation amounts; retain HRMS carry-forward and usage rules.
+        adjustments = frappe.db.sql("""
+            SELECT ledger.leave_type,
+                COALESCE(allocation.custom_new_leaves_allocated, 0) - SUM(ledger.leaves) AS adjustment
+            FROM `tabLeave Ledger Entry` ledger
+            INNER JOIN `tabLeave Allocation` allocation
+                ON allocation.name = ledger.transaction_name
+                AND allocation.docstatus = 1
+            WHERE ledger.employee = %(employee)s
+                AND ledger.docstatus = 1
+                AND ledger.transaction_type = 'Leave Allocation'
+                AND ledger.is_carry_forward = 0
+                AND ledger.is_expired = 0
+                AND ledger.is_lwp = 0
+                AND ledger.from_date <= %(date)s
+                AND ledger.to_date >= %(date)s
+            GROUP BY ledger.leave_type, allocation.name, allocation.custom_new_leaves_allocated
+        """, {"employee": employee.name, "date": get_last_date}, as_dict=True)
+        for adjustment in adjustments:
+            allocation = available_leave["leave_allocation"].get(adjustment.leave_type)
+            if allocation:
+                allocation["total_leaves"] += adjustment.adjustment
+                allocation["remaining_leaves"] += adjustment.adjustment
         print("available_leave",available_leave)
         print(available_leave)
         for leave_type in leave_types:

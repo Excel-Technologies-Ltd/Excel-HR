@@ -5,13 +5,12 @@ frappe.templates["leave_application_dashboard"] = `
 <table class="table table-bordered small">
 	<thead>
 		<tr>
-			<th style="width: 14%">{{ __("Leave Type") }}</th>
-			<th style="width: 14%" class="text-right">{{ __("Total Allocated Leaves") }}</th>
-			<th style="width: 14%" class="text-right">{{ __("Panalized Leaves") }}</th>
-			<th style="width: 14%" class="text-right">{{ __("Expired Leaves") }}</th>
-			<th style="width: 14%" class="text-right">{{ __("Used Leaves") }}</th>
-			<th style="width: 14%" class="text-right">{{ __("Leaves Pending Approval") }}</th>
-			<th style="width: 14%" class="text-right">{{ __("Available Leaves") }}</th>
+			<th style="width: 16.66%">{{ __("Leave Type") }}</th>
+			<th style="width: 16.66%" class="text-right">{{ __("Total Allocated Leaves") }}</th>
+			<th style="width: 16.66%" class="text-right">{{ __("Panalized Leaves") }}</th>
+			<th style="width: 16.66%" class="text-right">{{ __("Used Leaves") }}</th>
+			<th style="width: 16.66%" class="text-right">{{ __("Leaves Pending Approval") }}</th>
+			<th style="width: 16.66%" class="text-right">{{ __("Available Leaves") }}</th>
 		</tr>
 	</thead>
 	<tbody>
@@ -21,7 +20,6 @@ frappe.templates["leave_application_dashboard"] = `
 				<td> {%= key %} </td>
 				<td class="text-right"> {%= value["total_leaves"] %} </td>
 				<td class="text-right"> {%= value["penalized_leaves"] || 0 %} </td>
-				<td class="text-right"> {%= value["expired_leaves"] %} </td>
 				<td class="text-right"> {%= value["leaves_taken"] %} </td>
 				<td class="text-right"> {%= value["leaves_pending_approval"] %} </td>
 				<td class="text-right" style="color: {{ color }}"> {%= value["remaining_leaves"] %} </td>

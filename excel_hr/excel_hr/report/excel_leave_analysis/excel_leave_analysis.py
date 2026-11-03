@@ -122,7 +122,7 @@ def get_data(filters, leave_types):
                 "from_date": ("<=", end_date),
                 "to_date": (">=", start_date)
             },
-            fields=["leave_type", "total_leaves_allocated"]
+            fields=["leave_type", "custom_new_leaves_allocated", "unused_leaves"]
         )
 
         # Get approved leave applications
@@ -155,7 +155,7 @@ def get_data(filters, leave_types):
                 if leave_type == "Special Leave":
                     leave_data["allocated"][leave_type] = 0
                 else:
-                    leave_data["allocated"][leave_type] += alloc.total_leaves_allocated
+                    leave_data["allocated"][leave_type] += (alloc.custom_new_leaves_allocated or 0) + (alloc.unused_leaves or 0)
 
         # Process approved leaves
         for app in approved_leaves:

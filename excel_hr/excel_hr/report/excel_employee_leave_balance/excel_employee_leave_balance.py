@@ -96,7 +96,9 @@ def get_custom_leave_data(filters):
             e.employee_name,
             -- Opening balance (all allocations before period minus leaves taken before period)
             IFNULL((
-                SELECT SUM(IFNULL(alloc.leaves, 0)) - IFNULL((
+                SELECT SUM(CASE WHEN alloc.is_carry_forward = 1
+                    THEN IFNULL(alloc.leaves, 0)
+                    ELSE IFNULL(allocation.custom_new_leaves_allocated, 0) END) - IFNULL((
                     SELECT SUM(ABS(taken.leaves))
                     FROM `tabLeave Ledger Entry` taken
                     WHERE taken.docstatus = 1
@@ -105,7 +107,17 @@ def get_custom_leave_data(filters):
                     AND taken.transaction_type = 'Leave Application'
                     AND taken.from_date < '{filters.from_date}'
                 ), 0)
-                FROM `tabLeave Ledger Entry` alloc
+                FROM (
+                    SELECT transaction_name, employee, leave_type, docstatus, transaction_type,
+                        from_date, to_date, is_expired, is_carry_forward, SUM(leaves) AS leaves
+                    FROM `tabLeave Ledger Entry`
+                    WHERE docstatus = 1 AND transaction_type = 'Leave Allocation'
+                    GROUP BY transaction_name, employee, leave_type, docstatus, transaction_type,
+                        from_date, to_date, is_expired, is_carry_forward
+                ) alloc
+                INNER JOIN `tabLeave Allocation` allocation
+                    ON allocation.name = alloc.transaction_name
+                    AND allocation.docstatus = 1
                 WHERE alloc.docstatus = 1
                 AND alloc.employee = e.name
                 AND alloc.leave_type = lt.name
@@ -116,8 +128,20 @@ def get_custom_leave_data(filters):
             
             -- New allocations during period
             IFNULL((
-                SELECT SUM(IFNULL(new_alloc.leaves, 0))
-                FROM `tabLeave Ledger Entry` new_alloc
+                SELECT SUM(CASE WHEN new_alloc.is_carry_forward = 1
+                    THEN IFNULL(new_alloc.leaves, 0)
+                    ELSE IFNULL(allocation.custom_new_leaves_allocated, 0) END)
+                FROM (
+                    SELECT transaction_name, employee, leave_type, docstatus, transaction_type,
+                        from_date, to_date, is_expired, is_carry_forward, SUM(leaves) AS leaves
+                    FROM `tabLeave Ledger Entry`
+                    WHERE docstatus = 1 AND transaction_type = 'Leave Allocation'
+                    GROUP BY transaction_name, employee, leave_type, docstatus, transaction_type,
+                        from_date, to_date, is_expired, is_carry_forward
+                ) new_alloc
+                INNER JOIN `tabLeave Allocation` allocation
+                    ON allocation.name = new_alloc.transaction_name
+                    AND allocation.docstatus = 1
                 WHERE new_alloc.docstatus = 1
                 AND new_alloc.employee = e.name
                 AND new_alloc.leave_type = lt.name
@@ -127,9 +151,9 @@ def get_custom_leave_data(filters):
                 AND new_alloc.is_expired = 0
             ), 0) as leaves_allocated,
             
-            -- Leaves taken during period (total leave days, regardless of include_holiday)
+            -- Leaves taken during period from submitted leave ledger entries
             IFNULL((
-                SELECT SUM(IFNULL(taken.total_leave_days, 0))  -- Sum of total_leave_days for taken leave
+                SELECT SUM(ABS(IFNULL(taken.leaves, 0)))
                 FROM `tabLeave Ledger Entry` taken
                 WHERE taken.docstatus = 1
                 AND taken.employee = e.name

@@ -231,8 +231,9 @@ def get_leave_dashboard_data(employee=None, date=None):
             # Available leaves calculation (allocated - (taken + pending + expired))
             available = allocated - (taken + pending + expired)
             
+            # Display the allocation before policy deductions; availability uses the net allocation.
             leave_data[leave_type] = {
-                "total_leaves": allocated,
+                "total_leaves": allocated + (penalized if leave_type == "Annual Leave" else 0),
                 "penalized_leaves": penalized if leave_type == "Annual Leave" else 0,
                 "expired_leaves": expired,
                 "leaves_taken": taken,
@@ -846,6 +847,10 @@ def get_employee_overview(email):
 
     if not results:
         frappe.throw(_("No leave records found for this employee."))
+
+    # Display the allocation before policy deductions, preserving the net remaining balance.
+    for row in results:
+        row.total_allocated += row.penalized_leaves
 
     return results
 # @frappe.whitelist()

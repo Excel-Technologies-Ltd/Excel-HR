@@ -1425,22 +1425,6 @@
  },
  {
   "default_value": null,
-  "doc_type": "Leave Allocation",
-  "docstatus": 0,
-  "doctype": "Property Setter",
-  "doctype_or_field": "DocField",
-  "field_name": "total_leaves_allocated",
-  "is_system_generated": 0,
-  "modified": "2024-01-14 11:05:06.775508",
-  "module": null,
-  "name": "Leave Allocation-total_leaves_allocated-in_list_view",
-  "property": "in_list_view",
-  "property_type": "Check",
-  "row_name": null,
-  "value": "1"
- },
- {
-  "default_value": null,
   "doc_type": "Attendance",
   "docstatus": 0,
   "doctype": "Property Setter",
